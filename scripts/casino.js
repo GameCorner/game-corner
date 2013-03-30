@@ -152,6 +152,10 @@ module.exports = (new function () {
             casinobot.sendMessage(src, "The max bet is 100 coins.", casinochan);
             return;
         }
+        if (bet <= 1) {
+            casinobot.sendMessage(src, "The min bet is 2 coin.", casinochan);
+            return;
+        }
         dice1 = Math.floor((Math.random() * 6) + 1);
         dice2 = Math.floor((Math.random() * 6) + 1);
         global.coins[sys.name(src).toLowerCase()] -= bet;
