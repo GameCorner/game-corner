@@ -71,6 +71,9 @@ module.exports = (new function () {
             casinobot.sendMessage(src, "The max bet is 100 coins.", casinochan);
             return;
         }
+        if (bet < 1) {
+            casinobot.sendMessage(src, "The minimum bet is 1 coin.", casinochan)
+        }
         if (calnumber >= 19) {
 			casinobot.sendMessage(src, "That is not a result that 3 dice can make", casinochan);
 			return;
@@ -152,8 +155,8 @@ module.exports = (new function () {
             casinobot.sendMessage(src, "The max bet is 100 coins.", casinochan);
             return;
         }
-        if (bet <= 1) {
-            casinobot.sendMessage(src, "The min bet is 2 coin.", casinochan);
+        if (bet < 1) {
+            casinobot.sendMessage(src, "The min bet is 1 coin.", casinochan);
             return;
         }
         dice1 = Math.floor((Math.random() * 6) + 1);
