@@ -25,10 +25,10 @@ module.exports = (new function () {
     this.chan = undefined;
     
     try {
-        this.poker = Poker(casino);
+        this.poker = new Poker(casino);
     } catch (e) {
         if (staffchannel) {
-            bot.sendAll("Couldn't load poker: " + e + " on line " + e.lineNumber, staffchannel);
+            bot.sendAll("Couldn't load poker: " + e + " on line " + e.lineNumber + " [" + Object.keys((Poker || {})) + "]", staffchannel);
         }
         
         this.poker = {handleCommand: function () {}, step: function () {}};
@@ -72,7 +72,7 @@ module.exports = (new function () {
             return;
         }
         if (bet < 1) {
-            casinobot.sendMessage(src, "The minimum bet is 1 coin.", casinochan)
+            casinobot.sendMessage(src, "The minimum bet is 1 coin.", casinochan);
         }
         if (calnumber >= 19) {
 			casinobot.sendMessage(src, "That is not a result that 3 dice can make", casinochan);
@@ -188,13 +188,9 @@ module.exports = (new function () {
     };
 	this.playSlots = function (src) {
         var slot;
-		if (!global.coins.hasOwnProperty(src)) {
+        if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
             global.coins[sys.name(src).toLowerCase()] = 100;
         }
-        if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
-            global.coins[sys.name(src).toLowerCase()] = 1;
-        }
-		global.coins[sys.name(src).toLowerCase()] -= 1;
 		slot = Math.floor((Math.random() * 300) + 1);
 		if (slot === 1) {
 			global.coins[sys.name(src).toLowerCase()] += jackpot;
