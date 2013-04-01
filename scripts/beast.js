@@ -154,7 +154,7 @@ this.playCraps = function (src, commandData){
 			casinobot.sendMessage(src, "You don't have any coins so you are not able to play.", casinochan);
 			return;
 		}
-		coins[sys.name(src)] -= 1;
+		SESSION.users(src).coins -= 1;
 		slot = Math.floor((Math.random()*300)+1);
 		if(slot == 1){
 			SESSION.users(src).coins += jackpot;
