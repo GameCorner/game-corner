@@ -1,20 +1,16 @@
 /*jslint es5: true, evil: true, plusplus: true, sloppy: true, vars: true, undef: true*/
 /*global module, require, sys, casinobot, Config*/
 
-(function () {
-    var cards = require('cards.js');
+// implementing Texas Hold'em
+module.exports = function (casino) {
+    var cards = require('cards.js'),
+        randUtils = require('rand-utils.js');
     
     cards.useArc4 = true; // change this if it lags too much
     cards.raiseLimit = 50; // limit for raising
     cards.bigBlind = 5; // price of the big blind
     cards.smallBlind = 3; // price of the small blind
     cards.roundLimit = 10; // amount of rounds per poker game
-}());
-
-// implementing Texas Hold'em
-module.exports = function (casino) {
-    var cards = require('cards.js'),
-        randUtils = require('rand-utils.js');
     
     var game = {},
         module_scope = this;

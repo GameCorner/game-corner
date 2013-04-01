@@ -286,6 +286,10 @@ module.exports = (new function () {
 			casinobot.sendMessage(src, "You don't have that many coins!", casinochan);
 			return;
 		}
+        if (data[0] > 100) {
+			casinobot.sendMessage(src, "The max bet is 100 coins.", casinochan);
+			return;
+		}
         if (choices[0] === choices[1] || choices[0] === choices[2] || choices[1] === choices[2]) {
             return casinobot.sendMessage(src, "All types must be different (so you can't do Electric [1] twice, for example).", casinochan);
         }
@@ -413,17 +417,17 @@ module.exports = (new function () {
             sendChanMessage(src, msg, casinochan);
         });
 	};
-    this.casinocommands = {
+    this.commands = {
         user: {
-            cal: [this.playCAL, "To play Chuck A Luck."],
-            craps: [this.playCraps, "To play Craps."],
-	        slots: [this.playSlots, "To play Slots."],
-            pr: [this.playPR, "To play Pikachu's Roulette."],
-            help: [this.showHelp, "To learn how to play the games."],
-            games: [this.showGames, "To see all the games you can play."],
-            jackpot: [this.showJackpot, "To see what the current jackpot is."],
-            mycoins: [this.showmyCoins, "To find out how many coins you have."],
-            casinocommands: [this.showCommands, "To see a list of possible commands."]
+            cal: this.playCAL,
+            craps: this.playCraps,
+	        slots: this.playSlots,
+            pr: this.playPR,
+            help: this.showHelp,
+            games: this.showGames,
+            jackpot: this.showJackpot,
+            mycoins: this.showmyCoins,
+            casinocommands: this.showCommands
         }
 	};
     this.handleCommand = function (src, message, channel) {
@@ -455,8 +459,8 @@ module.exports = (new function () {
             }, casinoCommandCooldown * 1000, false);
         }
         
-        if (casino.casinocommands.user.hasOwnProperty(command)) { //Ricetip: You will need this block to make commands work.
-            casino.casinocommands.user[command][0].call(casino, src, commandData);
+        if (casino.commands.user.hasOwnProperty(command)) { //Ricetip: You will need this block to make commands work.
+            casino.commands.user[command].call(casino, src, commandData);
             return true;
         }
 	};
