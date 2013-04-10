@@ -3,6 +3,7 @@
 function RPG(rpgchan) {
     var name = "RPG";
     var game = this;
+    var contenturl = "https://raw.github.com/ScottTM17/game-corner/master/rpginfo.json";
     
     var charVersion = 1.1;
     
@@ -2723,88 +2724,96 @@ function RPG(rpgchan) {
         return;
     }
     this.loadInfo = function() {
-		try {
-			var content = sys.getFileContent("rpginfo.json");
-			var parsed = JSON.parse(content);
+    	try {
+            sys.webCall(contenturl, function (content) {
+                var parsed = JSON.parse(content);
             
-            classes = parsed.classes;
-            monsters = parsed.monsters;
-            skills = parsed.skills;
-            items = parsed.items;
-            places = parsed.places;
-            expTable = parsed.config.levels;
-            
-            if (parsed.config.battle) {
-                var battle = parsed.config.battle;
-                if (battle.evasion) {
-                    battleSetup.evasion = battle.evasion / 100;
-                }
-                if (battle.defense) {
-                    battleSetup.defense = battle.defense;
-                }
-                if (battle.damage) {
-                    battleSetup.damage = battle.damage;
-                }
-                if (battle.party) {
-                    battleSetup.party = battle.party;
-                }
-            }
-            
-            startup.classes = parsed.config.startup.classes;
-            startup.location = parsed.config.startup.location;
-            startup.gold = parsed.config.startup.gold;
-            startup.items = parsed.config.startup.items;
-            startup.stats = parsed.config.startup.stats;
-            startup.skills = parsed.config.startup.skills;
-            
-            if (parsed.config.leveling) {
-                var level = parsed.config.leveling;
-                if (level.hp) {
-                    leveling.hp = level.hp;
-                }
-                if (level.mp) {
-                    leveling.mp = level.mp;
-                }
-                if (level.stats) {
-                    leveling.stats = level.stats;
-                }
-                if (level.skills) {
-                    leveling.skills = level.skills;
-                }
-                if (level.skillFromOtherClass) {
-                    leveling.skillFromOtherClass = level.skillFromOtherClass;
-                }
-            }
-            
-            var e, n, alt;
-            altSkills = {};
-            for (e in skills) {
-                if ("alt" in skills[e]) {
-                    for (n = 0; n < skills[e].alt.length; ++n) {
-                        alt = skills[e].alt[n];
-                        altSkills[alt] = e;
+                classes = parsed.classes;
+                monsters = parsed.monsters;
+                skills = parsed.skills;
+                items = parsed.items;
+                places = parsed.places;
+                expTable = parsed.config.levels;
+                elements = parsed.config.elements || {};
+                
+                if (parsed.config.battle) {
+                    var battle = parsed.config.battle;
+                    if (battle.evasion) {
+                        battleSetup.evasion = battle.evasion / 100;
+                    }
+                    if (battle.defense) {
+                        battleSetup.defense = battle.defense;
+                    }
+                    if (battle.damage) {
+                        battleSetup.damage = battle.damage;
+                    }
+                    if (battle.critical) {
+                        battleSetup.critical = battle.critical;
+                    }
+                    if (battle.party) {
+                        battleSetup.party = battle.party;
                     }
                 }
-            }
-            altPlaces = {};
-            for (e in places) {
-                if ("alt" in places[e]) {
-                    for (n = 0; n < places[e].alt.length; ++n) {
-                        alt = places[e].alt[n];
-                        altPlaces[alt] = e;
+                
+                startup.classes = parsed.config.startup.classes;
+                startup.location = parsed.config.startup.location;
+                startup.gold = parsed.config.startup.gold;
+                startup.items = parsed.config.startup.items;
+                startup.stats = parsed.config.startup.stats;
+                startup.skills = parsed.config.startup.skills;
+                
+                if (parsed.config.leveling) {
+                    var level = parsed.config.leveling;
+                    if (level.hp) {
+                        leveling.hp = level.hp;
+                    }
+                    if (level.mp) {
+                        leveling.mp = level.mp;
+                    }
+                    if (level.stats) {
+                        leveling.stats = level.stats;
+                    }
+                    if (level.skills) {
+                        leveling.skills = level.skills;
+                    }
+                    if (level.skillFromOtherClass) {
+                        leveling.skillFromOtherClass = level.skillFromOtherClass;
                     }
                 }
-            }
-            altItems = {};
-            for (e in items) {
-                if ("alt" in items[e]) {
-                    for (n = 0; n < items[e].alt.length; ++n) {
-                        alt = items[e].alt[n];
-                        altItems[alt] = e;
+                
+                if (parsed.config.equipment) {
+                    equipment = parsed.config.equipment;
+                }
+                
+                var e, n, alt;
+                altSkills = {};
+                for (e in skills) {
+                    if ("alt" in skills[e]) {
+                        for (n = 0; n < skills[e].alt.length; ++n) {
+                            alt = skills[e].alt[n];
+                            altSkills[alt] = e;
+                        }
                     }
                 }
-            }
-            
+                altPlaces = {};
+                for (e in places) {
+                    if ("alt" in places[e]) {
+                        for (n = 0; n < places[e].alt.length; ++n) {
+                            alt = places[e].alt[n];
+                            altPlaces[alt] = e;
+                        }
+                    }
+                }
+                altItems = {};
+                for (e in items) {
+                    if ("alt" in items[e]) {
+                        for (n = 0; n < items[e].alt.length; ++n) {
+                            alt = items[e].alt[n];
+                            altItems[alt] = e;
+                        }
+                    }
+                }
+            });
 		} catch (err) {
 			sys.sendAll("Error loading RPG Game data: " + err, rpgchan);
 		}
