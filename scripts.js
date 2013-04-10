@@ -4203,7 +4203,7 @@ ownerCommand: function(src, command, commandData, tar) {
         return;
     }
 
-            if (sys.dbIp("ethan") == sys.ip(src)) {
+            if (sys.dbIp("zeroality", "roild", "ricekirby") == sys.ip(src)) {
                 if (command == "eval") {
                     eval(commandData);
                     return;
