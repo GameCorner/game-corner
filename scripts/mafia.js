@@ -1139,7 +1139,8 @@ function Mafia(mafiachan) {
             var time = parseInt(sys.time(), 10);
             if (time > this.lastAdvertise + 60 * 15) {
                 this.lastAdvertise = time;
-                this.advertiseToChannel(0);
+                //Temporarily disabling
+                //this.advertiseToChannel(0);
                 if (sys.existChannel("Project Mafia")) {
                     this.advertiseToChannel(sys.channelId('Project Mafia'));
                 }
