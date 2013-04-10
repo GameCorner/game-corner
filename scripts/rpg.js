@@ -1045,6 +1045,9 @@ function RPG(rpgchan) {
                         }
                         
                         var def = move.effect && move.effect.pierce && move.effect.pierce === true ? 1 : getFullValue(target, "def") * battleSetup.defense;
+                        if (def <= 0) {
+                            def = 1;
+                        }
                         
                         var atkElement = "none";
                         if (move.element && move.element !== "none") {
