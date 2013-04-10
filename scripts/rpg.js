@@ -2974,6 +2974,7 @@ function RPG(rpgchan) {
 	this.beforeLogOut = function(src) {
         if (SESSION.users(src).rpg !== undefined) {
             game.removePlayer(src);
+            game.saveGame(src);
         }
     };
 	this.init = function() {
