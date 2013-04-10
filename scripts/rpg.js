@@ -1044,7 +1044,7 @@ function RPG(rpgchan) {
                             
                         }
                         
-                        var def = move.effect && move.effect.pierce && move.effect.pierce === true ? 0 : getFullValue(target, "def") * battleSetup.defense;
+                        var def = move.effect && move.effect.pierce && move.effect.pierce === true ? 1 : getFullValue(target, "def") * battleSetup.defense;
                         
                         var atkElement = "none";
                         if (move.element && move.element !== "none") {
@@ -3416,7 +3416,7 @@ function RPG(rpgchan) {
             var user, x, gamefile;
             for (x = 0; x < playerson.length; ++x) {
                 user = SESSION.users(playerson[x]);
-                if (user.rpg !== undefined) {
+                if (user.rpg) {
                     gamefile = this.convertChar(user.rpg);
                     user.rpg = gamefile;
                 }
