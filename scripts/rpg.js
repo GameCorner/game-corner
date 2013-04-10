@@ -1169,8 +1169,7 @@ function RPG(rpgchan) {
         for (var p in loser) {
             var lost = loser[p];
             if (lost.isPlayer) {
-                rpgbot.sendMessage(lost.id, "You lost " + Math.floor(lost.gold * 0.1) + " Gold!", rpgchan);
-                lost.gold = Math.floor(lost.gold * 0.9);
+                
             } else {
                 if (lost.gold) {
                     gold += Math.floor(lost.gold);
@@ -2845,10 +2844,8 @@ function RPG(rpgchan) {
             stats: [this.viewStats, "To view your character status."],
             skills: [this.viewSkills, "To view the available skills."],
             increase: [this.addPoint, "To increase your stats or skills after you level up."],
-            resetchar: [this.resetChar, "To reset your build without erasing your character."],
             savechar: [this.saveGame, "To save your progress."],
             clearchar: [this.clearChar, "To clear your character."],
-            inn: [this.gotoInn, "Pay 10 Gold to fully restore HP and MP."],
             party: [this.manageParty, "To create and manage a party"]
         },
         altactions: {
