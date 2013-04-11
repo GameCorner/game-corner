@@ -932,7 +932,7 @@ function RPG(rpgchan) {
                 }
                 
                 if (!castComplete && "cast" in move && move.cast > 0) {
-                    out.push(player.name + " is preparing a move!");
+                    out.push(player.name + " is preparing to use " + skills[moveName].name + "!");
                     player.battle.casting = move.cast;
                     player.battle.skillCasting = moveName;
                     continue;
@@ -2053,7 +2053,7 @@ function RPG(rpgchan) {
         
         var player = SESSION.users(src).rpg;
         
-        var attributes = ["life", "hp", "mana", "mp", "str", "strength", "def", "defense", "spd", "speed", "dex", "dexterity", "mag", "magic"];
+        var attributes = ["hp", "mana", "mp", "str", "strength", "def", "defense", "spd", "speed", "dex", "dexterity", "mag", "magic"];
         
         if (attributes.indexOf(what) !== -1) {
             if (player.statPoints <= 0) {
@@ -3305,7 +3305,7 @@ function RPG(rpgchan) {
     this.loadInfo = function() {
 		try {
             sys.webCall(contenturl, function (content) {
-                // var content = sys.getFileContent("rpginfo.json");
+                //var content = sys.getFileContent("rpginfo.json");
                 var parsed = JSON.parse(content);
             
                 classes = parsed.classes;
