@@ -3277,6 +3277,7 @@ function RPG(rpgchan) {
 "±RPG: /skills - See your skills and available skill points. Use /increase to allocate them. See /stats for your stats.",
 "±RPG: /increase - To allocate your stat or skill point. EG: /increase speed OR /increase fire:3",
 "±RPG: /revive - Use this when you have died. You will revive at the inn with half HP, so remember to heal at the inn.",
+"±RPG: A guide of how to start the game can be found at http://gamecorner.info/Thread-RPG-Beginner-s-Guide ",
 			"*** *********************************************************************** ***",
 			""
 		];
