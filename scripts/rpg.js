@@ -910,7 +910,6 @@ function RPG(rpgchan) {
                     continue;
                 } else {
                     castComplete = true;
-                    player.battle.casting = null;
                 }
             }
             
@@ -923,6 +922,7 @@ function RPG(rpgchan) {
                 
                 if (player.mp < Math.floor(move.cost * mpModifier)) {
                     out.push(player.name + " tried to use " + move.name + ", but didn't have enough Mana!");
+                    player.battle.casting = null;
                     continue;
                 }
                 
@@ -936,6 +936,8 @@ function RPG(rpgchan) {
                     player.battle.casting = move.cast;
                     player.battle.skillCasting = moveName;
                     continue;
+                } else {
+                    player.battle.casting = null;
                 }
                 
                 var count = (move.targetCount) ? move.targetCount : 1;
@@ -1676,7 +1678,7 @@ function RPG(rpgchan) {
                     }
                 }
             }
-            rpgbot.sendMessage(src, item.message, rpgchan);
+            rpgbot.sendMessage(src, item.message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp), rpgchan);
             changeItemCount(player, it, -1);
         } else if (item.type === "equip") {
             var slot = item.slot;
@@ -3305,7 +3307,7 @@ function RPG(rpgchan) {
     this.loadInfo = function() {
 		try {
             sys.webCall(contenturl, function (content) {
-                //var content = sys.getFileContent("rpginfo.json");
+                // var content = sys.getFileContent("rpginfo.json");
                 var parsed = JSON.parse(content);
             
                 classes = parsed.classes;
