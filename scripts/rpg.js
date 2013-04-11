@@ -3268,7 +3268,15 @@ function RPG(rpgchan) {
 		var help = [
 			"",
 			"*** *********************************************************************** ***",
-			"±RPG: Welcome! This is RPG, use /commands to find commands and /start to create a new character! Don't forget to /savechar",
+			"/start - To pick a class. See /classes for an explanation. EG: /start mage",
+"/classes - Shows all of the current starting classes.",
+"/i - To see your items list. Use /i name to equip. EG: /i armor or /i potion to heal during battle - You get some starting items. Equip them. Buy items at the weaponry, use /w weaponry from the inn.",
+"/w inn - To go to the inn, which will tell you all the places you can go. /t owner:inn to rest and /e here to get battles vs slimes. Use /w place to move. EG: /w cave",
+"/e - Starts a battle or occasionally explores to find an item.",
+"/stats - See your stats and available stat points. Use /increase to allocate them. See /skills for your skills.",
+"/skills - See your skills and available skill points. Use /increase to allocate them. See /stats for your stats.",
+"/increase - To allocate your stat or skill point. EG: /increase speed OR /increase fire:3",
+"/revive - Use this when you have died. You will revive at the inn with half HP, so remember to heal at the inn.",
 			"*** *********************************************************************** ***",
 			""
 		];
