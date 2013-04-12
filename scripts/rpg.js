@@ -49,6 +49,7 @@ function RPG(rpgchan) {
         defense: 1,
         damage: 1,
         critical: 1.5,
+        instantCast: false,
         passive: 2,
         party: 6
     };
@@ -874,7 +875,6 @@ function RPG(rpgchan) {
         var doubleAttackDex = Math.floor(totalDex / (priority.length + 1) * 2) + 1;
         var tripleAttackDex = Math.floor(totalDex * 0.75) + 1;
         var quadAttackDex = Math.floor(totalDex * 0.90) + 1;
-        // sys.sendAll("Debug: " + doubleAttackDex + " / " + tripleAttackDex + " / " + totalDex, rpgchan);
         for (i = priority.length - 1; i >= 0; --i) {
             var d = Math.floor(getFullValue(priority[i], "dex") * getPassiveMultiplier(priority[i], "attackSpeed"));
             if (d >= doubleAttackDex && d >= 3) {
@@ -908,7 +908,7 @@ function RPG(rpgchan) {
                 }
             }
             
-            if (player.battle.casting) {
+            if (player.battle.casting !== null && player.battle.casting >= 0) {
                 player.battle.casting--;
                 if (player.battle.casting > 0) {
                     if (player.hp > 0) {
@@ -932,7 +932,6 @@ function RPG(rpgchan) {
                     player.battle.casting = null;
                     continue;
                 }
-                
                 if (player.isPlayer === true && move.effect && "goldCost" in move.effect && player.gold < getLevelValue(move.effect.goldCost, level)) {
                     out.push(player.name + " tried to use " + move.name + ", but didn't have enough Gold!");
                     continue;
@@ -943,17 +942,19 @@ function RPG(rpgchan) {
                     continue;
                 }
                 
-                if (!castComplete && "cast" in move && move.cast > 0) {
-                    out.push(player.name + " is preparing to use " + skills[moveName].name + "!");
-                    player.battle.casting = move.cast;
-                    player.battle.skillCasting = moveName;
-                    continue;
+                if (!castComplete && "cast" in move) {
+                    var cast = Math.round((move.cast + getPassiveValue(player, "castTime")) * getPassiveMultiplier(player, "castMultiplier"));
+                    
+                    if (cast > 0 || (cast === 0 && battleSetup.instantCast === false)) {
+                        out.push(player.name + " is preparing to use " + skills[moveName].name + "!");
+                        player.battle.casting = cast;
+                        player.battle.skillCasting = moveName;
+                        continue;
+                    }
                 } else {
                     player.battle.casting = null;
                 }
                 
-                var count = (move.targetCount) ? move.targetCount : 1;
-                var hitDead = (move.hitDead) ? move.hitDead.toLowerCase() : "none";
                 var targetTeam, n, added = 0;
                 
                 switch (move.target.toLowerCase()) {
@@ -973,6 +974,9 @@ function RPG(rpgchan) {
                         focusList = shuffle(this.team1Focus.concat(this.team2Focus));
                         break;
                 }
+                
+                var count = (move.targetCount) ? move.targetCount : 1;
+                var hitDead = (move.hitDead) ? move.hitDead.toLowerCase() : "none";
                 
                 if (move.target.toLowerCase() !== "self") {
                     for (n = 0; n < targetTeam.length; ++n) {
@@ -1004,6 +1008,14 @@ function RPG(rpgchan) {
                     }
                 }
                 
+                if (move.effect && move.effect.multihit) {
+                    var originalTargets = targets.concat();
+                    var hits = getLevelValue(move.effect.multihit, level);
+                    for (n = targets.length; n < hits; ++n) {
+                        targets.push(originalTargets[n % originalTargets.length]);
+                    }
+                }
+                
                 player.mp -= Math.floor(move.cost * mpModifier);
                 if (player.isPlayer === true && move.effect && "goldCost" in move.effect) {
                     player.gold -= getLevelValue(move.effect.goldCost, level);
@@ -1012,10 +1024,11 @@ function RPG(rpgchan) {
                     changeItemCount(player, move.effect.itemCost, -1);
                 }
                 
-                var suicide = false;
+                var suicide = false, breakCast;
                 for (var t in targets) {
                     target = targets[t];
                     var defeated = false;
+                    breakCast = false;
                     var damage = 0;
                     var critical = 1;
                     if ((hitDead === "none" && target.hp === 0) || (hitDead === "only" && target.hp > 0)) {
@@ -1098,16 +1111,17 @@ function RPG(rpgchan) {
                         
                         var main = move.type === "physical" ? getFullValue(player, "str") : getFullValue(player, "mag");
                         var invert = move.type === "physical" ? getFullValue(player, "mag") : getFullValue(player, "str");
+                        main = main <= 0 ? 1 : main;
+                        invert = invert <= 0 ? 1 : invert;
                         var varRange = (invert / main > 1 ? 1 : invert / main) * 0.25;
                         var variation = (0.75 + varRange) + (Math.random() * (0.25 - varRange));
                         
                         if (power < 0) {
                             critical = 1;
                         } else {
-                            critical = (Math.random() < (invert / main) * 0.5 * getEquipMultiplier(player, "critical") * getPassiveMultiplier(player, "critical")) ? battleSetup.critical : 1;
+                            critical = (Math.random() < (invert / main) * 0.66 * getEquipMultiplier(player, "critical") * getPassiveMultiplier(player, "critical")) ? battleSetup.critical : 1;
                         }
                         variation = (critical === battleSetup.critical) ? 1 : variation;
-                        
                         damage = Math.floor((power / def) * element * variation * critical) + (getLevelValue(move.modifier, level) > 0 ? 1 : -1);
                     } 
                     
@@ -1179,6 +1193,11 @@ function RPG(rpgchan) {
                                 }
                             }
                         }
+                        if (target.battle.casting !== null && move.effect.breakCast && Math.random() < move.effect.breakCast) {
+                            breakCast = true;
+                            target.battle.casting = null;
+                            target.battle.skillCasting = null;
+                        }
                         if (damage > 0) {
                             if (move.effect.hpabsorb) {
                                 player.hp += Math.floor(damage * getLevelValue(move.effect.hpabsorb, level));
@@ -1224,6 +1243,10 @@ function RPG(rpgchan) {
                         out.push((critical === battleSetup.critical ? "CRITICAL HIT! ": "") + items[player.equips.rhand].message.replace(/~User~/g, nonFlashing(player.name)).replace(/~Target~/g, nonFlashing(target.name)).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
                     } else {
                         out.push(move.message.replace(/~User~/g, nonFlashing(player.name)).replace(/~Target~/g, nonFlashing(target.name)).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
+                    }
+                    
+                    if (breakCast) {
+                        out.push(target.name + "'s concentration was broken!")
                     }
                     
                     if (defeated && target !== player) {
@@ -2753,6 +2776,10 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You need to register before starting a game!", rpgchan);
             return;
         }
+        if (user.rpg !== undefined) {
+            rpgbot.sendMessage(src, "You already have a character!", rpgchan);
+            return;
+        }
         if (startup.classes.indexOf(commandData.toLowerCase()) === -1) {
             rpgbot.sendMessage(src, "To create a character, type /start [class]. Possible classes are " + readable(startup.classes, "or") + ".", rpgchan);
             return;
@@ -3121,6 +3148,10 @@ function RPG(rpgchan) {
         for (e in data.strategy) {
             player.strategy[e] = data.strategy[e];
         }
+        player.plans = [];
+        player.plans.push(player.strategy);
+        player.plans.push(player.strategy);
+        player.plans.push(player.strategy);
         
         player.skillPoints = startup.skills + leveling.skills * (player.level - 1);
     };
@@ -3384,6 +3415,9 @@ function RPG(rpgchan) {
                     }
                     if (battle.critical) {
                         battleSetup.critical = battle.critical;
+                    }
+                    if (battle.instantCast) {
+                        battleSetup.instantCast = battle.instantCast;
                     }
                     if (battle.passive) {
                         battleSetup.passive = battle.passive;
