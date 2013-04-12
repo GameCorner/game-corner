@@ -1968,7 +1968,7 @@ function RPG(rpgchan) {
         player.items[item] += ammount;
         if (player.items[item] <= 0) {
             delete player.items[item];
-            this.removeEquip(player.id, item);
+            game.removeEquip(player.id, item);
         }
     }
     function hasItem(player, item, ammount) {
@@ -3765,26 +3765,26 @@ function RPG(rpgchan) {
 }
 
 module.exports = function() {
-	var id;
+    var id;
     var init = function() {
-		var name = "RPG";
-		if (sys.existChannel(name)) {
-			id = sys.channelId(name);
-		} else {
-			id = sys.createChannel(name);
-		}
-		SESSION.global().channelManager.restoreSettings(id);
-		SESSION.channels(id).perm = true;
-		SESSION.channels(id).master = "RiceKirby";
-	};
-
-	var game = new RPG(id);
-
-	return {
-		game: game,
-		init: game.init,
-		handleCommand: game.handleCommand,
+        var name = "RPG";
+        if (sys.existChannel(name)) {
+            id = sys.channelId(name);
+        } else {
+            id = sys.createChannel(name);
+        }
+        SESSION.global().channelManager.restoreSettings(id);
+        SESSION.channels(id).perm = true;
+        SESSION.channels(id).master = "RiceKirby";
+    };
+    
+    var game = new RPG(id);
+    
+    return {
+        game: game,
+        init: game.init,
+        handleCommand: game.handleCommand,
         beforeLogOut: game.beforeLogOut,
-		stepEvent: game.stepEvent
-	};
+        stepEvent: game.stepEvent
+    };
 }();
