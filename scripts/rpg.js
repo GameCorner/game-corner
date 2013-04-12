@@ -490,7 +490,7 @@ function RPG(rpgchan) {
                 for (e in eff.classes) {
                     if (e === player.job) {
                         this.changePlayerClass(player, eff.classes[e]);
-                        rpgbot.sendMessage(src, "You changed classes and now is a " + classes[player.job].name + "!", rpgchan);
+                        rpgbot.sendMessage(src, "You changed classes and now are a " + classes[player.job].name + "!", rpgchan);
                         break;
                     }
                 }
@@ -1025,7 +1025,13 @@ function RPG(rpgchan) {
                     if (move.type === "physical" || move.type === "magical") {
                         var acc = getFullValue(player, "dex") * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * getEquipMultiplier(player, "accuracy") * getPassiveMultiplier(player, "accuracy");
                         var evd = getFullValue(target, "spd") * battleSetup.evasion * getEquipMultiplier(player, "evasion") * getPassiveMultiplier(player, "evasion");
-                        if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > 0.8 + (acc - evd) / 100) {
+                        if (acc <= 0) {
+                            acc = 1;
+                        }
+                        if (evd <= 0) {
+                            evd = 1;
+                        }
+                        if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > 0.75 + ((acc - evd) / 100)) {
                             out.push(player.name + " tried to use " + move.name + ", but " + target.name + " evaded!");
                             if (move.effect && move.effect.chained && move.effect.chained === true) {
                                 break;
@@ -1043,6 +1049,9 @@ function RPG(rpgchan) {
                             }
                         } else {
                             power = move.type === "physical" ? getFullValue(player, "str") : getFullValue(player, "mag");
+                            if (power <= 0) {
+                                power = 1;
+                            }
                         }
                         power = power * getLevelValue(move.modifier, level) * battleSetup.damage;
                         
@@ -1967,8 +1976,8 @@ function RPG(rpgchan) {
         }
         player.items[item] += ammount;
         if (player.items[item] <= 0) {
-            delete player.items[item];
             game.removeEquip(player.id, item);
+            delete player.items[item];
         }
     }
     function hasItem(player, item, ammount) {
@@ -3777,9 +3786,9 @@ module.exports = function() {
         SESSION.channels(id).perm = true;
         SESSION.channels(id).master = "RiceKirby";
     };
-    
+
     var game = new RPG(id);
-    
+
     return {
         game: game,
         init: game.init,
