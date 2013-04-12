@@ -49,6 +49,7 @@ function RPG(rpgchan) {
         defense: 1,
         damage: 1,
         critical: 1.5,
+        passive: 2,
         party: 6
     };
     
@@ -61,8 +62,8 @@ function RPG(rpgchan) {
         var player = SESSION.users(src).rpg;
         
         if (player.location === null || player.location === undefined || !(player.location in places)) {
-            player.location = startup.location;
-            rpgbot.sendMessage(src, "You were in an unknown location! Moving you to the " + places[startup.location].name + "!", rpgchan);
+            player.location = player.respawn;
+            rpgbot.sendMessage(src, "You were in an unknown location! Moving you to the " + places[player.respawn].name + "!", rpgchan);
             return;
         }
         
@@ -292,9 +293,15 @@ function RPG(rpgchan) {
                     }
                 }
             }
-            if ("noSkillPoints" in req && req.noSkillPoints === true && player.skillPoints > 0) {
-                sys.sendMessage(src, topic.denymsg + " [You must use all your Skill Points!]", rpgchan);
-                return;
+            if ("noSkillPoints" in req && req.noSkillPoints === true) {
+                var points = 0;
+                for (r in classes[player.job].skills) {
+                    points += skills[r].levels - player.skills[r];
+                }
+                if (player.skillPoints > 0 && points > 0) {
+                    sys.sendMessage(src, topic.denymsg + " [You must use all your Skill Points!]", rpgchan);
+                    return;
+                }
             }
             if ("defeated" in req) {
                 for (r in req.defeated) {
@@ -869,7 +876,7 @@ function RPG(rpgchan) {
         var quadAttackDex = Math.floor(totalDex * 0.90) + 1;
         // sys.sendAll("Debug: " + doubleAttackDex + " / " + tripleAttackDex + " / " + totalDex, rpgchan);
         for (i = priority.length - 1; i >= 0; --i) {
-            var d = getFullValue(priority[i], "dex");
+            var d = Math.floor(getFullValue(priority[i], "dex") * getPassiveMultiplier(priority[i], "attackSpeed"));
             if (d >= doubleAttackDex && d >= 3) {
                 priority.push(priority[i]);
                 if (d >= tripleAttackDex) {
@@ -926,8 +933,13 @@ function RPG(rpgchan) {
                     continue;
                 }
                 
-                if (move.effect && "goldCost" in move.effect && player.gold < getLevelValue(move.effect.goldCost, level)) {
+                if (player.isPlayer === true && move.effect && "goldCost" in move.effect && player.gold < getLevelValue(move.effect.goldCost, level)) {
                     out.push(player.name + " tried to use " + move.name + ", but didn't have enough Gold!");
+                    continue;
+                }
+                
+                if (player.isPlayer === true && move.effect && "itemCost" in move.effect && hasItem(player, move.effect.itemCost, 1) === false) {
+                    out.push(player.name + " tried to use " + move.name + ", but didn't have a " + items[move.effect.itemCost].name + "!");
                     continue;
                 }
                 
@@ -993,8 +1005,11 @@ function RPG(rpgchan) {
                 }
                 
                 player.mp -= Math.floor(move.cost * mpModifier);
-                if (move.effect && "goldCost" in move.effect) {
+                if (player.isPlayer === true && move.effect && "goldCost" in move.effect) {
                     player.gold -= getLevelValue(move.effect.goldCost, level);
+                }
+                if (player.isPlayer === true && move.effect && "itemCost" in move.effect) {
+                    changeItemCount(player, move.effect.itemCost, -1);
                 }
                 
                 var suicide = false;
@@ -1008,8 +1023,8 @@ function RPG(rpgchan) {
                     }
                     
                     if (move.type === "physical" || move.type === "magical") {
-                        var acc = getFullValue(player, "dex") * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * getEquipMultiplier(player, "accuracy");
-                        var evd = getFullValue(target, "spd") * battleSetup.evasion * getEquipMultiplier(player, "evasion");
+                        var acc = getFullValue(player, "dex") * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * getEquipMultiplier(player, "accuracy") * getPassiveMultiplier(player, "accuracy");
+                        var evd = getFullValue(target, "spd") * battleSetup.evasion * getEquipMultiplier(player, "evasion") * getPassiveMultiplier(player, "evasion");
                         if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > 0.8 + (acc - evd) / 100) {
                             out.push(player.name + " tried to use " + move.name + ", but " + target.name + " evaded!");
                             if (move.effect && move.effect.chained && move.effect.chained === true) {
@@ -1080,7 +1095,7 @@ function RPG(rpgchan) {
                         if (power < 0) {
                             critical = 1;
                         } else {
-                            critical = (Math.random() < (invert / main) * 0.5) ? battleSetup.critical : 1;
+                            critical = (Math.random() < (invert / main) * 0.5 * getEquipMultiplier(player, "critical") * getPassiveMultiplier(player, "critical")) ? battleSetup.critical : 1;
                         }
                         variation = (critical === battleSetup.critical) ? 1 : variation;
                         
@@ -1091,7 +1106,7 @@ function RPG(rpgchan) {
                         var duration = move.effect.duration ? getLevelValue(move.effect.duration, level) : 6;
                         var e;
                         
-                        if (move.effect.target && (!move.effect.targetChance || Math.random() > move.effect.targetChance)) {
+                        if (move.effect.target && (!move.effect.targetChance || Math.random() < getLevelValue(move.effect.targetChance, level))) {
                             if (!target.battle.counters) {
                                 target.battle.counters = {};
                             }
@@ -1123,7 +1138,7 @@ function RPG(rpgchan) {
                                 }
                             } 
                         }
-                        if (move.effect.user && (!move.effect.userChance || Math.random() > move.effect.userChance)) {
+                        if (move.effect.user && (!move.effect.userChance || Math.random() < getLevelValue(move.effect.userChance, level))) {
                             if (!player.battle.counters) {
                                 player.battle.counters = {};
                             }
@@ -1643,19 +1658,9 @@ function RPG(rpgchan) {
             return;
         }
         
-        if (item.classes && item.classes.indexOf(player.job) === -1) {
-            var allowedClasses = getPassiveClasses(player, "itemsFromClass");
-            var canUse = false;
-            for (var c in item.classes) {
-                if (allowedClasses.indexOf(item.classes[c]) !== -1) {
-                    canUse = true;
-                    break;
-                }
-            }
-            if (!canUse) {
-                rpgbot.sendMessage(src, "You can't use this item as " + classes[player.job].name + "!", rpgchan);
-                return;
-            }
+        if (canUseItem(player, it) === false) {
+            rpgbot.sendMessage(src, "You can't use this item as " + classes[player.job].name + "!", rpgchan);
+            return;
         }
         
         sys.sendMessage(src, "", rpgchan);
@@ -1963,6 +1968,7 @@ function RPG(rpgchan) {
         player.items[item] += ammount;
         if (player.items[item] <= 0) {
             delete player.items[item];
+            this.removeEquip(player.id, item);
         }
     }
     function hasItem(player, item, ammount) {
@@ -1971,6 +1977,25 @@ function RPG(rpgchan) {
             return false;
         } else if (player.items[item] >= count) {
             return true;
+        }
+    }
+    function canUseItem(player, it) {
+        if (!("classes" in items[it])) {
+            return true;
+        } else {
+            var item = items[it]
+            if (item.classes.indexOf(player.job) === -1) {
+                var allowedClasses = getPassiveClasses(player, "itemsFromClass");
+                // sys.sendAll("Debug: " + allowedClasses.join(", "), rpgchan);
+                for (var c in item.classes) {
+                    if (allowedClasses.indexOf(item.classes[c]) !== -1) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return true;
+            }
         }
     }
     
@@ -2042,7 +2067,6 @@ function RPG(rpgchan) {
     this.addPoint = function(src, commandData) {
         var data = commandData.split(":");
         
-        // if (data.length < 2) {
         if (commandData === "*") {
             rpgbot.sendMessage(src, "To increase an stat or skill, type /increase statName:ammount or /increase skillName:ammount.", rpgchan);
             return;
@@ -2197,11 +2221,6 @@ function RPG(rpgchan) {
             player.skills[what] += ammount;
             player.skillPoints -= ammount;
             
-            if (skills[what].type === "passive") {
-                player.passives[what] = player.skills[what];
-                this.updateBonus(src);
-            }
-            
             rpgbot.sendMessage(src, "You increased your " + skills[what].name + " skill to level " + player.skills[what] + "!", rpgchan);
         }
     };
@@ -2229,8 +2248,10 @@ function RPG(rpgchan) {
         
         if (broken.length > 1) {
             action = broken[0].toLowerCase();
-            target = parseInt(broken[1]);
-            commandData = broken[2];
+            if (action === "load" || action === "set") {
+                target = parseInt(broken[1]);
+                commandData = broken[2];
+            }
         }
         
         if (action === "load") {
@@ -2299,7 +2320,7 @@ function RPG(rpgchan) {
         var player = SESSION.users(src).rpg;
         if (commandData === "*") {
             rpgbot.sendMessage(src, "Your current passive skills are " + getSkillsNames(player.passives) + "!", rpgchan);
-            rpgbot.sendMessage(src, "To change your current passive skills, type /passive skill1:skill2:skill3.", rpgchan);
+            rpgbot.sendMessage(src, "To change your current passive skills, type /passive skill1:skill2.", rpgchan);
             return;
         }
         
@@ -2307,8 +2328,8 @@ function RPG(rpgchan) {
         var obj = {};
         var skill;
         
-        if (data.length > 3) {
-            rpgbot.sendMessage(src, "You can only set up to 3 passive skills!", rpgchan);
+        if (data.length > battleSetup.passive) {
+            rpgbot.sendMessage(src, "You can only set up to " + battleSetup.passive + " passive skills!", rpgchan);
             return;
         }
         for (var s in data) {
@@ -2336,7 +2357,17 @@ function RPG(rpgchan) {
         }
         
         player.passives = obj;
+        
         rpgbot.sendMessage(src, "Your current passive skills are " + getSkillsNames(player.passives) + "!", rpgchan);
+        
+        for (s in player.equips) {
+            if (player.equips[s] !== null && canUseItem(player, player.equips[s]) === false) {
+                rpgbot.sendMessage(src, items[player.equips[s]].name + " unequipped!", rpgchan);
+                player.equips[s] = null;
+            }
+        }
+        
+        this.updateBonus(src);
     };
     function getSkillsNames(obj) {
         var list = [];
@@ -2772,7 +2803,11 @@ function RPG(rpgchan) {
         var character = {};
         
         for (var e in data.stats) {
-            character[e] = data.stats[e];
+            if (data.stats[e] <= 0) {
+                character[e] = 1;
+            } else {
+                character[e] = data.stats[e];
+            }
         }
         character.maxhp = character.hp;
         character.maxmp = character.mp;
@@ -3269,15 +3304,15 @@ function RPG(rpgchan) {
 			"",
 			"*** *********************************************************************** ***",
 			"±RPG: /start - To pick a class. See /classes for an explanation. EG: /start mage",
-"±RPG: /classes - Shows all of the current starting classes.",
-"±RPG: /i - To see your items list. Use /i name to equip. EG: /i armor or /i potion to heal during battle - You get some starting items. Equip them. Buy items at the weaponry, use /w weaponry from the inn.",
-"±RPG: /w inn - To go to the inn, which will tell you all the places you can go. /t owner:inn to rest and /e here to get battles vs slimes. Use /w place to move. EG: /w cave",
-"±RPG: /e - Starts a battle or occasionally explores to find an item.",
-"±RPG: /stats - See your stats and available stat points. Use /increase to allocate them. See /skills for your skills.",
-"±RPG: /skills - See your skills and available skill points. Use /increase to allocate them. See /stats for your stats.",
-"±RPG: /increase - To allocate your stat or skill point. EG: /increase speed OR /increase fire:3",
-"±RPG: /revive - Use this when you have died. You will revive at the inn with half HP, so remember to heal at the inn.",
-"±RPG: A guide of how to start the game can be found at http://gamecorner.info/Thread-RPG-Beginner-s-Guide ",
+            "±RPG: /classes - Shows all of the current starting classes.",
+            "±RPG: /i - To see your items list. Use /i name to equip. EG: /i armor or /i potion to heal during battle - You get some starting items. Equip them. Buy items at the weaponry, use /w weaponry from the inn.",
+            "±RPG: /w inn - To go to the inn, which will tell you all the places you can go. /t owner:inn to rest and /e here to get battles vs slimes. Use /w place to move. EG: /w cave",
+            "±RPG: /e - Starts a battle or occasionally explores to find an item.",
+            "±RPG: /stats - See your stats and available stat points. Use /increase to allocate them. See /skills for your skills.",
+            "±RPG: /skills - See your skills and available skill points. Use /increase to allocate them. See /stats for your stats.",
+            "±RPG: /increase - To allocate your stat or skill point. EG: /increase speed OR /increase fire:3",
+            "±RPG: /revive - Use this when you have died. You will revive at the inn with half HP, so remember to heal at the inn.",
+            "±RPG: A guide of how to start the game can be found at http://gamecorner.info/Thread-RPG-Beginner-s-Guide ",
 			"*** *********************************************************************** ***",
 			""
 		];
@@ -3340,6 +3375,9 @@ function RPG(rpgchan) {
                     }
                     if (battle.critical) {
                         battleSetup.critical = battle.critical;
+                    }
+                    if (battle.passive) {
+                        battleSetup.passive = battle.passive;
                     }
                     if (battle.party) {
                         battleSetup.party = battle.party;
@@ -3745,9 +3783,7 @@ module.exports = function() {
 	return {
 		game: game,
 		init: game.init,
-		// beforeChatMessage: game.beforeChatMessage,
 		handleCommand: game.handleCommand,
-        // beforeChannelJoin: game.beforeChannelJoin,
         beforeLogOut: game.beforeLogOut,
 		stepEvent: game.stepEvent
 	};
