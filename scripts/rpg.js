@@ -1193,7 +1193,7 @@ function RPG(rpgchan) {
                                 }
                             }
                         }
-                        if (target.battle.casting !== null && move.effect.breakCast && Math.random() < move.effect.breakCast) {
+                        if (target.battle.casting !== null && move.effect.breakCast && Math.random() < getLevelValue(move.effect.breakCast, level)) {
                             breakCast = true;
                             target.battle.casting = null;
                             target.battle.skillCasting = null;
@@ -2077,10 +2077,14 @@ function RPG(rpgchan) {
                     dex: "Dexterity",
                     mag: "Magic"
                 }
-                for (var i = player.level; i < e; ++i) {
-                    for (var g in growth) {
-                        player[g] += getLevelValue(growth[g], (player.level - 1) % growth[g].length);
-                        increased[g] = true;
+                var i, g, inc;
+                for (i = player.level; i < e; ++i) {
+                    for (g in growth) {
+                        inc = getLevelValue(growth[g], (player.level - 1) % growth[g].length);
+                        player[g] += inc;
+                        if (inc > 0) {
+                            increased[g] = true;
+                        }
                     }
                     player.level++;
                 }
@@ -3388,109 +3392,127 @@ function RPG(rpgchan) {
         }
         return;
     }
-    this.loadInfo = function() {
+    
+    this.loadLocalContent = function(src) {
+        try {
+            this.loadInfo(sys.getFileContent("rpgcontent.json"));
+        } catch (err) {
+            rpgbot.sendMessage(src, "Error loading RPG content from cached file: " + err, rpgchan);
+        }
+    };
+    this.loadURLContent = function(src, url) {
+        try {
+            if (url === "*") {
+                sys.webCall(contenturl, this.loadInfo);
+            } else {
+                sys.webCall(url, this.loadInfo);
+            }
+        } catch (err) {
+            rpgbot.sendMessage(src, "Error loading RPG content from " + (url === "*" ? contenturl : url) + ": " + err, rpgchan);
+        }
+    };
+    this.loadInfo = function(content) {
 		try {
-            sys.webCall(contenturl, function (content) {
-                // var content = sys.getFileContent("rpginfo.json");
-                var parsed = JSON.parse(content);
+            var parsed = JSON.parse(content);
+        
+            classes = parsed.classes;
+            monsters = parsed.monsters;
+            skills = parsed.skills;
+            items = parsed.items;
+            places = parsed.places;
+            expTable = parsed.config.levels;
+            elements = parsed.config.elements || {};
             
-                classes = parsed.classes;
-                monsters = parsed.monsters;
-                skills = parsed.skills;
-                items = parsed.items;
-                places = parsed.places;
-                expTable = parsed.config.levels;
-                elements = parsed.config.elements || {};
-                
-                if (parsed.config.battle) {
-                    var battle = parsed.config.battle;
-                    if (battle.evasion) {
-                        battleSetup.evasion = battle.evasion / 100;
-                    }
-                    if (battle.defense) {
-                        battleSetup.defense = battle.defense;
-                    }
-                    if (battle.damage) {
-                        battleSetup.damage = battle.damage;
-                    }
-                    if (battle.critical) {
-                        battleSetup.critical = battle.critical;
-                    }
-                    if (battle.instantCast) {
-                        battleSetup.instantCast = battle.instantCast;
-                    }
-                    if (battle.passive) {
-                        battleSetup.passive = battle.passive;
-                    }
-                    if (battle.party) {
-                        battleSetup.party = battle.party;
+            if (parsed.config.battle) {
+                var battle = parsed.config.battle;
+                if (battle.evasion) {
+                    battleSetup.evasion = battle.evasion / 100;
+                }
+                if (battle.defense) {
+                    battleSetup.defense = battle.defense;
+                }
+                if (battle.damage) {
+                    battleSetup.damage = battle.damage;
+                }
+                if (battle.critical) {
+                    battleSetup.critical = battle.critical;
+                }
+                if (battle.instantCast) {
+                    battleSetup.instantCast = battle.instantCast;
+                }
+                if (battle.passive) {
+                    battleSetup.passive = battle.passive;
+                }
+                if (battle.party) {
+                    battleSetup.party = battle.party;
+                }
+            }
+            
+            startup.classes = parsed.config.startup.classes;
+            startup.location = parsed.config.startup.location;
+            startup.gold = parsed.config.startup.gold;
+            startup.items = parsed.config.startup.items;
+            startup.stats = parsed.config.startup.stats;
+            startup.skills = parsed.config.startup.skills;
+            
+            if (parsed.config.leveling) {
+                var level = parsed.config.leveling;
+                if (level.hp) {
+                    leveling.hp = level.hp;
+                }
+                if (level.mp) {
+                    leveling.mp = level.mp;
+                }
+                if (level.stats) {
+                    leveling.stats = level.stats;
+                }
+                if (level.skills) {
+                    leveling.skills = level.skills;
+                }
+                if (level.skillFromOtherClass) {
+                    leveling.skillFromOtherClass = level.skillFromOtherClass;
+                }
+            }
+            
+            if (parsed.config.equipment) {
+                equipment = parsed.config.equipment;
+            }
+            
+            var e, n, alt;
+            altSkills = {};
+            for (e in skills) {
+                if ("alt" in skills[e]) {
+                    for (n = 0; n < skills[e].alt.length; ++n) {
+                        alt = skills[e].alt[n];
+                        altSkills[alt] = e;
                     }
                 }
-                
-                startup.classes = parsed.config.startup.classes;
-                startup.location = parsed.config.startup.location;
-                startup.gold = parsed.config.startup.gold;
-                startup.items = parsed.config.startup.items;
-                startup.stats = parsed.config.startup.stats;
-                startup.skills = parsed.config.startup.skills;
-                
-                if (parsed.config.leveling) {
-                    var level = parsed.config.leveling;
-                    if (level.hp) {
-                        leveling.hp = level.hp;
-                    }
-                    if (level.mp) {
-                        leveling.mp = level.mp;
-                    }
-                    if (level.stats) {
-                        leveling.stats = level.stats;
-                    }
-                    if (level.skills) {
-                        leveling.skills = level.skills;
-                    }
-                    if (level.skillFromOtherClass) {
-                        leveling.skillFromOtherClass = level.skillFromOtherClass;
+            }
+            altPlaces = {};
+            for (e in places) {
+                if ("alt" in places[e]) {
+                    for (n = 0; n < places[e].alt.length; ++n) {
+                        alt = places[e].alt[n];
+                        altPlaces[alt] = e;
                     }
                 }
-                
-                if (parsed.config.equipment) {
-                    equipment = parsed.config.equipment;
-                }
-                
-                var e, n, alt;
-                altSkills = {};
-                for (e in skills) {
-                    if ("alt" in skills[e]) {
-                        for (n = 0; n < skills[e].alt.length; ++n) {
-                            alt = skills[e].alt[n];
-                            altSkills[alt] = e;
-                        }
+            }
+            altItems = {};
+            for (e in items) {
+                if ("alt" in items[e]) {
+                    for (n = 0; n < items[e].alt.length; ++n) {
+                        alt = items[e].alt[n];
+                        altItems[alt] = e;
                     }
                 }
-                altPlaces = {};
-                for (e in places) {
-                    if ("alt" in places[e]) {
-                        for (n = 0; n < places[e].alt.length; ++n) {
-                            alt = places[e].alt[n];
-                            altPlaces[alt] = e;
-                        }
-                    }
-                }
-                altItems = {};
-                for (e in items) {
-                    if ("alt" in items[e]) {
-                        for (n = 0; n < items[e].alt.length; ++n) {
-                            alt = items[e].alt[n];
-                            altItems[alt] = e;
-                        }
-                    }
-                }
+            }
+            
+            if ("classHelp" in parsed) {
+                classHelp = parsed.classHelp;
+            }
                 
-                if ("classHelp" in parsed) {
-                    classHelp = parsed.classHelp;
-                }
-                
-            });
+            sys.writeToFile("rpgcontent.json", content);
+            rpgbot.sendAll("RPG Game reloaded!", rpgchan);
 		} catch (err) {
 			sys.sendAll("Error loading RPG Game data: " + err, rpgchan);
 		}
@@ -3564,9 +3586,7 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, "No such property!", rpgchan);
                 break;
         }
-        
         //TO DO: Code to edit or remove properties from a borked character.
-        
     };
     
 	this.commands = {
@@ -3614,12 +3634,13 @@ function RPG(rpgchan) {
             view: [this.viewPlayer, "To view someone else's stats"]
 		},
 		op: {
-			
 		},
 		master: {
             reloadchars: [this.reloadChars, "To reload everyone's character after an update."],
 			unbork: [this.unborkChar, "To manually fix someone's character."],
-			updaterpg: [this.callUpdate, "Update the RPG Channel."]
+            updatelocal: [this.loadLocalContent, "To load RPG content from the directory."],
+            updaterpg: [this.loadURLContent, "To load RPG content from the web. If you don't specify an URL, the default one will be used."],
+			updategame: [this.callUpdate, "Update the RPG Scripts."]
 		}
 	};
     this.handleCommand = function(src, message, channel) {
@@ -3735,8 +3756,9 @@ function RPG(rpgchan) {
         SESSION.global().channelManager.restoreSettings(rpgchan);
         SESSION.channels(rpgchan).perm = true;
         SESSION.channels(rpgchan).master = "RiceKirby";
-		game.loadInfo();
-        rpgbot.sendAll("RPG Game was reloaded!", rpgchan);
+		// game.loadInfo();
+        game.loadLocalContent();
+        // rpgbot.sendAll("RPG Game was reloaded!", rpgchan);
 	};
 	this.stepEvent = function() {
         try {
