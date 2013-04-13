@@ -584,6 +584,7 @@ function RPG(rpgchan) {
             var item = content.substring(1);
             
             if (isNaN(parseInt(item)) === false && parseInt(item) > 0) {
+                player.gold += parseInt(item);
                 rpgbot.sendMessage(src, "You found " + parseInt(item) + " Gold!", rpgchan);
                 return;
             }
@@ -833,18 +834,22 @@ function RPG(rpgchan) {
         
         this.isPVP = false;
         
+        this.colorNames = {};
         var p1 = false, p2 = false;
+        var player;
         
         for (var p in this.team1) {
             if (this.team1[p].isPlayer) {
                 p1 = true;
-                break;
+                player = this.team1[p];
+                this.colorNames[player.name] = '<span style="font-weight:bold; color:' + sys.getColor(player.id) + ';">' + player.name + '</span>';
             }
         }
         for (p in this.team2) {
             if (this.team2[p].isPlayer) {
                 p2 = true;
-                break;
+                player = this.team2[p];
+                this.colorNames[player.name] = '<span style="font-weight:bold; color:' + sys.getColor(player.id) + ';">' + player.name + '</span>';
             }
         }
         
@@ -859,7 +864,7 @@ function RPG(rpgchan) {
         return p[att] + p.bonus.battle[att] + p.bonus.equip[att] + p.bonus.skill[att];
     }
     Battle.prototype.playNextTurn = function() {
-        var out = ["", "<span style='font-weight:bold;'>Turn: " + this.turn + "</span>"];
+        var out = ['', '<span style="font-weight:bold;">Turn: ' + this.turn + '</span>'];
         var team1 = this.team1;
         var team2 = this.team2;
         
@@ -1006,6 +1011,11 @@ function RPG(rpgchan) {
                             break;
                         }
                     }
+                }
+                
+                if (targets.length === 0) {
+                    out.push(player.name + " tried to use " + move.name + ", but there was no target!");
+                    continue;
                 }
                 
                 if (move.effect && move.effect.multihit) {
@@ -1240,9 +1250,9 @@ function RPG(rpgchan) {
                     }
                     
                     if (moveName === "attack" && player.isPlayer === true && player.equips.rhand !== null && items[player.equips.rhand].message) {
-                        out.push((critical === battleSetup.critical ? "CRITICAL HIT! ": "") + items[player.equips.rhand].message.replace(/~User~/g, nonFlashing(player.name)).replace(/~Target~/g, nonFlashing(target.name)).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
+                        out.push((critical === battleSetup.critical ? "CRITICAL HIT! ": "") + items[player.equips.rhand].message.replace(/~User~/g, player.name).replace(/~Target~/g, target.name).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
                     } else {
-                        out.push(move.message.replace(/~User~/g, nonFlashing(player.name)).replace(/~Target~/g, nonFlashing(target.name)).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
+                        out.push(move.message.replace(/~User~/g, player.name).replace(/~Target~/g, target.name).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
                     }
                     
                     if (breakCast) {
@@ -1250,11 +1260,11 @@ function RPG(rpgchan) {
                     }
                     
                     if (defeated && target !== player) {
-                        out.push(nonFlashing(target.name) + " was defeated!");
+                        out.push(target.name + " was defeated!");
                     }
                 }
                 if (suicide) {
-                    out.push(nonFlashing(player.name) + " was defeated!");
+                    out.push(player.name + " was defeated!");
                 }
             }
         }
@@ -1307,7 +1317,7 @@ function RPG(rpgchan) {
                     }
                 }
                 if (buffs.length > 0) {
-                    out.push(nonFlashing(player.name) + "'s " + readable(buffs.map(translateAtt) , "and") + " " + (buffs.length > 1 ? "are" : "is") + " back to normal.");
+                    out.push(player.name + "'s " + readable(buffs.map(translateAtt) , "and") + " " + (buffs.length > 1 ? "are" : "is") + " back to normal.");
                 }
             }
             if (hpGain !== 0 && player.hp > 0) {
@@ -1320,7 +1330,7 @@ function RPG(rpgchan) {
                 }
                 
                 verb = hpGain > 0 ? "gained" : "lost";
-                out.push(nonFlashing(player.name) + " " + verb + " " + Math.abs(hpGain) + " HP and now has " + player.hp + "!");
+                out.push(player.name + " " + verb + " " + Math.abs(hpGain) + " HP and now has " + player.hp + "!");
             }
             if (mpGain !== 0 && player.hp > 0) {
                 player.mp += mpGain;
@@ -1332,7 +1342,7 @@ function RPG(rpgchan) {
                 }
                 
                 verb = mpGain > 0 ? "gained" : "lost";
-                out.push(nonFlashing(player.name) + " " + verb + " " + Math.abs(mpGain) + " Mana and now has " + player.mp + "!");
+                out.push(player.name + " " + verb + " " + Math.abs(mpGain) + " Mana and now has " + player.mp + "!");
             }
         }
         
@@ -1380,11 +1390,20 @@ function RPG(rpgchan) {
         return winner;
     };
     Battle.prototype.sendToViewers = function(msg) {
-        for (var v in this.viewers) {
+        var size, v, viewer, reg;
+        
+        for (n in this.colorNames) {
+            reg = new RegExp("\\b" + n, "g");
+            msg = msg.replace(reg, this.colorNames[n]);
+        }
+        
+        for (v in this.viewers) {
+            viewer = this.viewers[v];
+            size = SESSION.users(viewer).rpg.fontSize || 11;
             if (msg === "") {
-                sys.sendHtmlMessage(this.viewers[v], '<span style="font-size:10px;">' + msg + '</span>', rpgchan);
+                sys.sendHtmlMessage(viewer, '<span style="font-size:' + size + 'px;">' + msg + '</span>', rpgchan);
             } else {
-                sys.sendHtmlMessage(this.viewers[v], '<span style="font-size:10px;"><timestamp/>' + msg + '</span>', rpgchan);
+                sys.sendHtmlMessage(viewer, nonFlashing('<span style="font-size:' + size + 'px;"><timestamp/>' + msg + '</span>'), rpgchan);
             }
         }
     };
@@ -1963,7 +1982,7 @@ function RPG(rpgchan) {
         if (getPassiveByEffect(player, "defenseElement").length > 0) {
             player.defenseElement = skills[getPassiveByEffect(player, "defenseElement")[0]].effect.defenseElement;
         } else {
-            for (var f in player.equips) {
+            for (var f in equipment) {
                 if (f !== "rhand" && player.equips[f] !== null && items[player.equips[f]].element) {
                     player.defenseElement = items[player.equips[f]].element;
                     break;
@@ -2830,6 +2849,7 @@ function RPG(rpgchan) {
         player.isBattling = false;
         player.version = charVersion;
         player.publicStats = false;
+        player.fontSize = 11;
         
         player.events = {};
         player.defeated = {};
@@ -3050,6 +3070,9 @@ function RPG(rpgchan) {
         }
         if (!file.publicStats) {
             file.publicStats = false;
+        }
+        if(!file.fontSize) {
+            file.fontSize = 11;
         }
         
         return file;
@@ -3303,6 +3326,14 @@ function RPG(rpgchan) {
         for (var x in out) {
             sys.sendMessage(src, out[x], rpgchan);
         }
+    };
+    this.changeFontSize = function(src, commandData) {
+        if (isNaN(parseInt(commandData)) === true) {
+            rpgbot.sendMessage(src, "You must choose a valid number!", rpgchan);
+            return;
+        }
+        SESSION.users(src).rpg.fontSize = commandData;
+        rpgbot.sendMessage(src, "Battle Font size set to " + commandData, rpgchan);
     };
     this.showCommands = function(src, commandData) {
         sys.sendMessage(src, "", rpgchan);
@@ -3610,7 +3641,8 @@ function RPG(rpgchan) {
             savechar: [this.saveGame, "To save your progress."],
             clearchar: [this.clearChar, "To clear your character."],
             // inn: [this.gotoInn, "Pay 10 Gold to fully restore HP and MP."],
-            party: [this.manageParty, "To create and manage a party"]
+            party: [this.manageParty, "To create and manage a party"],
+            font: [this.changeFontSize, "To change the Battle Message's size."]
         },
         altactions: {
             skill: [this.viewSkills, "Same as /skills."],
@@ -3652,7 +3684,7 @@ function RPG(rpgchan) {
             return true;
         } catch(e) {
             if (e !== "No valid command") {
-                sys.sendAll("Error on RPG command: " + e, rpgchan);
+                sys.sendAll("Error on RPG command" + (err.lineNumber ? " on line " + err.lineNumber : "") + ": " + e, rpgchan);
                 return true;
             }
         }
@@ -3764,7 +3796,7 @@ function RPG(rpgchan) {
         try {
             game.tickDown();
         } catch(err) {
-            sys.sendAll("±RPGBot: error occurred: " + err, rpgchan);
+            sys.sendAll("±RPGBot: error occurred" + (err.lineNumber ? " on line " + err.lineNumber : "") + ": " + err, rpgchan);
         }
     };
 
