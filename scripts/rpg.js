@@ -941,7 +941,6 @@ function RPG(rpgchan) {
                     out.push(player.name + " tried to use " + move.name + ", but didn't have enough Gold!");
                     continue;
                 }
-                
                 if (player.isPlayer === true && move.effect && "itemCost" in move.effect && hasItem(player, move.effect.itemCost, 1) === false) {
                     out.push(player.name + " tried to use " + move.name + ", but didn't have a " + items[move.effect.itemCost].name + "!");
                     continue;
@@ -984,37 +983,22 @@ function RPG(rpgchan) {
                 var hitDead = (move.hitDead) ? move.hitDead.toLowerCase() : "none";
                 
                 if (move.target.toLowerCase() !== "self") {
-                    for (n = 0; n < targetTeam.length; ++n) {
-                        if (targetTeam[n].hp > 0 && hitDead === "none") {
-                            if(focusList.length > 0) {
-                                targets.push(focusList.shift());
-                            } else {
-                                targets.push(targetTeam[n]);
-                            }
-                            added++;
-                        } else if (targetTeam[n].hp === 0 && hitDead === "only") {
-                            if(focusList.length > 0) {
-                                targets.push(focusList.shift());
-                            } else {
-                                targets.push(targetTeam[n]);
-                            }
-                            added++;
-                        } else if (hitDead === "any") {
-                            if(focusList.length > 0) {
-                                targets.push(focusList.shift());
-                            } else {
-                                targets.push(targetTeam[n]);
-                            }
+                    for (n = 0; n < focusList.length; ++n) {
+                        if ((focusList[n].hp > 0 && hitDead === "none") || (hitDead === "any") || (focusList[n].hp === 0 && hitDead === "only")) {
+                            targets.push(focusList[n]);
                             added++;
                         }
-                        if (added >= count) {
-                            break;
+                    }
+                    for (n = 0; n < targetTeam.length && added < count; ++n) {
+                        if ((targetTeam[n].hp > 0 && hitDead === "none") || (hitDead === "any") || (targetTeam[n].hp === 0 && hitDead === "only")) {
+                            targets.push(targetTeam[n]);
+                            added++;
                         }
                     }
                 }
                 
                 if (targets.length === 0) {
-                    out.push(player.name + " tried to use " + move.name + ", but there was no target!");
+                    out.push(player.name + " tried to use " + move.name + ", but found no target!");
                     continue;
                 }
                 
@@ -1054,7 +1038,7 @@ function RPG(rpgchan) {
                         if (evd <= 0) {
                             evd = 1;
                         }
-                        if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > 0.75 + ((acc - evd) / 100)) {
+                        if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > 0.7 + ((acc - evd) / 100)) {
                             out.push(player.name + " tried to use " + move.name + ", but " + target.name + " evaded!");
                             if (move.effect && move.effect.chained && move.effect.chained === true) {
                                 break;
@@ -2037,7 +2021,6 @@ function RPG(rpgchan) {
             var item = items[it]
             if (item.classes.indexOf(player.job) === -1) {
                 var allowedClasses = getPassiveClasses(player, "itemsFromClass");
-                // sys.sendAll("Debug: " + allowedClasses.join(", "), rpgchan);
                 for (var c in item.classes) {
                     if (allowedClasses.indexOf(item.classes[c]) !== -1) {
                         return true;
