@@ -424,6 +424,83 @@ function RPG(rpgchan) {
             sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             sys.sendMessage(src, "",rpgchan);
             return;
+        } else if ("trade" in topic) {
+            products = topic.trade;
+            var t, materials, rewards;
+            if (data.length < 3) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.message, rpgchan);
+                
+                for (i in products) {
+                    var materials = [];
+                    var rewards = [];
+                    for (t in products[i].material) {
+                        if (t === "gold") {
+                            materials.push(products[i].material[t] + " Gold");
+                        } else {
+                            materials.push(items[t].name + (products[i].material[t] > 1 ? " (x" + products[i].material[t] + ")" : ""));
+                        }
+                    }
+                    
+                    for (t in products[i].reward) {
+                        if (t === "gold") {
+                            rewards.push(products[i].reward[t] + " Gold");
+                        } else {
+                            rewards.push(items[t].name + (products[i].reward[t] > 1 ? "(x" + products[i].reward[t] + ")" : ""));
+                        }
+                    }
+                    sys.sendMessage(src, i + ": " + readable(materials, "and") + " for " + readable(rewards, "and"), rpgchan);
+                }
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
+            goods = data[2].toLowerCase();
+            
+            if (!(goods in products)) {
+                sys.sendMessage(src, topic.notrademsg,rpgchan);
+                return;
+            }
+            
+            materials = products[goods].material;
+            for (t in materials) {
+                if (t === "gold") {
+                    if (player.gold < materials[t]) {
+                        sys.sendMessage(src, topic.nomaterialmsg,rpgchan);
+                        return;
+                    }
+                } else if (!hasItem(player, t, materials[t])) {
+                    sys.sendMessage(src, topic.nomaterialmsg,rpgchan);
+                    return;
+                }
+            }
+            
+            for (t in materials) {
+                if (t === "gold") {
+                    player.gold -= materials[t];
+                    rpgbot.sendMessage(src, materials[t] + " Gold lost!", rpgchan);
+                } else {
+                    changeItemCount(player, t, -materials[t]);
+                    rpgbot.sendMessage(src, materials[t] + " " + items[t].name + "(s) lost!", rpgchan);
+                }
+            }
+            
+            rewards = products[goods].reward;
+            
+            for (t in rewards) {
+                if (t === "gold") {
+                    player.gold += rewards[t];
+                    rpgbot.sendMessage(src, rewards[t] + " Gold received!", rpgchan);
+                } else {
+                    changeItemCount(player, t, rewards[t]);
+                    rpgbot.sendMessage(src, rewards[t] + " " + items[t].name + "(s) received!", rpgchan);
+                }
+            }
+            
+            sys.sendMessage(src, "",rpgchan);
+            sys.sendMessage(src, topic.acceptmsg,rpgchan);
+            sys.sendMessage(src, "",rpgchan);
+            return;
         } else if ("effect" in topic) {
             sys.sendMessage(src, "", rpgchan);
             sys.sendMessage(src, topic.message, rpgchan);
@@ -870,6 +947,7 @@ function RPG(rpgchan) {
         
         var priority = team1.concat(team2);
         priority.sort(function(a, b) { return getFullValue(b, "spd") - getFullValue(a, "spd"); });
+        
         
         var totalDex = 0;
         for (var i = 0; i < priority.length; ++i) {
@@ -1895,15 +1973,8 @@ function RPG(rpgchan) {
     this.updateBonus = function(src) {
         var player = SESSION.users(src).rpg;
         
-        player.maxhp -= player.bonus.equip.maxhp + player.bonus.skill.maxhp;
-        player.maxmp -= player.bonus.equip.maxmp + player.bonus.skill.maxmp;
-        
-        if (player.hp > player.maxhp) {
-            player.hp = player.maxhp;
-        }
-        if (player.mp > player.maxmp) {
-            player.mp = player.maxmp;
-        }
+        player.maxhp = player.basehp;
+        player.maxmp = player.basemp;
         
         player.bonus.equip.maxhp = 0;
         player.bonus.equip.maxmp = 0;
@@ -1953,6 +2024,19 @@ function RPG(rpgchan) {
         
         player.maxhp += player.bonus.equip.maxhp + player.bonus.skill.maxhp;
         player.maxmp += player.bonus.equip.maxmp + player.bonus.skill.maxmp;
+        if (player.maxhp <= 0) {
+            player.maxhp = 1;
+        }
+        if (player.maxmp < 0) {
+            player.maxmp = 0;
+        }
+        
+        if (player.hp > player.maxhp) {
+            player.hp = player.maxhp;
+        }
+        if (player.mp > player.maxmp) {
+            player.mp = player.maxmp;
+        }
         
         player.attackElement = "none";
         var passiveElements = getPassiveByEffect(player, "attackElement");
@@ -2084,6 +2168,11 @@ function RPG(rpgchan) {
                     for (g in growth) {
                         inc = getLevelValue(growth[g], (player.level - 1) % growth[g].length);
                         player[g] += inc;
+                        if (g === "maxhp") {
+                            player.basehp += inc;
+                        } else if (g === "maxmp") {
+                            player.basemp += inc;
+                        }
                         if (inc > 0) {
                             increased[g] = true;
                         }
@@ -2132,16 +2221,20 @@ function RPG(rpgchan) {
                 case "life":
                 case "hp":
                     player.maxhp += leveling.hp * ammount;
+                    player.basehp += leveling.hp * ammount;
                     player.hp += leveling.hp * ammount;
-                    rpgbot.sendMessage(src, "Maximum HP increased to " + player.maxhp + "!", rpgchan);
+                    rpgbot.sendMessage(src, "Maximum HP increased to " + player.basehp + "!", rpgchan);
                     player.statPoints -= ammount;
+                    this.updateBonus(src);
                     break;
                 case "mana":
                 case "mp":
                     player.maxmp += leveling.mp * ammount;
+                    player.basemp += leveling.mp * ammount;
                     player.mp += leveling.mp * ammount;
-                    rpgbot.sendMessage(src, "Maximum Mana increased to " + player.maxmp + "!", rpgchan);
+                    rpgbot.sendMessage(src, "Maximum Mana increased to " + player.basemp + "!", rpgchan);
                     player.statPoints -= ammount;
+                    this.updateBonus(src);
                     break;
                 case "str":
                 case "strength":
@@ -2521,13 +2614,13 @@ function RPG(rpgchan) {
                 default:
                     if (party.leader === src) {
                         rpgbot.sendMessage(src, "No such action. Valid Party commands are: ", rpgchan);
-                        rpgbot.sendMessage(src, "/party leave (to leave your party)", rpgchan);
-                        rpgbot.sendMessage(src, "/party invite:name (to invite someone to your party)", rpgchan);
-                        rpgbot.sendMessage(src, "/party kick:name (to remove someone from your party)", rpgchan);
+                        rpgbot.sendMessage(src, "/party leave or l (to leave your party)", rpgchan);
+                        rpgbot.sendMessage(src, "/party invite:name or i:name (to invite someone to your party)", rpgchan);
+                        rpgbot.sendMessage(src, "/party kick:name or k:name (to remove someone from your party)", rpgchan);
                         rpgbot.sendMessage(src, "/party leader:name (to pass leadership of your party to another member)", rpgchan);
                         rpgbot.sendMessage(src, "/party disband (to disband your party)", rpgchan);
                     } else {
-                        rpgbot.sendMessage(src, "No such action. Valid Party commands are: /party leave (to quit your current party).", rpgchan);
+                        rpgbot.sendMessage(src, "No such action. Valid Party commands are: /party leave or l (to quit your current party).", rpgchan);
                     }
                     break;
             
@@ -2556,7 +2649,7 @@ function RPG(rpgchan) {
                     }
                     break;
                 default: 
-                    rpgbot.sendMessage(src, "No such action! Use either '/party create:name' to make your own party or '/party join:name' to join an existing party!", rpgchan);
+                    rpgbot.sendMessage(src, "No such action! Use '/party create:name' (or /p c:name) to make your own party, or '/party join:name' (or /p j:name) to join an existing party!", rpgchan);
                     break;
             }
         }
@@ -2796,6 +2889,9 @@ function RPG(rpgchan) {
         
         var player = user.rpg;
         
+        player.basehp = player.maxhp;
+        player.basemp = player.maxmp;
+        
         player.name = sys.name(src);
         player.level = 1;
         player.exp = 0;
@@ -2988,6 +3084,12 @@ function RPG(rpgchan) {
         if(!file.respawn) {
             file.respawn = startup.location;
         }
+        if (!(file.basehp)) {
+            file.basehp = file.maxhp - file.bonus.equip.maxhp - file.bonus.skill.maxhp;
+        }
+        if (!(file.basemp)) {
+            file.basemp = file.maxmp - file.bonus.equip.maxmp - file.bonus.skill.maxmp;
+        }
         
         var redoEquips = false;
         for (i in equipment) {
@@ -3067,13 +3169,11 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "Finish this battle first!", rpgchan);
             return;
         }
-        
         if (user.rpg.party && this.findParty(user.rpg.party) !== null) {
             this.findParty(user.rpg.party).leave(src);
         }
         
         user.rpg = undefined;
-        
         rpgbot.sendMessage(src, "Character successfully cleared!", rpgchan);
     };
     this.resetChar = function(src) {
@@ -3086,7 +3186,6 @@ function RPG(rpgchan) {
         
         this.resetStats(src);
         this.resetSkills(src);
-        
         rpgbot.sendMessage(src, "Stats/Skills reset!", rpgchan);
     };
     this.resetStats = function(src) {
@@ -3164,6 +3263,15 @@ function RPG(rpgchan) {
         player.plans.push(player.strategy);
         
         player.skillPoints = startup.skills + leveling.skills * (player.level - 1);
+        
+        for (e in player.equips) {
+            if (player.equips[e] !== null && canUseItem(player, player.equips[e]) === false) {
+                rpgbot.sendMessage(src, items[player.equips[e]].name + " unequipped!", rpgchan);
+                player.equips[e] = null;
+            }
+        }
+        
+        this.updateBonus(src);
     };
     
     this.viewStats = function(src) {
@@ -3261,10 +3369,6 @@ function RPG(rpgchan) {
         var id = sys.id(commandData);
         if (id === undefined) {
             rpgbot.sendMessage(src, "No such person!", rpgchan);
-            return;
-        }
-        if (id === src) {
-            rpgbot.sendMessage(src, "To view your own stats, use /stats!", rpgchan);
             return;
         }
         if (SESSION.users(id).rpg === undefined) {
@@ -3398,7 +3502,6 @@ function RPG(rpgchan) {
                 POglobal.plugins[index] = module;
                 module.source = source;
                 module.init();
-                // sendChanAll("Update complete!", rpgchan);
                 module.game.restoreValues(tempBattles, tempDuels, tempTrades, tempParty);
                 
             });
@@ -3417,8 +3520,10 @@ function RPG(rpgchan) {
     this.loadURLContent = function(src, url) {
         try {
             if (url === "*") {
+                rpgbot.sendMessage(src, "Loading RPG content from " + contenturl, rpgchan);
                 sys.webCall(contenturl, this.loadInfo);
             } else {
+                rpgbot.sendMessage(src, "Loading RPG content from " + url, rpgchan);
                 sys.webCall(url, this.loadInfo);
             }
         } catch (err) {
@@ -3771,9 +3876,7 @@ function RPG(rpgchan) {
         SESSION.global().channelManager.restoreSettings(rpgchan);
         SESSION.channels(rpgchan).perm = true;
         SESSION.channels(rpgchan).master = "RiceKirby";
-		// game.loadInfo();
         game.loadLocalContent();
-        // rpgbot.sendAll("RPG Game was reloaded!", rpgchan);
 	};
 	this.stepEvent = function() {
         try {
