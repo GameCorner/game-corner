@@ -893,6 +893,53 @@ function RPG(rpgchan) {
         }
         
     };
+    this.watchBattle = function(src, commandData) {
+        var bat, b;
+        if (commandData === "*") {
+            var cancelView = false;
+            for (b in currentBattles) {
+                bat = currentBattles[b];
+                var i = bat.viewers.indexOf(src);
+                if (i !== -1) {
+                    cancelView = true;
+                    bat.sendToViewers(sys.name(src) + " stopped watching this battle!");
+                    bat.viewers.splice(i, 1);
+                }
+            }
+            if (!cancelView) {
+                rpgbot.sendMessage(src, "Specify a player!", rpgchan);
+            }
+            return;
+        }
+        var id = sys.id(commandData);
+        if (id === undefined) {
+            rpgbot.sendMessage(src, "No such person!", rpgchan);
+            return;
+        }
+        if (SESSION.users(id).rpg === undefined) {
+            rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
+            return;
+        }
+        var target = SESSION.users(id).rpg;
+        if (target.isBattling === false) {
+            rpgbot.sendMessage(src, "This person is not battling!", rpgchan);
+            return;
+        }
+        /* if (SESSION.users(src).rpg.location !== target.location) {
+            rpgbot.sendMessage(src, "You must be in the same location as your target to watch their battles!", rpgchan);
+            return;
+        } */
+        
+        for (b in currentBattles) {
+            bat = currentBattles[b];
+            if (bat.viewers.indexOf(src) === -1 && (bat.team1.indexOf(target) !== -1 || bat.team2.indexOf(target) !== -1)) {
+                bat.viewers.push(src);
+                bat.sendToViewers(sys.name(src) + " is watching this battle!");
+                return;
+            }
+        }
+        rpgbot.sendMessage(src, "You can't watch any battle now!", rpgchan);
+    };
     
     function Battle(viewers, teamA, teamB) {
         this.viewers = viewers;
@@ -3730,7 +3777,8 @@ function RPG(rpgchan) {
             clearchar: [this.clearChar, "To clear your character."],
             // inn: [this.gotoInn, "Pay 10 Gold to fully restore HP and MP."],
             party: [this.manageParty, "To create and manage a party"],
-            font: [this.changeFontSize, "To change the Battle Message's size."]
+            font: [this.changeFontSize, "To change the Battle Message's size."],
+            watch: [this.watchBattle, "To watch someone else's battle."]
         },
         altactions: {
             skill: [this.viewSkills, "Same as /skills."],
@@ -3751,7 +3799,7 @@ function RPG(rpgchan) {
             start: [this.startGame, "To create your character and begin your game."],
             loadchar: [this.loadGame, "To load your previously saved game."],
             places: [this.viewPlaces, "To view the available locations."],
-            view: [this.viewPlayer, "To view someone else's stats"]
+            view: [this.viewPlayer, "To view someone else's stats."]
 		},
 		op: {
 		},
