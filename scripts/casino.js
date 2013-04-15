@@ -48,7 +48,7 @@ module.exports = (new function () {
         }
         
         if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
-            global.coins[sys.name(src).toLowerCase()] = 1;
+            global.coins[sys.name(src).toLowerCase()] = 100;
         }
 		if (commandData === undefined) {
 			return;
@@ -82,36 +82,36 @@ module.exports = (new function () {
         dice1 = Math.floor((Math.random() * 6) + 1);
         dice2 = Math.floor((Math.random() * 6) + 1);
         dice3 = Math.floor((Math.random() * 6) + 1);
-        global.coins[sys.name(src).toLowerCase()] -= bet;
+        global.coins[sys.name(src).toLowerCase()] -= Math.floor(bet);
         caldice = dice1 + dice2 + dice3;
         if (caldice == calnumber) {
             if (calnumber == 3 || calnumber == 18) {
-                payout = bet * 8;
+                payout = Math.floor(bet * 8);
             }
             if (calnumber == 4 || calnumber == 17) {
-                payout = bet * 7;
+                payout = Math.floor(bet * 7);
             }
             if (calnumber == 5 || calnumber == 16) {
-                payout = bet * 6;
+                payout = Math.floor(bet * 6);
             }
             if (calnumber == 6 || calnumber == 15) {
-                payout = bet * 5;
+                payout = Math.floor(bet * 5);
             }
             if (calnumber == 7 || calnumber == 14) {
-                payout = bet * 4;
+                payout = Math.floor(bet * 4);
             }
             if (calnumber == 8 || calnumber == 13) {
-                payout = bet * 3;
+                payout = Math.floor(bet * 3);
             }
             if (calnumber == 9 || calnumber == 12) {
-                payout = bet * 2;
+                payout = Math.floor(bet * 2);
             }
             if (calnumber == 10 || calnumber == 11) {
-                payout = bet;
+                payout = Math.floor(bet);
             }
             
             casinobot.sendMessage(src, "You rolled a " + caldice + " and matched your number!! You get " + payout + " coins!", casinochan);
-            global.coins[sys.name(src).toLowerCase()] += payout;
+            global.coins[sys.name(src).toLowerCase()] = global.coins[sys.name(src).toLowerCase()] + payout;
             if (payout >= 400) {
                 casinobot.sendAll(sys.name(src) + " just got a huge payout of " + payout + " coins!!!!", casinochan);
             }
@@ -133,7 +133,7 @@ module.exports = (new function () {
         }
         
         if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
-            global.coins[sys.name(src).toLowerCase()] = 1;
+            global.coins[sys.name(src).toLowerCase()] = 100;
         }
         if (commandData === undefined) {
             return;
