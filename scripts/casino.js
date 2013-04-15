@@ -413,7 +413,7 @@ module.exports = (new function () {
             ""
 		];
         
-        some.forEach(function (msg) {
+        return some.forEach(function (msg) {
             sendChanMessage(src, msg, casinochan);
         });
 	};
@@ -421,7 +421,7 @@ module.exports = (new function () {
         user: {
             cal: this.playCAL,
             craps: this.playCraps,
-	        slots: this.playSlots,
+	    slots: this.playSlots,
             pr: this.playPR,
             help: this.showHelp,
             games: this.showGames,
