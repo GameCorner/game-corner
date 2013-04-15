@@ -2375,7 +2375,7 @@ function RPG(rpgchan) {
                 return;
             }
             if (player.statPoints < amount) {
-                rpgbot.sendMessage(src, "You don't have that much stat points!", rpgchan);
+                rpgbot.sendMessage(src, "You don't have that many stat points!", rpgchan);
                 return;
             }
             switch (what) {
@@ -2436,7 +2436,7 @@ function RPG(rpgchan) {
                 return;
             }
             if (player.skillPoints < amount) {
-                rpgbot.sendMessage(src, "You don't have that much skill points!", rpgchan);
+                rpgbot.sendMessage(src, "You don't have that many skill points!", rpgchan);
                 return;
             }
             if (!(what in skills)) {
@@ -3361,6 +3361,8 @@ function RPG(rpgchan) {
         }
         player.maxhp = player.hp;
         player.maxmp = player.mp;
+        player.basehp = player.maxhp;
+        player.basemp = player.maxmp;
         
         player.statPoints = startup.stats + leveling.stats * (player.level - 1);
         
