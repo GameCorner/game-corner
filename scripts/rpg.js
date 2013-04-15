@@ -352,7 +352,7 @@ function RPG(rpgchan) {
                 
                 for (i in products) {
                     it = items[i];
-                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + " [" + products[i] + " Gold]", rpgchan);
+                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + " [" + (products[i] !== "*" ? products[i] : it.cost) + " Gold]", rpgchan);
                 }
                 sys.sendMessage(src, "", rpgchan);
                 return;
@@ -370,7 +370,7 @@ function RPG(rpgchan) {
                 ammount = ammount < 1 ? 1 : ammount;
             }
             
-            price = products[goods] * ammount;
+            price = (products[goods] !== "*" ? products[goods] : items[goods].cost) * ammount;
             
             if (player.gold < price) {
                 sys.sendMessage(src, topic.nogoldmsg.replace(/~Price~/g, price),rpgchan);
@@ -385,7 +385,7 @@ function RPG(rpgchan) {
             return;
             
             
-        } else if ("buy" in topic) {
+        } else if ("buy" in topic && typeof topic.buy === "object") {
             products = topic.buy;
             if (data.length < 3) {
                 sys.sendMessage(src, "", rpgchan);
@@ -393,7 +393,7 @@ function RPG(rpgchan) {
                 
                 for (i in topic.buy) {
                     it = items[i];
-                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + " [" + topic.buy[i] + " Gold]", rpgchan);
+                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + " [" + (products[i] !== "*" ? products[i] : Math.floor(it.cost / 2) ) + " Gold]", rpgchan);
                 }
                 sys.sendMessage(src, "", rpgchan);
                 return;
@@ -411,7 +411,43 @@ function RPG(rpgchan) {
                 ammount = ammount < 1 ? 1 : ammount;
             }
             
-            price = products[goods] * ammount;
+            price = (products[goods] !== "*" ? products[goods] : Math.floor(items[goods].cost/2)) * ammount;
+            
+            if (!hasItem(player, goods, ammount)) {
+                sys.sendMessage(src, topic.noitemmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name),rpgchan);
+                return;
+            }
+            
+            player.gold += price;
+            changeItemCount(player, goods, -ammount);
+            sys.sendMessage(src, "",rpgchan);
+            sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
+            sys.sendMessage(src, "",rpgchan);
+            return;
+        } else if ("buy" in topic && topic.buy === "*") {
+            if (data.length < 3) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.message, rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
+            goods = data[2].toLowerCase();
+            
+            if (!(goods in items)) {
+                sys.sendMessage(src, topic.nosellmsg,rpgchan);
+                return;
+            }
+            
+            if (data.length > 3 && isNaN(parseInt(data[3])) === false) {
+                ammount = parseInt(data[3]);
+                ammount = ammount < 1 ? 1 : ammount;
+            } else {
+                sys.sendMessage(src, topic.offermsg.replace(/~Item~/g, items[goods].name).replace(/~Price~/g, Math.floor(items[goods].cost/2)),rpgchan);
+                return;
+            }
+            
+            price = Math.floor(items[goods].cost / 2) * ammount;
             
             if (!hasItem(player, goods, ammount)) {
                 sys.sendMessage(src, topic.noitemmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name),rpgchan);
@@ -910,6 +946,15 @@ function RPG(rpgchan) {
                 rpgbot.sendMessage(src, "Specify a player!", rpgchan);
             }
             return;
+        } else if (commandData === "on") {
+            rpgbot.sendMessage(src, "Other players can watch your battles!", rpgchan);
+            SESSION.users(src).rpg.watchableBattles = true;
+            return;
+        } else if (commandData === "off") {
+            rpgbot.sendMessage(src, "Other players can't watch your battles!", rpgchan);
+            SESSION.users(src).rpg.watchableBattles = false;
+            return;
+        
         }
         var id = sys.id(commandData);
         if (id === undefined) {
@@ -921,6 +966,10 @@ function RPG(rpgchan) {
             return;
         }
         var target = SESSION.users(id).rpg;
+        if (target.watchableBattles === false) {
+            rpgbot.sendMessage(src, "You can't watch this person's battles!", rpgchan);
+            return;
+        }
         if (target.isBattling === false) {
             rpgbot.sendMessage(src, "This person is not battling!", rpgchan);
             return;
@@ -1006,7 +1055,7 @@ function RPG(rpgchan) {
         var tripleAttackDex = Math.floor(totalDex * 0.75) + 1;
         var quadAttackDex = Math.floor(totalDex * 0.90) + 1;
         for (i = priority.length - 1; i >= 0; --i) {
-            var d = Math.floor(getFullValue(priority[i], "dex") * getPassiveMultiplier(priority[i], "attackSpeed"));
+            var d = Math.floor(getFullValue(priority[i], "dex") * getPassiveMultiplier(priority[i], "attackSpeed")) * (priority[i].battle.attackSpeed ? priority[i].battle.attackSpeed : 1);
             if (d >= doubleAttackDex && d >= 3) {
                 priority.push(priority[i]);
                 if (d >= tripleAttackDex) {
@@ -1155,8 +1204,8 @@ function RPG(rpgchan) {
                     }
                     
                     if (move.type === "physical" || move.type === "magical") {
-                        var acc = getFullValue(player, "dex") * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * getEquipMultiplier(player, "accuracy") * getPassiveMultiplier(player, "accuracy");
-                        var evd = getFullValue(target, "spd") * battleSetup.evasion * getEquipMultiplier(player, "evasion") * getPassiveMultiplier(player, "evasion");
+                        var acc = getFullValue(player, "dex") * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * getEquipMultiplier(player, "accuracy") * getPassiveMultiplier(player, "accuracy") * (player.battle.accuracy ? player.battle.accuracy : 1);
+                        var evd = getFullValue(target, "spd") * battleSetup.evasion * getEquipMultiplier(target, "evasion") * getPassiveMultiplier(target, "evasion") * (target.battle.evasion ? target.battle.evasion : 1);
                         if (acc <= 0) {
                             acc = 1;
                         }
@@ -1238,7 +1287,8 @@ function RPG(rpgchan) {
                         if (power < 0) {
                             critical = 1;
                         } else {
-                            critical = (Math.random() < (invert / main) * 0.66 * getEquipMultiplier(player, "critical") * getPassiveMultiplier(player, "critical")) ? battleSetup.critical : 1;
+                            var critChance = (invert / main) * 0.66 * getEquipMultiplier(player, "critical") * getPassiveMultiplier(player, "critical") * (player.battle.critical ? player.battle.critical : 1);
+                            critical = (Math.random() < critChance) ? battleSetup.critical : 1;
                         }
                         variation = (critical === battleSetup.critical) ? 1 : variation;
                         damage = Math.floor((power / def) * element * variation * critical) + (getLevelValue(move.modifier, level) > 0 ? 1 : -1);
@@ -1256,27 +1306,40 @@ function RPG(rpgchan) {
                                 if (e in target.bonus.battle) {
                                     target.bonus.battle[e] = getLevelValue(move.effect.target[e], level);
                                     target.battle.counters[e] = duration;
-                                } else if (e === "mp") {
-                                    target.mp += getLevelValue(move.effect.target[e], level);
-                                } else if (e === "hp") {
-                                    damage -= getLevelValue(move.effect.target[e], level);
-                                } else if (e === "hpdamage" || e === "mpdamage") {
-                                    target.battle[e] = getLevelValue(move.effect.target[e], level);
-                                    target.battle.counters[e] = duration;
-                                } else if (e === "delay") {
-                                    target.battle.delay = getLevelValue(move.effect.target[e], level);
-                                } else if (e === "attackElement") {
-                                    target.battle.attackElement = move.effect.target[e];
-                                    target.battle.counters[e] = duration;
-                                } else if (e === "defenseElement") {
-                                    target.battle.defenseElement = move.effect.target[e];
-                                    target.battle.counters[e] = duration;
-                                } else if (e === "focus") {
-                                    focusList = side === 1 ? this.team2Focus : this.team1Focus;
-                                    if (focusList.indexOf(target) === -1) {
-                                        focusList.push(target);
+                                } else {
+                                    switch (e) {
+                                        case "mp":
+                                            target.mp += getLevelValue(move.effect.target[e], level);
+                                            break;
+                                        case "hp":
+                                            damage -= getLevelValue(move.effect.target[e], level);
+                                            break;
+                                        case "hpdamage":
+                                        case "mpdamage":
+                                        case "accuracy":
+                                        case "evasion":
+                                        case "critical":
+                                        case "attackSpeed":
+                                            target.battle[e] = getLevelValue(move.effect.target[e], level);
+                                            target.battle.counters[e] = duration;
+                                            break;
+                                        case "delay":
+                                            target.battle.delay = getLevelValue(move.effect.target[e], level);
+                                            break;
+                                        case "attackElement":
+                                        case "defenseElement":
+                                            target.battle[e] = move.effect.target[e];
+                                            target.battle.counters[e] = duration;
+                                            break;
+                                        case "focus":
+                                            focusList = side === 1 ? this.team2Focus : this.team1Focus;
+                                            if (focusList.indexOf(target) === -1) {
+                                                focusList.push(target);
+                                            }
+                                            target.battle.counters[e] = duration;
+                                            break;
+                                        
                                     }
-                                    target.battle.counters[e] = duration;
                                 }
                             } 
                         }
@@ -1288,27 +1351,40 @@ function RPG(rpgchan) {
                                 if (e in player.bonus.battle) {
                                     player.bonus.battle[e] = getLevelValue(move.effect.user[e], level);
                                     player.battle.counters[e] = duration;
-                                } else if (e === "mp") {
-                                    player.mp += getLevelValue(move.effect.user[e], level);
-                                } else if (e === "hp") {
-                                    player.hp += getLevelValue(move.effect.user[e], level);
-                                } else if (e === "hpdamage" || e === "mpdamage") {
-                                    player.battle[e] = getLevelValue(move.effect.user[e], level);
-                                    player.battle.counters[e] = duration;
-                                } else if (e === "delay") {
-                                    player.battle.delay = getLevelValue(move.effect.user[e], level);
-                                } else if (e === "attackElement") {
-                                    player.battle.attackElement = move.effect.user[e];
-                                    player.battle.counters[e] = duration;
-                                } else if (e === "defenseElement") {
-                                    player.battle.defenseElement = move.effect.user[e];
-                                    player.battle.counters[e] = duration;
-                                } else if (e === "focus") {
-                                    focusList = side === 1 ? this.team1Focus : this.team2Focus;
-                                    if (focusList.indexOf(player) === -1) {
-                                        focusList.push(player);
+                                } else {
+                                    switch (e) {
+                                        case "mp":
+                                            player.mp += getLevelValue(move.effect.user[e], level);
+                                            break;
+                                        case "hp":
+                                            player.hp += getLevelValue(move.effect.user[e], level);
+                                            break;
+                                        case "hpdamage":
+                                        case "mpdamage":
+                                        case "accuracy":
+                                        case "evasion":
+                                        case "critical":
+                                        case "attackSpeed":
+                                            player.battle[e] = getLevelValue(move.effect.user[e], level);
+                                            player.battle.counters[e] = duration;
+                                            break;
+                                        case "delay":
+                                            player.battle.delay = getLevelValue(move.effect.user[e], level);
+                                            break;
+                                        case "attackElement":
+                                        case "defenseElement":
+                                            player.battle[e] = move.effect.user[e];
+                                            player.battle.counters[e] = duration;
+                                            break;
+                                        case "focus":
+                                            focusList = side === 1 ? this.team2Focus : this.team1Focus;
+                                            if (focusList.indexOf(player) === -1) {
+                                                focusList.push(player);
+                                            }
+                                            player.battle.counters[e] = duration;
+                                            break;
+                                        
                                     }
-                                    player.battle.counters[e] = duration;
                                 }
                             }
                         }
@@ -1388,7 +1464,11 @@ function RPG(rpgchan) {
             dex: "Dexterity",
             mag: "Magic",
             attackElement: "Weapon's element",
-            defenseElement: "Armor's element"
+            defenseElement: "Armor's element",
+            accuracy: "Accuracy",
+            evasion: "Evasion",
+            critical: "Critical Hit rate",
+            attackSpeed: "Attack Speed"
         };
         function translateAtt(x) { return translations[x]; }
         for (i = 0; i < battlers.length; ++i) {
@@ -1422,6 +1502,11 @@ function RPG(rpgchan) {
                         } else if (b === "focus" && player.battle.counters[b] <= 0) {
                             focusList = this.team1.indexOf(player) !== - 1 ? this.team1Focus : this.team2Focus;
                             focusList.splice(focusList.indexOf(player), 1);
+                        } else if ((b === "accuracy" || b === "evasion" || b === "critical" || b === "attackSpeed") && player.battle.counters[b] <= 0) {
+                            player.battle[b] = 1;
+                            if (player.hp > 0) {
+                                buffs.push(b);
+                            }
                         }
                     }
                 }
@@ -2031,21 +2116,6 @@ function RPG(rpgchan) {
         player.bonus.equip.dex = 0;
         player.bonus.equip.mag = 0;
         
-        var equip, s;
-        for (var x in player.equips) {
-            equip = player.equips[x];
-            if (equip !== null) {
-                equip = items[equip];
-                if (equip.effect) {
-                    for (s in equip.effect) {
-                        if (s in player.bonus.equip) {
-                            player.bonus.equip[s] += equip.effect[s];
-                        }
-                    }
-                }
-            }
-        }
-        
         player.bonus.skill.maxhp = 0;
         player.bonus.skill.maxmp = 0;
         player.bonus.skill.str = 0;
@@ -2054,14 +2124,57 @@ function RPG(rpgchan) {
         player.bonus.skill.dex = 0;
         player.bonus.skill.mag = 0;
         
-        var skill, level;
+        var equip, s, x, skill, level;
+        
+        //Multiplier bonus from equipments and skills
+        for (x in player.equips) {
+            equip = player.equips[x];
+            if (equip !== null) {
+                equip = items[equip];
+                if (equip.effect && equip.effect.multiplier) {
+                    for (s in equip.effect.multiplier) {
+                        if (s in player.bonus.equip) {
+                            player.bonus.equip[s] += Math.floor(player[s] * equip.effect.multiplier[s]);
+                        }
+                    }
+                }
+            }
+        }
+        for (x in player.passives) {
+            level = player.passives[x];
+            if (level > 0) {
+                skill = skills[x];
+                if (skill.effect && skill.effect.multiplier) {
+                    for (s in skill.effect.multiplier) {
+                        if (s in player.bonus.skill) {
+                            player.bonus.skill[s] += Math.floor(player[s] * (getLevelValue(skill.effect.multiplier[s], level - 1)));
+                        }
+                    }
+                }
+            }
+        }
+        
+        //Regular bonus from equipments and skills
+        for (x in player.equips) {
+            equip = player.equips[x];
+            if (equip !== null) {
+                equip = items[equip];
+                if (equip.effect) {
+                    for (s in equip.effect) {
+                        if (s !== "multiplier" && s in player.bonus.equip) {
+                            player.bonus.equip[s] += equip.effect[s];
+                        }
+                    }
+                }
+            }
+        }
         for (x in player.passives) {
             level = player.passives[x];
             if (level > 0) {
                 skill = skills[x];
                 if (skill.effect) {
                     for (s in skill.effect) {
-                        if (s in player.bonus.skill) {
+                        if (s !== "multiplier" && s in player.bonus.skill) {
                             player.bonus.skill[s] += getLevelValue(skill.effect[s], level - 1);
                         }
                     }
@@ -2975,6 +3088,7 @@ function RPG(rpgchan) {
         player.isBattling = false;
         player.version = charVersion;
         player.publicStats = false;
+        player.watchableBattles = false;
         player.fontSize = 11;
         
         player.events = {};
@@ -3202,6 +3316,9 @@ function RPG(rpgchan) {
         }
         if (!file.publicStats) {
             file.publicStats = false;
+        }
+        if (!file.watchableBattles) {
+            file.watchableBattles = false;
         }
         if(!file.fontSize) {
             file.fontSize = 11;
@@ -3820,7 +3937,7 @@ function RPG(rpgchan) {
             return true;
         } catch(e) {
             if (e !== "No valid command") {
-                sys.sendAll("Error on RPG command" + (err.lineNumber ? " on line " + err.lineNumber : "") + ": " + e, rpgchan);
+                sys.sendAll("Error on RPG command" + (e.lineNumber ? " on line " + e.lineNumber : "") + ": " + e, rpgchan);
                 return true;
             }
         }
