@@ -343,7 +343,7 @@ function RPG(rpgchan) {
             }
         }
         
-        var it, i, goods, price, ammount = 1, products;
+        var it, i, goods, price, amount = 1, products;
         if ("sell" in topic) {
             products = topic.sell;
             if (data.length < 3) {
@@ -366,11 +366,11 @@ function RPG(rpgchan) {
             }
             
             if (data.length > 3 && isNaN(parseInt(data[3])) === false) {
-                ammount = parseInt(data[3]);
-                ammount = ammount < 1 ? 1 : ammount;
+                amount = parseInt(data[3]);
+                amount = amount < 1 ? 1 : amount;
             }
             
-            price = (products[goods] !== "*" ? products[goods] : items[goods].cost) * ammount;
+            price = (products[goods] !== "*" ? products[goods] : items[goods].cost) * amount;
             
             if (player.gold < price) {
                 sys.sendMessage(src, topic.nogoldmsg.replace(/~Price~/g, price),rpgchan);
@@ -378,9 +378,9 @@ function RPG(rpgchan) {
             }
             
             player.gold -= price;
-            changeItemCount(player, goods, ammount);
+            changeItemCount(player, goods, amount);
             sys.sendMessage(src, "",rpgchan);
-            sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
+            sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             sys.sendMessage(src, "",rpgchan);
             return;
             
@@ -407,21 +407,21 @@ function RPG(rpgchan) {
             }
             
             if (data.length > 3 && isNaN(parseInt(data[3])) === false) {
-                ammount = parseInt(data[3]);
-                ammount = ammount < 1 ? 1 : ammount;
+                amount = parseInt(data[3]);
+                amount = amount < 1 ? 1 : amount;
             }
             
-            price = (products[goods] !== "*" ? products[goods] : Math.floor(items[goods].cost/2)) * ammount;
+            price = (products[goods] !== "*" ? products[goods] : Math.floor(items[goods].cost/2)) * amount;
             
-            if (!hasItem(player, goods, ammount)) {
-                sys.sendMessage(src, topic.noitemmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name),rpgchan);
+            if (!hasItem(player, goods, amount)) {
+                sys.sendMessage(src, topic.noitemmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name),rpgchan);
                 return;
             }
             
             player.gold += price;
-            changeItemCount(player, goods, -ammount);
+            changeItemCount(player, goods, -amount);
             sys.sendMessage(src, "",rpgchan);
-            sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
+            sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             sys.sendMessage(src, "",rpgchan);
             return;
         } else if ("buy" in topic && topic.buy === "*") {
@@ -440,24 +440,24 @@ function RPG(rpgchan) {
             }
             
             if (data.length > 3 && isNaN(parseInt(data[3])) === false) {
-                ammount = parseInt(data[3]);
-                ammount = ammount < 1 ? 1 : ammount;
+                amount = parseInt(data[3]);
+                amount = amount < 1 ? 1 : amount;
             } else {
                 sys.sendMessage(src, topic.offermsg.replace(/~Item~/g, items[goods].name).replace(/~Price~/g, Math.floor(items[goods].cost/2)),rpgchan);
                 return;
             }
             
-            price = Math.floor(items[goods].cost / 2) * ammount;
+            price = Math.floor(items[goods].cost / 2) * amount;
             
-            if (!hasItem(player, goods, ammount)) {
-                sys.sendMessage(src, topic.noitemmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name),rpgchan);
+            if (!hasItem(player, goods, amount)) {
+                sys.sendMessage(src, topic.noitemmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name),rpgchan);
                 return;
             }
             
             player.gold += price;
-            changeItemCount(player, goods, -ammount);
+            changeItemCount(player, goods, -amount);
             sys.sendMessage(src, "",rpgchan);
-            sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, ammount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
+            sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             sys.sendMessage(src, "",rpgchan);
             return;
         } else if ("trade" in topic) {
@@ -1073,6 +1073,7 @@ function RPG(rpgchan) {
             player = priority[i];
             side = team1.indexOf(player) !== -1 ? 1 : 2;
             targets = [];
+            focusList = [];
             castComplete = false;
             
             if (player.battle.delay) {
@@ -1332,7 +1333,7 @@ function RPG(rpgchan) {
                                             target.battle.counters[e] = duration;
                                             break;
                                         case "focus":
-                                            focusList = side === 1 ? this.team2Focus : this.team1Focus;
+                                            focusList = this.team1.indexOf(target) !== -1 ? this.team1Focus : this.team2Focus;
                                             if (focusList.indexOf(target) === -1) {
                                                 focusList.push(target);
                                             }
@@ -1377,7 +1378,7 @@ function RPG(rpgchan) {
                                             player.battle.counters[e] = duration;
                                             break;
                                         case "focus":
-                                            focusList = side === 1 ? this.team2Focus : this.team1Focus;
+                                            focusList = side === 1 ? this.team1Focus : this.team2Focus;
                                             if (focusList.indexOf(player) === -1) {
                                                 focusList.push(player);
                                             }
@@ -2240,18 +2241,18 @@ function RPG(rpgchan) {
         player.hp = player.maxhp;
         player.mp = player.maxmp;
     };
-    function changeItemCount(player, item, ammount) {
+    function changeItemCount(player, item, amount) {
         if (!(item in player.items)) {
             player.items[item] = 0;
         }
-        player.items[item] += ammount;
+        player.items[item] += amount;
         if (player.items[item] <= 0) {
             game.removeEquip(player.id, item);
             delete player.items[item];
         }
     }
-    function hasItem(player, item, ammount) {
-        var count = ammount || 1;
+    function hasItem(player, item, amount) {
+        var count = amount || 1;
         if (!(item in player.items)) {
             return false;
         } else if (player.items[item] >= count) {
@@ -2355,14 +2356,14 @@ function RPG(rpgchan) {
         var data = commandData.split(":");
         
         if (commandData === "*") {
-            rpgbot.sendMessage(src, "To increase an stat or skill, type /increase statName:ammount or /increase skillName:ammount.", rpgchan);
+            rpgbot.sendMessage(src, "To increase an stat or skill, type /increase statName:amount or /increase skillName:amount.", rpgchan);
             return;
         }
         
         var what = data[0].toLowerCase();
-        var ammount;
-        ammount = data.length > 1 ? parseInt(data[1]) : 1;
-        ammount = isNaN(ammount) ? 1 : ammount;
+        var amount;
+        amount = data.length > 1 ? parseInt(data[1]) : 1;
+        amount = isNaN(amount) ? 1 : amount;
         
         var player = SESSION.users(src).rpg;
         
@@ -2373,69 +2374,68 @@ function RPG(rpgchan) {
                 rpgbot.sendMessage(src, "You have no stat points to increase!", rpgchan);
                 return;
             }
-            if (player.statPoints < ammount) {
+            if (player.statPoints < amount) {
                 rpgbot.sendMessage(src, "You don't have that much stat points!", rpgchan);
                 return;
             }
             switch (what) {
-                case "life":
                 case "hp":
-                    player.maxhp += leveling.hp * ammount;
-                    player.basehp += leveling.hp * ammount;
-                    player.hp += leveling.hp * ammount;
+                    player.maxhp += leveling.hp * amount;
+                    player.basehp += leveling.hp * amount;
+                    player.hp += leveling.hp * amount;
                     rpgbot.sendMessage(src, "Maximum HP increased to " + player.basehp + "!", rpgchan);
-                    player.statPoints -= ammount;
-                    this.updateBonus(src);
+                    player.statPoints -= amount;
                     break;
                 case "mana":
                 case "mp":
-                    player.maxmp += leveling.mp * ammount;
-                    player.basemp += leveling.mp * ammount;
-                    player.mp += leveling.mp * ammount;
+                    player.maxmp += leveling.mp * amount;
+                    player.basemp += leveling.mp * amount;
+                    player.mp += leveling.mp * amount;
                     rpgbot.sendMessage(src, "Maximum Mana increased to " + player.basemp + "!", rpgchan);
-                    player.statPoints -= ammount;
-                    this.updateBonus(src);
+                    player.statPoints -= amount;
                     break;
                 case "str":
                 case "strength":
-                    player.str += 1 * ammount;
+                    player.str += 1 * amount;
                     rpgbot.sendMessage(src, "Strength increased to " + player.str + "!", rpgchan);
-                    player.statPoints -= ammount;
+                    player.statPoints -= amount;
                     break;
                 case "def":
                 case "defense":
-                    player.def += 1 * ammount;
+                    player.def += 1 * amount;
                     rpgbot.sendMessage(src, "Defense increased to " + player.def + "!", rpgchan);
-                    player.statPoints -= ammount;
+                    player.statPoints -= amount;
                     break;
                 case "spd":
                 case "speed":
-                    player.spd += 1 * ammount;
+                    player.spd += 1 * amount;
                     rpgbot.sendMessage(src, "Speed increased to " + player.spd + "!", rpgchan);
-                    player.statPoints -= ammount;
+                    player.statPoints -= amount;
                     break;
                 case "dex":
                 case "dexterity":
-                    player.dex += 1 * ammount;
+                    player.dex += 1 * amount;
                     rpgbot.sendMessage(src, "Dexterity increased to " + player.dex + "!", rpgchan);
-                    player.statPoints -= ammount;
+                    player.statPoints -= amount;
                     break;
                 case "mag":
                 case "magic":
-                    player.mag += 1 * ammount;
+                    player.mag += 1 * amount;
                     rpgbot.sendMessage(src, "Magic increased to " + player.mag + "!", rpgchan);
-                    player.statPoints -= ammount;
+                    player.statPoints -= amount;
                     break;
                 default:
                     rpgbot.sendMessage(src, "You can only increase HP, Mana, Str, Def, Spd, Dex or Mag!", rpgchan);
+                    return;
                     break;
             }
+            this.updateBonus(src);
         } else {
             if (player.skillPoints <= 0) {
                 rpgbot.sendMessage(src, "You have no skill points to increase!", rpgchan);
                 return;
             }
-            if (player.skillPoints < ammount) {
+            if (player.skillPoints < amount) {
                 rpgbot.sendMessage(src, "You don't have that much skill points!", rpgchan);
                 return;
             }
@@ -2505,12 +2505,12 @@ function RPG(rpgchan) {
                 rpgbot.sendMessage(src, "This skill is already maxed!", rpgchan);
                 return;
             }
-            if (player.skills[what] + ammount > skills[what].levels) {
+            if (player.skills[what] + amount > skills[what].levels) {
                 rpgbot.sendMessage(src, "You can't add that much skill points to this skill!", rpgchan);
                 return;
             }
-            player.skills[what] += ammount;
-            player.skillPoints -= ammount;
+            player.skills[what] += amount;
+            player.skillPoints -= amount;
             
             rpgbot.sendMessage(src, "You increased your " + skills[what].name + " skill to level " + player.skills[what] + "!", rpgchan);
         }
