@@ -2541,7 +2541,19 @@ function RPG(rpgchan) {
             action = broken[0].toLowerCase();
             if (action === "load" || action === "set") {
                 target = parseInt(broken[1]);
-                commandData = broken[2];
+                if (target !== 1 && target !== 2 && target !== 3) {
+                    rpgbot.sendMessage(src, "No such slot! Type /plan slots to know how to set/load your strategies.", rpgchan);
+                    return;
+                }
+                if (broken.length > 3) {
+                    commandData = [];
+                    for (var b = 3; b < broken.length; ++b) {
+                        commandData = commandData.concat(broken[b]);
+                    }
+                    commandData = commandData.join("");
+                } else {
+                    commandData = broken[2]
+                }
             }
         }
         
@@ -2913,7 +2925,7 @@ function RPG(rpgchan) {
             this.broadcast(sys.name(src) + " has joined the party!");
             this.fix();
         } else {
-            rpgbot.sendMessage(src, "You haven't be invited to this party!", rpgchan);
+            rpgbot.sendMessage(src, "You haven't been invited to this party!", rpgchan);
         }
     };
     Party.prototype.kick = function(src, target) {
@@ -3336,6 +3348,8 @@ function RPG(rpgchan) {
         if (user.rpg.party && this.findParty(user.rpg.party) !== null) {
             this.findParty(user.rpg.party).leave(src);
         }
+        
+        this.removePlayer(src);
         
         user.rpg = undefined;
         rpgbot.sendMessage(src, "Character successfully cleared!", rpgchan);
@@ -4025,6 +4039,14 @@ function RPG(rpgchan) {
         }
         if (player.name in duelChallenges) {
             duelChallenges[player.name] = undefined;
+        }
+        for (var b in currentBattles) {
+            var bat = currentBattles[b];
+            var i = bat.viewers.indexOf(src);
+            if (i !== -1) {
+                bat.viewers.splice(i, 1);
+                bat.sendToViewers(sys.name(src) + " stopped watching this battle!");
+            }
         }
     };
 	this.beforeLogOut = function(src) {
