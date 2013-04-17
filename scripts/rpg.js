@@ -4039,7 +4039,7 @@ function RPG(rpgchan) {
             classes: [this.viewClasses, "To view basic information about each class."],
             start: [this.startGame, "To create your character and begin your game."],
             loadchar: [this.loadGame, "To load your previously saved game."],
-            places: [this.viewPlaces, "To view the available locations."],
+            //places: [this.viewPlaces, "To view the available locations."],
             view: [this.viewPlayer, "To view someone else's stats."]
 		},
 		op: {
