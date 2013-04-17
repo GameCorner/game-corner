@@ -74,7 +74,9 @@ function RPG(rpgchan) {
             var access = places[player.location].access;
             for (var l in access) {
                 var p = places[access[l]];
-                out.push(p.name + " (" + access[l] + "): " + p.info + " [Type: " + cap(p.type) + "]");
+                if (!p.hide || p.hide !== true) {
+                    out.push(p.name + " (" + access[l] + "): " + p.info + " [Type: " + cap(p.type) + "]");
+                }
             }
             
             for (l in out) {
@@ -177,9 +179,15 @@ function RPG(rpgchan) {
             }
         }
         
-        var dest = places[loc].access.map(function(x) {
-            return places[x].name + " (" + x + ")" ;
-        });
+        
+        
+        var dest = [], x;
+        for (r in places[loc].access) {
+            x = places[loc].access[r];
+            if (!places[x].hide || places[x].hide !== true) {
+                dest.push(places[x].name + " (" + x + ")");
+            }
+        }
         
         player.location = loc;
         sys.sendMessage(src, "", rpgchan);
@@ -211,12 +219,22 @@ function RPG(rpgchan) {
         
         if (commandData === "*") {
             if (places[player.location].npc) {
-                sys.sendMessage(src, "", rpgchan);
-                sys.sendMessage(src, "You can talk to the following persons:", rpgchan);
+                var talkable = [];
                 for (var n in places[player.location].npc) {
-                    sys.sendMessage(src, cap(n), rpgchan);
+                    if (!places[player.location].npc[n].hide || places[player.location].npc[n].hide !== true) {
+                        talkable.push(cap(n));
+                    }
                 }
-                sys.sendMessage(src, "", rpgchan);
+                if (talkable.length > 0) {
+                    sys.sendMessage(src, "", rpgchan);
+                    sys.sendMessage(src, "You can talk to the following persons:", rpgchan);
+                    for (n in talkable) {
+                        sys.sendMessage(src, talkable[n], rpgchan);
+                    }
+                    sys.sendMessage(src, "", rpgchan);
+                } else {
+                    rpgbot.sendMessage(src, "No one to talk to here!", rpgchan);
+                }
                 return;
             } else {
                 rpgbot.sendMessage(src, "No one to talk to here!", rpgchan);
@@ -245,8 +263,12 @@ function RPG(rpgchan) {
         }
         
         var option = data[1].toLowerCase();
-        if (!(option in npc) || option === "message" || option === "notopic") {
-            sys.sendMessage(src, npc.notopic, rpgchan);
+        if (!(option in npc) || option === "message" || option === "notopic" || option === "hide") {
+            if (npc.notopic) {
+                sys.sendMessage(src, npc.notopic, rpgchan);
+            } else {
+                sys.sendMessage(src, npc.message, rpgchan);
+            }
             return;
         } 
         
@@ -918,9 +940,15 @@ function RPG(rpgchan) {
         player.location = player.respawn;
         rpgbot.sendMessage(src, "You respawned with " + player.hp + " HP at the " + places[player.respawn].name + "!", rpgchan);
         
-        var dest = places[player.respawn].access.map(function(x) {
-            return places[x].name + " (" + x + ")" ;
-        });
+        
+        var dest = [], x, r, loc = player.respawn;
+        for (r in places[loc].access) {
+            x = places[loc].access[r];
+            if (!places[x].hide || places[x].hide !== true) {
+                dest.push(places[x].name + " (" + x + ")");
+            }
+        }
+        
         if (dest.length > 0) {
             rpgbot.sendMessage(src, "From here, you can go to " + readable(dest, "or"), rpgchan);
         }
@@ -1067,14 +1095,22 @@ function RPG(rpgchan) {
             }
         }
         
-        
         var player, side, target, targets, castComplete, focusList;
+        var effectsMessages;
         for (i = 0; i < priority.length; ++i) {
             player = priority[i];
             side = team1.indexOf(player) !== -1 ? 1 : 2;
             targets = [];
             focusList = [];
             castComplete = false;
+            effectsMessages = {
+                castBreak: [],
+                defeated: [],
+                targets: [],
+                damaged: {},
+                damagedNames: [],
+                evaded: []
+            };
             
             if (player.battle.delay) {
                 if (player.battle.delay > 0) {
@@ -1177,6 +1213,8 @@ function RPG(rpgchan) {
                     continue;
                 }
                 
+                effectsMessages.targets = targets.map(function(x){ return x.name });
+                
                 if (move.effect && move.effect.multihit) {
                     var originalTargets = targets.concat();
                     var hits = getLevelValue(move.effect.multihit, level);
@@ -1194,7 +1232,7 @@ function RPG(rpgchan) {
                 }
                 
                 var suicide = false, breakCast;
-                for (var t in targets) {
+                for (var t = 0; t < targets.length; ++t) {
                     target = targets[t];
                     var defeated = false;
                     breakCast = false;
@@ -1214,8 +1252,15 @@ function RPG(rpgchan) {
                             evd = 1;
                         }
                         if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > 0.7 + ((acc - evd) / 100)) {
-                            out.push(player.name + " tried to use " + move.name + ", but " + target.name + " evaded!");
+                            if (effectsMessages.evaded.indexOf(target.name) === -1) {
+                                effectsMessages.evaded.push(target.name);
+                            }
                             if (move.effect && move.effect.chained && move.effect.chained === true) {
+                                for (var v = t + 1; v < targets.length; ++v) {
+                                    if (effectsMessages.evaded.indexOf(targets[v].name) === -1) {
+                                        effectsMessages.evaded.push(targets[v].name);
+                                    }
+                                }
                                 break;
                             } else {
                                 continue;
@@ -1355,10 +1400,8 @@ function RPG(rpgchan) {
                                 } else {
                                     switch (e) {
                                         case "mp":
-                                            player.mp += getLevelValue(move.effect.user[e], level);
-                                            break;
                                         case "hp":
-                                            player.hp += getLevelValue(move.effect.user[e], level);
+                                            player[e] += getLevelValue(move.effect.user[e], level);
                                             break;
                                         case "hpdamage":
                                         case "mpdamage":
@@ -1393,6 +1436,7 @@ function RPG(rpgchan) {
                             breakCast = true;
                             target.battle.casting = null;
                             target.battle.skillCasting = null;
+                            effectsMessages.castBreak.push(target.name);
                         }
                         if (damage > 0) {
                             if (move.effect.hpabsorb) {
@@ -1412,9 +1456,16 @@ function RPG(rpgchan) {
                     
                     target.hp -= damage;
                     
+                    if (damage !== 0) {
+                        if (!(target.name in effectsMessages.damaged)) {
+                            effectsMessages.damaged[target.name] = [];
+                        }
+                        effectsMessages.damaged[target.name].push("<b>" + (-damage) + (critical === battleSetup.critical ? "*" : "") + "</b>");
+                    }
+                    
                     if (player.hp < 0) {
                         player.hp = 0;
-                        suicide = true;
+                        effectsMessages.defeated.push(player.name);
                     } else if (player.hp > player.maxhp) {
                         player.hp = player.maxhp;
                     }
@@ -1425,7 +1476,7 @@ function RPG(rpgchan) {
                     }
                     if (target.hp <= 0) {
                         target.hp = 0;
-                        defeated = true;
+                        effectsMessages.defeated.push(target.name);
                     } else if (target.hp > target.maxhp) {
                         target.hp = target.maxhp;
                     }
@@ -1434,23 +1485,24 @@ function RPG(rpgchan) {
                     } else if (target.mp > target.maxmp) {
                         target.mp = target.maxmp;
                     }
-                    
-                    if (moveName === "attack" && player.isPlayer === true && player.equips.rhand !== null && items[player.equips.rhand].message) {
-                        out.push((critical === battleSetup.critical ? "CRITICAL HIT! ": "") + items[player.equips.rhand].message.replace(/~User~/g, player.name).replace(/~Target~/g, target.name).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
-                    } else {
-                        out.push(move.message.replace(/~User~/g, player.name).replace(/~Target~/g, target.name).replace(/~Damage~/g, Math.abs(damage)).replace(/~Life~/, target.hp).replace(/~Mana~/, target.mp));
-                    }
-                    
-                    if (breakCast) {
-                        out.push(target.name + "'s concentration was broken!")
-                    }
-                    
-                    if (defeated && target !== player) {
-                        out.push(target.name + " was defeated!");
-                    }
                 }
-                if (suicide) {
-                    out.push(player.name + " was defeated!");
+                 
+                for (var d in effectsMessages.damaged) {
+                    effectsMessages.damagedNames.push(d + " (" + effectsMessages.damaged[d].map(function(x) { return (x >= 0 ? "+" + x : x); }).join(", ") + " HP)");
+                }
+                
+                if (moveName === "attack" && player.isPlayer === true && player.equips.rhand !== null && items[player.equips.rhand].message) {
+                    out.push(items[player.equips.rhand].message.replace(/~User~/g, player.name).replace(/~Target~/g, readable(effectsMessages.targets, "and")) + (effectsMessages.damagedNames.length > 0 ? " [" + readable(effectsMessages.damagedNames, "and") + "]" : "") + (effectsMessages.evaded.length > 0 ? " [" + readable(effectsMessages.evaded, "and") + " evaded!]" : ""));
+                } else {
+                    out.push(move.message.replace(/~User~/g, player.name).replace(/~Target~/g, readable(effectsMessages.targets, "and")) + (effectsMessages.damagedNames.length > 0 ? " " + readable(effectsMessages.damagedNames, "and") + "!" : "") + (effectsMessages.evaded.length > 0 ? " " + readable(effectsMessages.evaded, "and") + " evaded!" : ""));
+                }
+                
+                if (effectsMessages.castBreak.length > 0) {
+                    out.push(readable(effectsMessages.castBreak, "and") + "'s concentration was broken!")
+                }
+                
+                if (effectsMessages.defeated.length > 0) {
+                    out.push(readable(effectsMessages.defeated, "and") + (effectsMessages.defeated.length > 1 ? " were" : " was") + " defeated!");
                 }
             }
         }
@@ -1515,6 +1567,8 @@ function RPG(rpgchan) {
                     out.push(player.name + "'s " + readable(buffs.map(translateAtt) , "and") + " " + (buffs.length > 1 ? "are" : "is") + " back to normal.");
                 }
             }
+            var gained = [];
+            var lost = [];
             if (hpGain !== 0 && player.hp > 0) {
                 player.hp += hpGain;
                 
@@ -1524,8 +1578,11 @@ function RPG(rpgchan) {
                     player.hp = player.maxhp;
                 }
                 
-                verb = hpGain > 0 ? "gained" : "lost";
-                out.push(player.name + " " + verb + " " + Math.abs(hpGain) + " HP and now has " + player.hp + "!");
+                if (hpGain > 0) {
+                    gained.push(hpGain + " HP");
+                } else {
+                    lost.push(Math.abs(hpGain) + " HP");
+                }
             }
             if (mpGain !== 0 && player.hp > 0) {
                 player.mp += mpGain;
@@ -1536,8 +1593,30 @@ function RPG(rpgchan) {
                     player.mp = player.maxmp;
                 }
                 
-                verb = mpGain > 0 ? "gained" : "lost";
-                out.push(player.name + " " + verb + " " + Math.abs(mpGain) + " Mana and now has " + player.mp + "!");
+                if (mpGain > 0) {
+                    gained.push(mpGain + " Mana");
+                } else {
+                    lost.push(Math.abs(mpGain) + " Mana");
+                }
+            }
+            
+            if (player.hp > 0 && (hpGain !== 0 || mpGain !== 0)) {
+                var gainmsg = []
+                if (gained.length > 0) {
+                    gainmsg.push("gained " + readable(gained, "and"));
+                }
+                if (lost.length > 0) {
+                    gainmsg.push("lost " + readable(lost, "and"));
+                }
+                var finalGain = [];
+                if (hpGain !== 0) {
+                    finalGain.push(player.hp + " HP");
+                }
+                if (mpGain !== 0) {
+                    finalGain.push(player.mp + " Mana");
+                }
+                
+                out.push(player.name  + " " + readable(gainmsg, "and") + " and now has " + readable(finalGain, "and") + "!");
             }
         }
         
@@ -1547,9 +1626,15 @@ function RPG(rpgchan) {
         var winner = this.checkWin();
         if (winner !== null) {
             this.finishBattle(winner);
+        } else {
+            this.sendToViewers(this.team2.map(getPlayerHP).join(", "));
+            this.sendToViewers(this.team1.map(getPlayerHP).join(", "));
         }
         this.turn++;
     };
+    function getPlayerHP(x) {
+        return x.name + " (" + x.hp + " HP)";
+    }
     Battle.prototype.checkWin = function() {
         var defeated1 = true;
         var defeated2 = true;
@@ -1572,7 +1657,6 @@ function RPG(rpgchan) {
         }
         
         if (defeated1 || defeated2) {
-            // isFinished = true;
             if (defeated1 && defeated2) {
                 winner = 0;
             } else if (!defeated1 && defeated2) {
@@ -1658,14 +1742,11 @@ function RPG(rpgchan) {
             // playerExp = Math.floor(playerExp / winner.length);
             playerExp = 0;
             
-            var l, m, loot, gainedExp;
+            var l, m, loot, gainedExp, gainedGold;
             for (p in winner) {
                 var won = winner[p];
                 if (won.isPlayer) {
-                    var goldMultiplier = getPassiveMultiplier(won, "goldBonus");
-                    rpgbot.sendMessage(won.id, "You received " + Math.floor(gold * goldMultiplier) + " Gold!", rpgchan);
-                    won.gold += Math.floor(gold * goldMultiplier);
-                    
+                    var lootFound = {};
                     for (l in loser) {
                         m = loser[l];
                         if (m.isPlayer === false) {
@@ -1682,17 +1763,38 @@ function RPG(rpgchan) {
                                 loot = randomSample(m.loot);
                                 if (loot !== "none") {
                                     changeItemCount(won, loot, 1);
-                                    rpgbot.sendMessage(won.id, "You found a " + items[loot].name + "!", rpgchan);
+                                    if (!(loot in lootFound)) {
+                                        lootFound[loot] = 0;
+                                    }
+                                    lootFound[loot]++;
+                                    
                                 }
                             }
                         }
                     }
+                    if (Object.keys(lootFound).length > 0) {
+                        var itemsFound = [];
+                        for (l in lootFound) {
+                            itemsFound.push(lootFound[l] + " " + items[l].name + (lootFound[l] > 1 ? "(s)" : ""));
+                        }
+                        rpgbot.sendMessage(won.id, "You found " + readable(itemsFound, "and") + "!", rpgchan);
+                    }
+                    
+                    var goldMultiplier = getPassiveMultiplier(won, "goldBonus");
+                    gainedGold = Math.floor(gold * goldMultiplier);
+                    if (gainedGold > 0) {
+                        won.gold += gainedGold;
+                    }
+                    
                     var expMultiplier = getPassiveMultiplier(won, "expBonus");
                     gainedExp = Math.floor((monsterExp + Math.floor(playerExp / won.level)) * expMultiplier);
                     if (gainedExp > 0) {
-                        rpgbot.sendMessage(won.id, "You received " + gainedExp + " Exp. Points!", rpgchan);
                         game.receiveExp(won.id, gainedExp);
                     }
+                    if (gainedExp > 0 || gainedGold > 0) {
+                        rpgbot.sendMessage(won.id, "You received " + (gainedExp > 0 ? gainedExp + " Exp. Points" : "") + (gainedExp > 0 && gainedGold > 0 ? " and " : "") + (gainedGold > 0 ? gainedGold + " Gold" : "") + "!", rpgchan);
+                    }
+                    
                 }
             }
         }
