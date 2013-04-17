@@ -2656,7 +2656,7 @@ function RPG(rpgchan) {
                 } else {
                     commandData = broken[2];
                 }
-                if (commandData === undefined) {
+                if (commandData === undefined && action === "set") {
                     rpgbot.sendMessage(src, "Incorrect format. Type /plan to know how to set your strategy!", rpgchan);
                     return
                 }
