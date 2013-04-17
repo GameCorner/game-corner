@@ -2642,19 +2642,23 @@ function RPG(rpgchan) {
         if (broken.length > 1) {
             action = broken[0].toLowerCase();
             if (action === "load" || action === "set") {
-                target = parseInt(broken[1]);
-                if (target !== 1 && target !== 2 && target !== 3) {
+                if (broken[1] !== "1" && broken[1] !== "2" && broken[1] !== "3") {
                     rpgbot.sendMessage(src, "No such slot! Type /plan slots to know how to set/load your strategies.", rpgchan);
                     return;
                 }
+                target = parseInt(broken[1]);
                 if (broken.length > 3) {
                     commandData = [];
-                    for (var b = 3; b < broken.length; ++b) {
+                    for (var b = 2; b < broken.length; ++b) {
                         commandData = commandData.concat(broken[b]);
                     }
                     commandData = commandData.join("");
                 } else {
-                    commandData = broken[2]
+                    commandData = broken[2];
+                }
+                if (commandData === undefined) {
+                    rpgbot.sendMessage(src, "Incorrect format. Type /plan to know how to set your strategy!", rpgchan);
+                    return
                 }
             }
         }
