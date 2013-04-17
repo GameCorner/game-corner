@@ -1627,8 +1627,8 @@ function RPG(rpgchan) {
         if (winner !== null) {
             this.finishBattle(winner);
         } else {
-            this.sendToViewers(this.team2.map(getPlayerHP).join(", "));
-            this.sendToViewers(this.team1.map(getPlayerHP).join(", "));
+            this.sendToViewers("⇛ " + this.team2.map(getPlayerHP).join(", "));
+            this.sendToViewers("⇛ " + this.team1.map(getPlayerHP).join(", "));
         }
         this.turn++;
     };
