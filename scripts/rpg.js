@@ -2085,6 +2085,10 @@ function RPG(rpgchan) {
             tradeRequests[player.name] = undefined;
             return;
         }
+        if (player.isBattling === true) {
+            rpgbot.sendMessage(src, "You can't trade while battling!", rpgchan);
+            return;
+        }
         var data = commandData.split(":");
         if (data.length < 3) {
             rpgbot.sendMessage(src, "Incorrect formatting! Use /trade Player:ItemYouOffer:ItemYouWant to request a trade!", rpgchan);
@@ -2101,6 +2105,10 @@ function RPG(rpgchan) {
         }
         if (SESSION.users(targetId).rpg === undefined) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
+            return;
+        }
+        if (SESSION.users(targetId).rpg.isBattling === true) {
+            rpgbot.sendMessage(src, "Wait for that person to finish their battle!", rpgchan);
             return;
         }
         if (tradeRequests[player.name] !== undefined) {
