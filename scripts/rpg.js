@@ -1400,8 +1400,10 @@ function RPG(rpgchan) {
                                 } else {
                                     switch (e) {
                                         case "mp":
+                                            player.mp += getLevelValue(move.effect.user[e], level);
+                                            break;
                                         case "hp":
-                                            player[e] += getLevelValue(move.effect.user[e], level);
+                                            player.hp += getLevelValue(move.effect.user[e], level);
                                             break;
                                         case "hpdamage":
                                         case "mpdamage":
@@ -1463,7 +1465,7 @@ function RPG(rpgchan) {
                         effectsMessages.damaged[target.name].push("<b>" + (-damage) + (critical === battleSetup.critical ? "*" : "") + "</b>");
                     }
                     
-                    if (player.hp < 0) {
+                    if (player.hp <= 0) {
                         player.hp = 0;
                         effectsMessages.defeated.push(player.name);
                     } else if (player.hp > player.maxhp) {
@@ -1569,21 +1571,6 @@ function RPG(rpgchan) {
             }
             var gained = [];
             var lost = [];
-            if (hpGain !== 0 && player.hp > 0) {
-                player.hp += hpGain;
-                
-                if (player.hp < 0) {
-                    player.hp = 0;
-                } else if (player.hp > player.maxhp) {
-                    player.hp = player.maxhp;
-                }
-                
-                if (hpGain > 0) {
-                    gained.push(hpGain + " HP");
-                } else {
-                    lost.push(Math.abs(hpGain) + " HP");
-                }
-            }
             if (mpGain !== 0 && player.hp > 0) {
                 player.mp += mpGain;
                 
@@ -1599,8 +1586,23 @@ function RPG(rpgchan) {
                     lost.push(Math.abs(mpGain) + " Mana");
                 }
             }
+            if (hpGain !== 0 && player.hp > 0) {
+                player.hp += hpGain;
+                
+                if (player.hp < 0) {
+                    player.hp = 0;
+                } else if (player.hp > player.maxhp) {
+                    player.hp = player.maxhp;
+                }
+                
+                if (hpGain > 0) {
+                    gained.push(hpGain + " HP");
+                } else {
+                    lost.push(Math.abs(hpGain) + " HP");
+                }
+            }
             
-            if (player.hp > 0 && (hpGain !== 0 || mpGain !== 0)) {
+            if (gained.length > 0 || lost.length > 0) {
                 var gainmsg = []
                 if (gained.length > 0) {
                     gainmsg.push("gained " + readable(gained, "and"));
