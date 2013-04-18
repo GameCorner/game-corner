@@ -1213,7 +1213,11 @@ function RPG(rpgchan) {
                     continue;
                 }
                 
-                effectsMessages.targets = targets.map(function(x){ return x.name });
+                for (n in targets) {
+                    if (effectsMessages.targets.indexOf(targets[n].name) === -1) {
+                        effectsMessages.targets.push(targets[n].name);
+                    }
+                }
                 
                 if (move.effect && move.effect.multihit) {
                     var originalTargets = targets.concat();
@@ -1438,7 +1442,9 @@ function RPG(rpgchan) {
                             breakCast = true;
                             target.battle.casting = null;
                             target.battle.skillCasting = null;
-                            effectsMessages.castBreak.push(target.name);
+                            if (effectsMessages.castBreak.indexOf(target.name) === -1) {
+                                effectsMessages.castBreak.push(target.name);
+                            }
                         }
                         if (damage > 0) {
                             if (move.effect.hpabsorb) {
@@ -1467,7 +1473,9 @@ function RPG(rpgchan) {
                     
                     if (player.hp <= 0) {
                         player.hp = 0;
-                        effectsMessages.defeated.push(player.name);
+                        if (effectsMessages.defeated.indexOf(player.name) === -1) {
+                            effectsMessages.defeated.push(player.name);
+                        }
                     } else if (player.hp > player.maxhp) {
                         player.hp = player.maxhp;
                     }
@@ -1478,7 +1486,9 @@ function RPG(rpgchan) {
                     }
                     if (target.hp <= 0) {
                         target.hp = 0;
-                        effectsMessages.defeated.push(target.name);
+                        if (effectsMessages.defeated.indexOf(target.name) === -1) {
+                            effectsMessages.defeated.push(target.name);
+                        }
                     } else if (target.hp > target.maxhp) {
                         target.hp = target.maxhp;
                     }
@@ -1493,7 +1503,7 @@ function RPG(rpgchan) {
                     effectsMessages.damagedNames.push(d + " (" + effectsMessages.damaged[d].map(function(x) { return (x >= 0 ? "+" + x : x); }).join(", ") + " HP)");
                 }
                 
-                if (moveName === "attack" && player.isPlayer === true && player.equips.rhand !== null && items[player.equips.rhand].message) {
+                if (moveName === "attack" && player.isPlayer === true && player.equips.rhand && player.equips.rhand !== null && items[player.equips.rhand].message) {
                     out.push(items[player.equips.rhand].message.replace(/~User~/g, player.name).replace(/~Target~/g, readable(effectsMessages.targets, "and")) + (effectsMessages.damagedNames.length > 0 ? " [" + readable(effectsMessages.damagedNames, "and") + "]" : "") + (effectsMessages.evaded.length > 0 ? " [" + readable(effectsMessages.evaded, "and") + " evaded!]" : ""));
                 } else {
                     out.push(move.message.replace(/~User~/g, player.name).replace(/~Target~/g, readable(effectsMessages.targets, "and")) + (effectsMessages.damagedNames.length > 0 ? " " + readable(effectsMessages.damagedNames, "and") + "!" : "") + (effectsMessages.evaded.length > 0 ? " " + readable(effectsMessages.evaded, "and") + " evaded!" : ""));
@@ -1951,7 +1961,9 @@ function RPG(rpgchan) {
             var out = ["", "Items: "];
             
             for (var i in player.items) {
-                out.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
+                if (i in items) {
+                    out.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
+                }
             }
             
             out.push("");
@@ -2047,7 +2059,7 @@ function RPG(rpgchan) {
             }
             if (item.slot === "2-hands") {
                 slot = "rhand";
-                if (player.equips.lhand !== null) {
+                if (player.equips.lhand && player.equips.lhand !== null) {
                     rpgbot.sendMessage(src, items[player.equips.lhand].name + " unequipped!", rpgchan);
                     player.equips.lhand = null;
                 }
@@ -2315,7 +2327,7 @@ function RPG(rpgchan) {
         var passiveElements = getPassiveByEffect(player, "attackElement");
         if (passiveElements.length > 0) {
             player.attackElement = skills[passiveElements[0]].effect.attackElement;
-        } else if (player.equips.rhand !== null && items[player.equips.rhand].element) {
+        } else if (player.equips.rhand && player.equips.rhand !== null && items[player.equips.rhand].element) {
             player.attackElement = items[player.equips.rhand].element;
         }
         
@@ -3243,9 +3255,6 @@ function RPG(rpgchan) {
         character.passives = {};
         for (e in data.skills) {
             character.skills[e] = data.skills[e];
-            if (skills[e].type === "passive" && data.skills[e] > 0) {
-                character.passives[e] = data.skills[e];
-            }
         }
         character.strategy = {};
         for (e in data.strategy) {
