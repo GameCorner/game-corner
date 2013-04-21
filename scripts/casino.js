@@ -123,72 +123,12 @@ module.exports = (new function () {
             return;
         }
 	};
-    this.playCraps = function (src, commandData) {
-        var bet,
-            dice1,
-            dice2,
-            crapsdice,
-        
-        if (!global.coins.hasOwnProperty(src)) {
-            global.coins[sys.name(src).toLowerCase()] = 100;
-        }
-        if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
-            global.coins[sys.name(src).toLowerCase()] = 100;
-        }
-        if (commandData === undefined) {
-            return;
-        }
-        if (global.coins[sys.name(src).toLowerCase()] <= 0) {
-            casinobot.sendMessage(src, "You don't have any coins so you are not able to play.", casinochan);
-            return;
-        }
-        bet = parseInt(commandData, 10);
-        if (isNaN(bet)) {
-            casinobot.sendMessage(src, "You use it like /craps [number of coins you are betting].", casinochan);
-            return;
-        }
-        if (global.coins[sys.name(src).toLowerCase()] < bet) {
-            casinobot.sendMessage(src, "You don't have enough coins to make that bet.", casinochan);
-            return;
-        }
-        if (bet > 100) {
-            casinobot.sendMessage(src, "The max bet is 100 coins.", casinochan);
-            return;
-        }
-        if (bet < 1) {
-            casinobot.sendMessage(src, "The min bet is 1 coin.", casinochan);
-            return;
-        }
-        dice1 = Math.floor((Math.random() * 6) + 1);
-        dice2 = Math.floor((Math.random() * 6) + 1);
-        global.coins[sys.name(src).toLowerCase()] -= bet;
-        crapsdice = dice1 + dice2;
-        if (crapsdice === 7 || crapsdice === 11) {
-            casinobot.sendMessage(src, "You rolled a " + crapsdice + " and got " + (Math.floor(bet)*2.5) + " coins!", casinochan);
-            global.coins[sys.name(src).toLowerCase()] = global.coins[sys.name(src).toLowerCase()] + (Math.floor(bet)*2.5);
-            return;
-        } else if (crapsdice === 4 || crapsdice === 5 || crapsdice === 6 || crapsdice === 8 || crapsdice === 9 || crapsdice === 10) {
-            var extra1 = Math.floor((Math.random() * 6) + 1),
-                extra2 = Math.floor((Math.random() * 6) + 1),
-                extra = extra1 + extra2;
-            if (crapsdice === extra) {
-                casinobot.sendMessage(src, "You rolled a " + crapsdice + " and a " + extra + " and got " + (Math.floor(bet)*2.5) + " coins!", casinochan);
-                global.coins[sys.name(src).toLowerCase()] = global.coins[sys.name(src).toLowerCase()] + (Math.floor(bet)*2.5);
-                return;
-            } else {
-                casinobot.sendMessage(src, "Your two rolls of " + crapsdice + " and " + extra + " didn't match so you lost " + bet + " coins.", casinochan);
-                return;
-            }
-        } else {
-            casinobot.sendMessage(src, "You rolled a " + crapsdice + " and lost " + bet + " coins!", casinochan);
-            return;
-        }
-    };
 	this.playSlots = function (src) {
         var slot;
         if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
             global.coins[sys.name(src).toLowerCase()] = 100;
         }
+        global.coins[sys.name(src).toLowerCase()] -= 1;
 		slot = Math.floor((Math.random() * 300) + 1);
 		if (slot === 1) {
 			global.coins[sys.name(src).toLowerCase()] += jackpot;
