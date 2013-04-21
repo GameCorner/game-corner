@@ -1,3 +1,5 @@
+//Please do not touch these scripts without talking to Beast/BeastCharizard.  Thanks.
+
 /*jslint es5: true, evil: true, plusplus: true, sloppy: true, vars: true, eqeq: true*/
 /*jshint "laxbreak":true,"shadow":true,"undef":true,"evil":true,"trailing":true,"proto":true,"withstmt":true*/
 /*global sys:true, sendChanHtmlAll:true, module:true, SESSION:true, casinobot, script, require, bot, staffchannel, sendChanMessage */
@@ -166,7 +168,7 @@ module.exports = (new function () {
         if (crapsdice === 7 || crapsdice === 11) {
             payout = Math.floor(bet * 2.5);
             casinobot.sendMessage(src, "You rolled a " + crapsdice + " and got " + payout + " coins!", casinochan);
-            global.coins[sys.name(src).toLowerCase()] += payout;
+            global.coins[sys.name(src).toLowerCase()] = global.coins[sys.name(src).toLowerCase()] + payout;
             return;
         } else if (crapsdice === 4 || crapsdice === 5 || crapsdice === 6 || crapsdice === 8 || crapsdice === 9 || crapsdice === 10) {
             var extra1 = Math.floor((Math.random() * 6) + 1),
@@ -175,7 +177,7 @@ module.exports = (new function () {
             if (crapsdice === extra) {
                 payout = Math.floor(bet * 1.75);
                 casinobot.sendMessage(src, "You rolled a " + crapsdice + " and a " + extra + " and got " + payout + " coins!", casinochan);
-                global.coins[sys.name(src).toLowerCase()] += payout;
+                global.coins[sys.name(src).toLowerCase()] = global.coins[sys.name(src).toLowerCase()] + payout;
                 return;
             } else {
                 casinobot.sendMessage(src, "Your two rolls of " + crapsdice + " and " + extra + " didn't match so you lost " + bet + " coins.", casinochan);
