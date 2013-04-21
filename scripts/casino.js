@@ -133,10 +133,6 @@ module.exports = (new function () {
         if (!global.coins.hasOwnProperty(src)) {
             global.coins[sys.name(src).toLowerCase()] = 100;
         }
-        
-        if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
-            global.coins[sys.name(src).toLowerCase()] = 100;
-        }
         if (commandData === undefined) {
             return;
         }
