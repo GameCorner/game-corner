@@ -313,10 +313,7 @@ module.exports = (new function () {
         if (commandData === "chuck" || commandData === "cal" || commandData === "chuck a luck") {
             casinobot.sendMessage(src, "To play type /cal [bet]:[number you are trying to hit]. bet is how many coins you are risking and number is the number you are trying to roll.", casinochan);
             return;
-        } else if (commandData === "craps") {
-            casinobot.sendMessage(src, "To play type /craps [bet].  bet is how many coins you are risking.");
-            return;
-        } else if (commandData === "slots") {
+        }else if (commandData === "slots") {
             casinobot.sendMessage(src, "To play type /slots. You win depend on how lucky you are.");
             return;
         } else if (commandData === "pr") {
@@ -326,7 +323,6 @@ module.exports = (new function () {
             var help = [
                 "",
                 "Type /help cal or /help chuck a luck to learn how to play Chuck a Luck. :",
-                "Type /help craps to learn how to play Craps. :",
                 "Type /help slots to learn how to play Slots. :",
                 "Type /help pr to learn how to play Pikachu's Roulette. :",
                 ""
@@ -341,7 +337,6 @@ module.exports = (new function () {
         var some = [
             "*** CASINO Commands ***",
             "/cal [bet:number]: To play Chuck A Luck.",
-            "/craps [bet]: To play Craps.",
             "/slots: To play Slots.",
             "/pr [bet]:[choice1-choice2-choice3]: To play Pikachu's Roulette.",
             "/help: To learn how to play the games.",
@@ -358,7 +353,6 @@ module.exports = (new function () {
     this.commands = {
         user: {
             cal: this.playCAL,
-            craps: this.playCraps,
 	    slots: this.playSlots,
             pr: this.playPR,
             help: this.showHelp,
