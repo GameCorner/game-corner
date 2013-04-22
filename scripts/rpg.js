@@ -3,7 +3,7 @@
 function RPG(rpgchan) {
     var name = "RPG";
     var game = this;
-    var contenturl = "https://raw.github.com/ScottTM17/game-corner/master/rpginfo.json";
+    var contentLoc;
     
     var charVersion = 1.1;
     
@@ -2117,7 +2117,7 @@ function RPG(rpgchan) {
         
         var item = items[it];
         
-        if ("inBattle" in item && item.inBattle === false) {
+        if (player.isBattling === true && "inBattle" in item && item.inBattle === false) {
             rpgbot.sendMessage(src, "You can't use this item while battling!", rpgchan);
             return;
         }
@@ -2979,7 +2979,7 @@ function RPG(rpgchan) {
             return;
         } else {
             player.strategy = obj;
-            rpgbot.sendMessage(src, "You strategy was set to " + randomSampleText(obj, function(x) { return skills[x].name; } ) + "!", rpgchan);
+            rpgbot.sendMessage(src, "Your strategy was set to " + randomSampleText(obj, function(x) { return skills[x].name; } ) + "!", rpgchan);
         }
         
     };
@@ -4098,14 +4098,21 @@ function RPG(rpgchan) {
     this.loadURLContent = function(src, url) {
         try {
             if (url === "*") {
-                rpgbot.sendMessage(src, "Loading RPG content from " + contenturl, rpgchan);
-                sys.webCall(contenturl, this.loadInfo);
+                rpgbot.sendMessage(src, "Loading RPG content from " + contentLoc.url, rpgchan);
+                sys.webCall(contentLoc.url, this.loadInfo);
+                url = contentLoc.url;
             } else {
                 rpgbot.sendMessage(src, "Loading RPG content from " + url, rpgchan);
                 sys.webCall(url, this.loadInfo);
             }
+            contentLoc = {
+                url: url,
+                user: sys.name(src),
+                date: (new Date()).toUTCString()
+            };
+            sys.writeToFile("rpglocation.txt", JSON.stringify(contentLoc));
         } catch (err) {
-            rpgbot.sendMessage(src, "Error loading RPG content from " + (url === "*" ? contenturl : url) + ": " + err, rpgchan);
+            rpgbot.sendMessage(src, "Error loading RPG content from " + url + ": " + err, rpgchan);
         }
     };
     this.loadInfo = function(content) {
@@ -4235,6 +4242,14 @@ function RPG(rpgchan) {
         duelChallenges = tempDuels;
         currentParties = tempParty;
     };
+    this.viewContentFile = function(src) {
+        sys.sendMessage(src, "", rpgchan);
+        sys.sendMessage(src, "Last Update Info:", rpgchan);
+        sys.sendMessage(src, "URL: " + contentLoc.url, rpgchan);
+        sys.sendMessage(src, "Who: " + contentLoc.user, rpgchan);
+        sys.sendMessage(src, "When: " + contentLoc.date, rpgchan);
+        sys.sendMessage(src, "", rpgchan);
+    };
     this.callUpdate = function (src) {
         runUpdate();
         return;
@@ -4351,10 +4366,11 @@ function RPG(rpgchan) {
 		},
 		master: {
             reloadchars: [this.reloadChars, "To reload everyone's character after an update."],
-			unbork: [this.unborkChar, "To manually fix someone's character."],
+            unbork: [this.unborkChar, "To manually fix someone's character."],
             updatelocal: [this.loadLocalContent, "To load RPG content from the directory."],
             updaterpg: [this.loadURLContent, "To load RPG content from the web. If you don't specify an URL, the default one will be used."],
-			updategame: [this.callUpdate, "Update the RPG Scripts."]
+            updategame: [this.callUpdate, "Update the RPG Scripts."],
+            getcontent: [this.viewContentFile, "To view the content file for RPG."]
 		}
 	};
     this.handleCommand = function(src, message, channel) {
@@ -4482,6 +4498,7 @@ function RPG(rpgchan) {
         SESSION.channels(rpgchan).perm = true;
         SESSION.channels(rpgchan).master = "RiceKirby";
         game.loadLocalContent();
+        contentLoc = JSON.parse(sys.getFileContent("rpglocation.txt"))
 	};
 	this.stepEvent = function() {
         try {
