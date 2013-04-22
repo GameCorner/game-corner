@@ -11,7 +11,7 @@ module.exports = (new function () {
         defaultChannel = "Casino";
   
     var utilities = require('utilities.js'),
-        Poker = require('poker.js'),
+        //Poker = require('poker.js'),
         //MemoryHash = require('memoryhash.js'),
         isNonNegative = utilities.is_non_negative;
     
@@ -26,6 +26,7 @@ module.exports = (new function () {
     //}
     this.chan = undefined;
     
+    /*
     try {
         this.poker = new Poker(casino);
     } catch (e) {
@@ -34,7 +35,7 @@ module.exports = (new function () {
         }
         
         this.poker = {handleCommand: function () {}, step: function () {}};
-    }
+    }*/
     
 	this.playCAL = function (src, commandData) {
         var bet,
@@ -376,10 +377,10 @@ module.exports = (new function () {
         
         if (channel !== casinochan && ['casinocommands'].indexOf(command) === -1) {
             return;
-        }
+        }/*
         if (casino.poker.handleCommand(src, message, channel) === true) {
             return true;
-        }
+        }*/
         if (['cal', 'craps', 'slots', 'pr'].indexOf(command) !== -1) {
             if (cooldowns[src]) {
                 casinobot.sendMessage(src, "Don't be so eager to lose all your coins!", casinochan);
