@@ -2117,6 +2117,11 @@ function RPG(rpgchan) {
         
         var item = items[it];
         
+        if ("inBattle" in item && item.inBattle === false) {
+            rpgbot.sendMessage(src, "You can't use this item while battling!", rpgchan);
+            return;
+        }
+        
         if (data.length > 1 && data[1].toLowerCase() === "drop") {
             var amm = -1;
             if (data.length > 2 && isNaN(parseInt(data[2])) === false) {
@@ -2156,8 +2161,31 @@ function RPG(rpgchan) {
                         player.mp = player.maxmp;
                     }
                 }
+                var dest = [], x, r, loc;
+                if ("move" in item.effect) {
+                    loc = item.effect.move;
+                    loc = loc === "*" ? player.respawn : loc;
+                    if (loc in places) {
+                        player.location = loc;
+                        
+                        for (r in places[loc].access) {
+                            x = places[loc].access[r];
+                            if (!places[x].hide || places[x].hide !== true) {
+                                dest.push(places[x].name + " (" + x + ")");
+                            }
+                        }
+                        
+                        if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
+                            this.findParty(player.party).broadcast(player.name + " moved to " + places[loc].name, src);
+                        }
+                    }
+                } 
             }
-            rpgbot.sendMessage(src, item.message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp), rpgchan);
+            rpgbot.sendMessage(src, item.message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~Place~/g, places[player.location].name), rpgchan);
+            if (dest.length > 0) {
+                rpgbot.sendMessage(src, places[player.location].welcome, rpgchan);
+                rpgbot.sendMessage(src, "From here, you can go to " + readable(dest, "or"), rpgchan);
+            }
             changeItemCount(player, it, -1);
         } else if (item.type === "equip") {
             var slot = item.slot;
@@ -2219,7 +2247,7 @@ function RPG(rpgchan) {
         }
         var data = commandData.split(":");
         if (data.length < 3) {
-            rpgbot.sendMessage(src, "Incorrect formatting! Use /trade Player:ItemYouOffer:ItemYouWant to request a trade!", rpgchan);
+            rpgbot.sendMessage(src, "Incorrect formatting! Use /trade Player:ItemYouOffer:ItemYouWant to request a trade. You can also use itemName*amount to offer/ask for more than 1 item!", rpgchan);
             return;
         }
         var targetId = sys.id(data[0].toLowerCase());
@@ -2301,8 +2329,8 @@ function RPG(rpgchan) {
         var target = SESSION.users(targetId).rpg;
         var targetName = target.name;
         
-        var offer = typeof itemOffered === "number" ? itemOffered + " Gold" : items[itemOffered].name + (amountOffered > 1 ? " (" + amountOffered + "x)": "");
-        var wanted = typeof itemWanted === "number" ? itemWanted + " Gold" : items[itemWanted].name + (amountWanted > 1 ? " (" + amountWanted + "x)": "");
+        var offer = typeof itemOffered === "number" ? itemOffered + " Gold" : items[itemOffered].name + (amountOffered > 1 ? " (x" + amountOffered + ")": "");
+        var wanted = typeof itemWanted === "number" ? itemWanted + " Gold" : items[itemWanted].name + (amountWanted > 1 ? " (x" + amountWanted + ")": "");
         
         tradeRequests[playerName] = [targetName, itemOffered, itemWanted, amountOffered, amountWanted];
         if (tradeRequests[targetName] && tradeRequests[targetName][0] === playerName) {
