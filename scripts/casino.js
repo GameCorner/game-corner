@@ -425,7 +425,7 @@ module.exports = (new function () {
               //  casino.memoryHash.add('coins', JSON.stringify(global.coins));
             //}
             
-            casino.poker.step();
+            //casino.poker.step();
         },
         onHelp: function (src, topic, channel) {
             if (topic === "casino") {
