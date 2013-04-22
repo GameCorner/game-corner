@@ -1093,7 +1093,6 @@ function RPG(rpgchan) {
         var priority = team1.concat(team2);
         priority.sort(function(a, b) { return getFullValue(b, "spd") - getFullValue(a, "spd"); });
         
-        
         var totalDex = 0;
         for (var i = 0; i < priority.length; ++i) {
             if (priority[i].hp > 0) {
@@ -1684,16 +1683,14 @@ function RPG(rpgchan) {
                 out.push(player.name  + " " + readable(gainmsg, "and") + " and now has " + readable(finalGain, "and") + "!");
             }
         }
-        
-        for (var x in out) {
-            this.sendToViewers(out[x]);
-        }
-        var winner = this.checkWin();
+        out.push("⇛ " + this.team2.map(getPlayerHP).join(", "));
+        out.push("⇛ " + this.team1.map(getPlayerHP).join(", "));
+        this.sendToViewers(out);
+        winner = this.checkWin();
         if (winner !== null) {
             this.finishBattle(winner);
         } else {
-            this.sendToViewers("⇛ " + this.team2.map(getPlayerHP).join(", "));
-            this.sendToViewers("⇛ " + this.team1.map(getPlayerHP).join(", "));
+            // this.sendToViewers(["⇛ " + this.team2.map(getPlayerHP).join(", "), "⇛ " + this.team1.map(getPlayerHP).join(", ")]);
         }
         this.turn++;
     };
@@ -1736,19 +1733,20 @@ function RPG(rpgchan) {
     Battle.prototype.sendToViewers = function(msg) {
         var size, v, viewer, reg;
         
-        for (n in this.colorNames) {
-            reg = new RegExp("\\b" + n, "g");
-            msg = msg.replace(reg, this.colorNames[n]);
+        if (typeof msg === "string") { 
+            msg = [msg];
+        }
+        msg = msg.map(function(x) { return (x === "" ? "" : "<timestamp/>" + x); } ).join("<br/>");
+        
+        for (v in this.colorNames) {
+            reg = new RegExp("\\b" + v, "g");
+            msg = msg.replace(reg, this.colorNames[v]);
         }
         
         for (v in this.viewers) {
             viewer = this.viewers[v];
             size = SESSION.users(viewer).rpg.fontSize || 11;
-            if (msg === "") {
-                sys.sendHtmlMessage(viewer, '<span style="font-size:' + size + 'px;">' + msg + '</span>', rpgchan);
-            } else {
-                sys.sendHtmlMessage(viewer, nonFlashing('<span style="font-size:' + size + 'px;"><timestamp/>' + msg + '</span>'), rpgchan);
-            }
+            sys.sendHtmlMessage(viewer, '<span style="font-size:' + size + 'px;">' + msg + '</span>', rpgchan);
         }
     };
     Battle.prototype.finishBattle = function(win) {
