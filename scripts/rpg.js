@@ -3590,6 +3590,14 @@ function RPG(rpgchan) {
             return;
         }
         
+        var playerson = sys.playerIds();
+        for (var p in playerson) {
+            if (SESSION.users(playerson[p]).rpg && SESSION.users(playerson[p]).rpg.name.toLowerCase() === sys.name(src).toLowerCase()) {
+                rpgbot.sendMessage(src, "This character is already being used!", rpgchan);
+                return;
+            }
+        }
+        
         gamefile = this.convertChar(gamefile);
         
         user.rpg = gamefile;
