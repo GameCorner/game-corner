@@ -2600,7 +2600,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-    	for (e = expTable.length; e >= 0; --e) {
+		for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -3592,7 +3592,7 @@ function RPG(rpgchan) {
         
         var playerson = sys.playerIds();
         for (var p in playerson) {
-            if (SESSION.users(playerson[p]).rpg !== undefined && SESSION.users(playerson[p]).rpg.name.toLowerCase() === sys.name(src).toLowerCase()) {
+            if (SESSION.users(playerson[p]) && SESSION.users(playerson[p]).rpg && SESSION.users(playerson[p]).rpg.name &&  SESSION.users(playerson[p]).rpg.name.toLowerCase() === sys.name(src).toLowerCase()) {
                 rpgbot.sendMessage(src, "This character is already being used!", rpgchan);
                 return;
             }
