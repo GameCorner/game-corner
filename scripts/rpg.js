@@ -2017,10 +2017,12 @@ function RPG(rpgchan) {
         }
         return list;
     }
-    function getEquipAttributes(item) {
+    function getEquipAttributes(item, hideSlot) {
         item = items[item];
         var result = [];
-        result.push(item.slot === "2-hands" ? "Both Hands" : equipment[item.slot]);
+        if (!hideSlot || hideSlot === false) {
+            result.push(item.slot === "2-hands" ? "Both Hands" : equipment[item.slot]);
+        }
         
         if ("effect" in item) {
             var effect = item.effect;
@@ -2153,7 +2155,7 @@ function RPG(rpgchan) {
             out.push("");
             out.push("Equipment:");
             for (i in player.equips) {
-                out.push(equipment[i] + ": " + (player.equips[i] === null ? "Nothing" : items[player.equips[i]].name))
+                out.push(equipment[i] + ": " + (player.equips[i] === null ? "Nothing" : items[player.equips[i]].name + " - " + items[player.equips[i]].info + " " + getEquipAttributes(player.equips[i], true)));
             }
             
             out.push("");
@@ -2688,7 +2690,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-		for (e = expTable.length; e >= 0; --e) {
+    	for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
