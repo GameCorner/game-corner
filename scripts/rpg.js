@@ -377,7 +377,7 @@ function RPG(rpgchan) {
                 
                 for (i in products) {
                     it = items[i];
-                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + " [" + (products[i] !== "*" ? products[i] : it.cost) + " Gold]", rpgchan);
+                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + (it.type === "equip" ? " " + getEquipAttributes(i) : "") + " (" + (products[i] !== "*" ? products[i] : it.cost) + " Gold) ", rpgchan);
                 }
                 sys.sendMessage(src, "", rpgchan);
                 return;
@@ -423,7 +423,7 @@ function RPG(rpgchan) {
                 
                 for (i in topic.buy) {
                     it = items[i];
-                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + " [" + (products[i] !== "*" ? products[i] : Math.floor(it.cost / 2) ) + " Gold]", rpgchan);
+                    sys.sendMessage(src, it.name + " (" + i + "): " + it.info + " (" + (products[i] !== "*" ? products[i] : Math.floor(it.cost / 2) ) + " Gold)", rpgchan);
                 }
                 sys.sendMessage(src, "", rpgchan);
                 return;
@@ -1416,6 +1416,12 @@ function RPG(rpgchan) {
                                         case "hp":
                                             damage -= getLevelValue(move.effect.target[e], level);
                                             break;
+                                        case "mpPercent":
+                                            target.mp += Math.round(getLevelValue(move.effect.target[e], level) * target.maxmp);
+                                            break;
+                                        case "hpPercent":
+                                            damage -= Math.round(getLevelValue(move.effect.target[e], level) * target.maxhp);
+                                            break;
                                         case "hpdamage":
                                         case "mpdamage":
                                         case "accuracy":
@@ -1460,6 +1466,12 @@ function RPG(rpgchan) {
                                             break;
                                         case "hp":
                                             player.hp += getLevelValue(move.effect.user[e], level);
+                                            break;
+                                        case "mpPercent":
+                                            player.mp += Math.round(getLevelValue(move.effect.user[e], level) * player.maxmp);
+                                            break;
+                                        case "hpPercent":
+                                            player.hp += Math.round(getLevelValue(move.effect.user[e], level) * player.maxhp);
                                             break;
                                         case "hpdamage":
                                         case "mpdamage":
@@ -2005,7 +2017,69 @@ function RPG(rpgchan) {
         }
         return list;
     }
-    
+    function getEquipAttributes(item) {
+        item = items[item];
+        var result = [];
+        result.push(item.slot === "2-hands" ? "Both Hands" : equipment[item.slot]);
+        
+        if ("effect" in item) {
+            var effect = item.effect;
+            if ("maxhp" in effect) {
+                result.push((effect.maxhp > 0 ? "+" : "") + effect.maxhp + " Max HP");
+            }
+            if ("maxmp" in effect) {
+                result.push((effect.maxmp > 0 ? "+" : "") + effect.maxmp + " Max Mana");
+            }
+            if ("str" in effect) {
+                result.push((effect.str > 0 ? "+" : "") + effect.str + " Str");
+            }
+            if ("def" in effect) {
+                result.push((effect.def > 0 ? "+" : "") + effect.def + " Def");
+            }
+            if ("spd" in effect) {
+                result.push((effect.spd > 0 ? "+" : "") + effect.spd + " Spd");
+            }
+            if ("dex" in effect) {
+                result.push((effect.dex > 0 ? "+" : "") + effect.dex + " Dex");
+            }
+            if ("mag" in effect) {
+                result.push((effect.mag > 0 ? "+" : "") + effect.mag + " Mag");
+            }
+            if ("multiplier" in effect) {
+                if ("maxhp" in effect.multiplier) {
+                    result.push((effect.multiplier.maxhp > 0 ? "+" : "") + (effect.multiplier.maxhp * 100) + "% Max HP");
+                }
+                if ("maxmp" in effect.multiplier) {
+                    result.push((effect.multiplier.maxmp > 0 ? "+" : "") + (effect.multiplier.maxmp * 100) + "% Max Mana");
+                }
+                if ("str" in effect.multiplier) {
+                    result.push((effect.multiplier.str > 0 ? "+" : "") + (effect.multiplier.str * 100) + "% Str");
+                }
+                if ("def" in effect.multiplier) {
+                    result.push((effect.multiplier.def > 0 ? "+" : "") + (effect.multiplier.def * 100) + "% Def");
+                }
+                if ("spd" in effect.multiplier) {
+                    result.push((effect.multiplier.spd > 0 ? "+" : "") + (effect.multiplier.spd * 100) + "% Spd");
+                }
+                if ("dex" in effect.multiplier) {
+                    result.push((effect.multiplier.dex > 0 ? "+" : "") + (effect.multiplier.dex * 100) + "% Dex");
+                }
+                if ("mag" in effect.multiplier) {
+                    result.push((effect.multiplier.mag > 0 ? "+" : "") + (effect.multiplier.mag * 100) + "% Mag");
+                }
+            }
+            if ("accuracy" in effect) {
+                result.push((effect.accuracy > 1 ? "+" : "") + ((effect.accuracy-1) * 100) + "% Accuracy");
+            }
+            if ("evasion" in effect) {
+                result.push((effect.evasion > 1 ? "+" : "") + ((effect.evasion-1) * 100) + "% Evasion");
+            }
+            if ("critical" in effect) {
+                result.push((effect.critical > 1 ? "+" : "") + ((effect.critical-1) * 100) + "% Critical");
+            }
+        }
+        return "[" + result.join(", ") + "]"
+    }
     this.useItem = function(src, commandData) {
         var player = SESSION.users(src).rpg;
         
@@ -2026,7 +2100,7 @@ function RPG(rpgchan) {
                             types.usable.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
                             break;
                         case "equip":
-                            types.equip.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
+                            types.equip.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info + getEquipAttributes(i));
                             break;
                         case "key":
                             types.key.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
@@ -2036,7 +2110,7 @@ function RPG(rpgchan) {
                             break;
                     }
                 } else {
-                    types.broken.push(player.items[i] + ": Unknown item. Contact an RPG admin to fix that.");
+                    types.broken.push(i + ": Unknown item. Contact an RPG admin to fix that.");
                 }
             }
             
@@ -2143,22 +2217,36 @@ function RPG(rpgchan) {
         sys.sendMessage(src, "", rpgchan);
         if (item.type === "usable") {
             if (item.effect) {
+                var startingHp = player.hp, startingMp = player.mp, hpGain = 0, mpGain = 0;
                 if ("hp" in item.effect) {
                     player.hp += item.effect.hp;
-                    if (player.hp < 0) {
-                        player.hp = 0;
-                    } else if (player.hp > player.maxhp) {
-                        player.hp = player.maxhp;
-                    }
+                    hpGain += item.effect.hp;
                 }
                 if ("mp" in item.effect) {
                     player.mp += item.effect.mp;
-                    if (player.mp < 0) {
-                        player.mp = 0;
-                    } else if (player.mp > player.maxmp) {
-                        player.mp = player.maxmp;
-                    }
+                    mpGain += item.effect.mp;
                 }
+                if ("hpPercent" in item.effect) {
+                    player.hp += Math.round(player.maxhp * item.effect.hpPercent);
+                    hpGain += Math.round(player.maxhp * item.effect.hpPercent);
+                }
+                if ("mpPercent" in item.effect) {
+                    player.mp += Math.round(player.maxmp * item.effect.mpPercent);
+                    mpGain += Math.round(player.maxmp * item.effect.mpPercent)
+                }
+                if (player.hp > player.maxhp) {
+                    player.hp = player.maxhp;
+                    hpGain = player.maxhp - startingHp;
+                } else if (player.hp < 0) {
+                    player.hp = 0;
+                }
+                if (player.mp > player.maxmp) {
+                    player.mp = player.maxmp;
+                    mpGain = player.maxmp - startingMp;
+                } else if (player.mp < 0) {
+                    player.mp = 0;
+                }
+                
                 var dest = [], x, r, loc;
                 if ("move" in item.effect) {
                     loc = item.effect.move;
@@ -2179,7 +2267,7 @@ function RPG(rpgchan) {
                     }
                 } 
             }
-            rpgbot.sendMessage(src, item.message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~Place~/g, places[player.location].name), rpgchan);
+            rpgbot.sendMessage(src, item.message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, Math.abs(hpGain)).replace(/~ManaGained~/g, Math.abs(mpGain)).replace(/~Place~/g, places[player.location].name), rpgchan);
             if (dest.length > 0) {
                 rpgbot.sendMessage(src, places[player.location].welcome, rpgchan);
                 rpgbot.sendMessage(src, "From here, you can go to " + readable(dest, "or"), rpgchan);
@@ -2600,7 +2688,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-		for (e = expTable.length; e >= 0; --e) {
+    	for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -3602,7 +3690,7 @@ function RPG(rpgchan) {
         
         user.rpg = gamefile;
         user.rpg.id = src;
-        rpgbot.sendMessage(src, "You character has been loaded successfully!", rpgchan);
+        rpgbot.sendMessage(src, "Your character has been loaded successfully!", rpgchan);
     };
     this.convertChar = function(gamefile) {
         var file = gamefile;
