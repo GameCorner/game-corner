@@ -2100,7 +2100,7 @@ function RPG(rpgchan) {
                             types.usable.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
                             break;
                         case "equip":
-                            types.equip.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info + getEquipAttributes(i));
+                            types.equip.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info + " " + getEquipAttributes(i));
                             break;
                         case "key":
                             types.key.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
@@ -2688,7 +2688,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-    	for (e = expTable.length; e >= 0; --e) {
+		for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
