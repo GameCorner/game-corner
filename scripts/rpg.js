@@ -1,5 +1,5 @@
 // Global variables inherited from scripts.js
-/*global cmp, rpgbot, getTimeString, updateModule, script, sys, saveKey, SESSION, sendChanAll, escape, require, Config, module, nonFlashing, sachannel, staffchannel*/
+/*global rpgbot, updateModule, sys, SESSION, sendChanAll, escape, module*/
 function RPG(rpgchan) {
     var name = "RPG";
     var game = this;
@@ -48,7 +48,7 @@ function RPG(rpgchan) {
         lhand: "Left Hand",
         body: "Body",
         head: "Head"
-    }
+    };
     var battleSetup = {
         evasion: 1,
         defense: 1,
@@ -75,7 +75,6 @@ function RPG(rpgchan) {
         
         if (commandData === "*") {
             var out = ["", "You are at the " + places[player.location].name + "! You can move to the following locations: "];
-            
             var access = places[player.location].access;
             for (var l in access) {
                 var p = places[access[l]];
@@ -83,11 +82,9 @@ function RPG(rpgchan) {
                     out.push(p.name + " (" + access[l] + "): " + p.info + " [Type: " + cap(p.type) + "]");
                 }
             }
-            
             for (l in out) {
                 sys.sendMessage(src, out[l], rpgchan);
             }
-            
             return;
         }
         if (player.hp === 0) {
@@ -100,7 +97,6 @@ function RPG(rpgchan) {
         }
         
         var loc = commandData.toLowerCase();
-        
         if (!(loc in places)) {
             if (loc in altPlaces) {
                 loc = altPlaces[loc];
@@ -390,8 +386,8 @@ function RPG(rpgchan) {
                 return;
             }
             
-            if (data.length > 3 && isNaN(parseInt(data[3])) === false) {
-                amount = parseInt(data[3]);
+            if (data.length > 3 && isNaN(parseInt(data[3], 10)) === false) {
+                amount = parseInt(data[3], 10);
                 amount = amount < 1 ? 1 : amount;
             }
             
@@ -436,8 +432,8 @@ function RPG(rpgchan) {
                 return;
             }
             
-            if (data.length > 3 && isNaN(parseInt(data[3])) === false) {
-                amount = parseInt(data[3]);
+            if (data.length > 3 && isNaN(parseInt(data[3], 10)) === false) {
+                amount = parseInt(data[3], 10);
                 amount = amount < 1 ? 1 : amount;
             }
             
@@ -469,8 +465,8 @@ function RPG(rpgchan) {
                 return;
             }
             
-            if (data.length > 3 && isNaN(parseInt(data[3])) === false) {
-                amount = parseInt(data[3]);
+            if (data.length > 3 && isNaN(parseInt(data[3], 10)) === false) {
+                amount = parseInt(data[3], 10);
                 amount = amount < 1 ? 1 : amount;
             } else {
                 sys.sendMessage(src, topic.offermsg.replace(/~Item~/g, items[goods].name).replace(/~Price~/g, Math.floor(items[goods].cost/2)),rpgchan);
@@ -498,8 +494,8 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, topic.message, rpgchan);
                 
                 for (i in products) {
-                    var materials = [];
-                    var rewards = [];
+                    materials = [];
+                    rewards = [];
                     for (t in products[i].material) {
                         if (t === "gold") {
                             materials.push(products[i].material[t] + " Gold");
@@ -734,9 +730,9 @@ function RPG(rpgchan) {
         if (content[0] === "*") {
             var item = content.substring(1);
             
-            if (isNaN(parseInt(item)) === false && parseInt(item) > 0) {
-                player.gold += parseInt(item);
-                rpgbot.sendMessage(src, "You found " + parseInt(item) + " Gold!", rpgchan);
+            if (isNaN(parseInt(item, 10)) === false && parseInt(item, 10) > 0) {
+                player.gold += parseInt(item, 10);
+                rpgbot.sendMessage(src, "You found " + parseInt(item, 10) + " Gold!", rpgchan);
                 return;
             }
             
@@ -1277,10 +1273,9 @@ function RPG(rpgchan) {
                     }
                 }
                 
-                var suicide = false, breakCast;
+                var breakCast;
                 for (var t = 0; t < targets.length; ++t) {
                     target = targets[t];
-                    var defeated = false;
                     breakCast = false;
                     var damage = 0;
                     var critical = 1;
@@ -1340,10 +1335,8 @@ function RPG(rpgchan) {
                                     player.gold -= goldUsed;
                                 }
                             }
-                            
                         }
                         
-                        // var def = move.effect && move.effect.pierce && move.effect.pierce === true ? 1 : getFullValue(target, "def") * battleSetup.defense;
                         var def = getFullValue(target, "def") * battleSetup.defense;
                         if (move.effect && move.effect.pierce) {
                             var pierce = move.effect.pierce;
@@ -1563,8 +1556,9 @@ function RPG(rpgchan) {
                     }
                 }
                  
-                for (var d in effectsMessages.damaged) {
-                    effectsMessages.damagedNames.push(d + " (" + effectsMessages.damaged[d].map(function(x) { return (x >= 0 ? "+" + x : x); }).join(", ") + " HP)");
+                
+                for (var dam in effectsMessages.damaged) {
+                    effectsMessages.damagedNames.push(dam + " (" + effectsMessages.damaged[dam].map(getNumberSign).join(", ") + " HP)");
                 }
                 
                 if (moveName === "attack" && player.isPlayer === true && player.equips.rhand && player.equips.rhand !== null && items[player.equips.rhand].message) {
@@ -1574,7 +1568,7 @@ function RPG(rpgchan) {
                 }
                 
                 if (effectsMessages.castBreak.length > 0) {
-                    out.push(readable(effectsMessages.castBreak, "and") + "'s concentration was broken!")
+                    out.push(readable(effectsMessages.castBreak, "and") + "'s concentration was broken!");
                 }
                 
                 if (effectsMessages.defeated.length > 0) {
@@ -1585,7 +1579,7 @@ function RPG(rpgchan) {
         
         // Turn Events here
         var battlers = team1.concat(team2);
-        var buffs, b, verb;
+        var buffs, b;
         var translations = {
             str: "Strength",
             def: "Defense",
@@ -1677,7 +1671,7 @@ function RPG(rpgchan) {
             }
             
             if (gained.length > 0 || lost.length > 0) {
-                var gainmsg = []
+                var gainmsg = [];
                 if (gained.length > 0) {
                     gainmsg.push("gained " + readable(gained, "and"));
                 }
@@ -1698,16 +1692,17 @@ function RPG(rpgchan) {
         out.push("⇛ " + this.team2.map(getPlayerHP).join(", "));
         out.push("⇛ " + this.team1.map(getPlayerHP).join(", "));
         this.sendToViewers(out);
-        winner = this.checkWin();
+        var winner = this.checkWin();
         if (winner !== null) {
             this.finishBattle(winner);
-        } else {
-            // this.sendToViewers(["⇛ " + this.team2.map(getPlayerHP).join(", "), "⇛ " + this.team1.map(getPlayerHP).join(", ")]);
         }
         this.turn++;
     };
     function getPlayerHP(x) {
         return x.name + " (" + x.hp + " HP)";
+    }
+    function getNumberSign(x) { 
+        return (x >= 0 ? "+" + x : x); 
     }
     Battle.prototype.checkWin = function() {
         var defeated1 = true;
@@ -2027,25 +2022,25 @@ function RPG(rpgchan) {
         if ("effect" in item) {
             var effect = item.effect;
             if ("maxhp" in effect) {
-                result.push((effect.maxhp > 0 ? "+" : "") + effect.maxhp + " Max HP");
+                result.push(getNumberSign(effect.maxhp) + " Max HP");
             }
             if ("maxmp" in effect) {
-                result.push((effect.maxmp > 0 ? "+" : "") + effect.maxmp + " Max Mana");
+                result.push(getNumberSign(effect.maxmp) + " Max Mana");
             }
             if ("str" in effect) {
-                result.push((effect.str > 0 ? "+" : "") + effect.str + " Str");
+                result.push(getNumberSign(effect.str) + " Str");
             }
             if ("def" in effect) {
-                result.push((effect.def > 0 ? "+" : "") + effect.def + " Def");
+                result.push(getNumberSign(effect.def) + " Def");
             }
             if ("spd" in effect) {
-                result.push((effect.spd > 0 ? "+" : "") + effect.spd + " Spd");
+                result.push(getNumberSign(effect.spd) + " Spd");
             }
             if ("dex" in effect) {
-                result.push((effect.dex > 0 ? "+" : "") + effect.dex + " Dex");
+                result.push(getNumberSign(effect.dex) + " Dex");
             }
             if ("mag" in effect) {
-                result.push((effect.mag > 0 ? "+" : "") + effect.mag + " Mag");
+                result.push(getNumberSign(effect.mag) + " Mag");
             }
             if ("multiplier" in effect) {
                 if ("maxhp" in effect.multiplier) {
@@ -2080,7 +2075,7 @@ function RPG(rpgchan) {
                 result.push((effect.critical > 1 ? "+" : "") + ((effect.critical-1) * 100) + "% Critical");
             }
         }
-        return "[" + result.join(", ") + "]"
+        return "[" + result.join(", ") + "]";
     }
     this.useItem = function(src, commandData) {
         var player = SESSION.users(src).rpg;
@@ -2094,7 +2089,7 @@ function RPG(rpgchan) {
                 key: [],
                 other: [],
                 broken: []
-            }
+            };
             for (var i in player.items) {
                 if (i in items) {
                     switch (items[i].type) {
@@ -2198,8 +2193,8 @@ function RPG(rpgchan) {
         
         if (data.length > 1 && data[1].toLowerCase() === "drop") {
             var amm = -1;
-            if (data.length > 2 && isNaN(parseInt(data[2])) === false) {
-                amm = -parseInt(data[2])
+            if (data.length > 2 && isNaN(parseInt(data[2], 10)) === false) {
+                amm = -parseInt(data[2], 10);
             }
             changeItemCount(player, it, amm);
             rpgbot.sendMessage(src, "You have dropped " + Math.abs(amm) + " " + item.name + "(s)!", rpgchan);
@@ -2218,8 +2213,8 @@ function RPG(rpgchan) {
         
         sys.sendMessage(src, "", rpgchan);
         if (item.type === "usable") {
+            var startingHp = player.hp, startingMp = player.mp, hpGain = 0, mpGain = 0, dest;
             if (item.effect) {
-                var startingHp = player.hp, startingMp = player.mp, hpGain = 0, mpGain = 0;
                 if ("hp" in item.effect) {
                     player.hp += item.effect.hp;
                     hpGain += item.effect.hp;
@@ -2234,7 +2229,7 @@ function RPG(rpgchan) {
                 }
                 if ("mpPercent" in item.effect) {
                     player.mp += Math.round(player.maxmp * item.effect.mpPercent);
-                    mpGain += Math.round(player.maxmp * item.effect.mpPercent)
+                    mpGain += Math.round(player.maxmp * item.effect.mpPercent);
                 }
                 if (player.hp > player.maxhp) {
                     player.hp = player.maxhp;
@@ -2249,7 +2244,8 @@ function RPG(rpgchan) {
                     player.mp = 0;
                 }
                 
-                var dest = [], x, r, loc;
+                var p, r, loc;
+                dest = [];
                 if ("move" in item.effect) {
                     loc = item.effect.move;
                     loc = loc === "*" ? player.respawn : loc;
@@ -2257,9 +2253,9 @@ function RPG(rpgchan) {
                         player.location = loc;
                         
                         for (r in places[loc].access) {
-                            x = places[loc].access[r];
-                            if (!places[x].hide || places[x].hide !== true) {
-                                dest.push(places[x].name + " (" + x + ")");
+                            p = places[loc].access[r];
+                            if (!places[p].hide || places[p].hide !== true) {
+                                dest.push(places[p].name + " (" + p + ")");
                             }
                         }
                         
@@ -2366,11 +2362,11 @@ function RPG(rpgchan) {
         var amountWanted = 1;
         var tempSplit;
         
-        if (isNaN(parseInt(itemOffered)) === true) {
+        if (isNaN(parseInt(itemOffered, 10)) === true) {
             tempSplit = itemOffered.split("*");
             itemOffered = tempSplit[0];
-            if (tempSplit.length > 1 && isNaN(parseInt(tempSplit[1])) === false) {
-                amountOffered = parseInt(tempSplit[1]);
+            if (tempSplit.length > 1 && isNaN(parseInt(tempSplit[1], 10)) === false) {
+                amountOffered = parseInt(tempSplit[1], 10);
                 if (amountOffered <= 0) {
                     rpgbot.sendMessage(src, "You need to offer at least one of this item!", rpgchan);
                     return;
@@ -2389,13 +2385,13 @@ function RPG(rpgchan) {
                 return;
             }
         } else {
-            itemOffered = parseInt(itemOffered);
+            itemOffered = parseInt(itemOffered, 10);
         }
-        if (isNaN(parseInt(itemWanted)) === true) {
+        if (isNaN(parseInt(itemWanted, 10)) === true) {
             tempSplit = itemWanted.split("*");
             itemWanted = tempSplit[0];
-            if (tempSplit.length > 1 && isNaN(parseInt(tempSplit[1])) === false) {
-                amountWanted = parseInt(tempSplit[1]);
+            if (tempSplit.length > 1 && isNaN(parseInt(tempSplit[1], 10)) === false) {
+                amountWanted = parseInt(tempSplit[1], 10);
                 if (amountWanted <= 0) {
                     rpgbot.sendMessage(src, "You need to ask for at least one of this item!", rpgchan);
                     return;
@@ -2410,7 +2406,7 @@ function RPG(rpgchan) {
                 }
             }
         } else {
-            itemWanted = parseInt(itemWanted);
+            itemWanted = parseInt(itemWanted, 10);
         }
         
         var playerName = player.name;
@@ -2666,7 +2662,7 @@ function RPG(rpgchan) {
         if (!("classes" in items[it])) {
             return true;
         } else {
-            var item = items[it]
+            var item = items[it];
             if (item.classes.indexOf(player.job) === -1) {
                 var allowedClasses = getPassiveClasses(player, "itemsFromClass");
                 for (var c in item.classes) {
@@ -2726,7 +2722,7 @@ function RPG(rpgchan) {
                     spd: "Speed",
                     dex: "Dexterity",
                     mag: "Magic"
-                }
+                };
                 var i, g, inc;
                 for (i = player.level; i < e; ++i) {
                     for (g in growth) {
@@ -2783,7 +2779,7 @@ function RPG(rpgchan) {
         
         var what = data[0].toLowerCase();
         var amount;
-        amount = data.length > 1 ? parseInt(data[1]) : 1;
+        amount = data.length > 1 ? parseInt(data[1], 10) : 1;
         amount = isNaN(amount) ? 1 : amount;
         
         
@@ -2875,7 +2871,6 @@ function RPG(rpgchan) {
                 default:
                     rpgbot.sendMessage(src, "You can only increase HP, Mana, Str, Def, Spd, Dex or Mag!", rpgchan);
                     return;
-                    break;
             }
             this.updateBonus(src);
         } else {
@@ -2992,7 +2987,7 @@ function RPG(rpgchan) {
                     rpgbot.sendMessage(src, "No such slot! Type /plan slots to know how to set/load your strategies.", rpgchan);
                     return;
                 }
-                target = parseInt(broken[1]);
+                target = parseInt(broken[1], 10);
                 if (broken.length > 3) {
                     commandData = [];
                     for (var b = 2; b < broken.length; ++b) {
@@ -3004,7 +2999,7 @@ function RPG(rpgchan) {
                 }
                 if (commandData === undefined && action === "set") {
                     rpgbot.sendMessage(src, "Incorrect format. Type /plan to know how to set your strategy!", rpgchan);
-                    return
+                    return;
                 }
             }
         }
@@ -4080,7 +4075,7 @@ function RPG(rpgchan) {
         out.push("");
         out.push(target.name + "'s equipment:");
         for (i in target.equips) {
-            out.push(equipment[i] + ": " + (target.equips[i] === null ? "Nothing" : items[target.equips[i]].name))
+            out.push(equipment[i] + ": " + (target.equips[i] === null ? "Nothing" : items[target.equips[i]].name));
         }
         out.push("");
         
@@ -4089,7 +4084,7 @@ function RPG(rpgchan) {
         }
     };
     this.changeFontSize = function(src, commandData) {
-        if (isNaN(parseInt(commandData)) === true) {
+        if (isNaN(parseInt(commandData, 10)) === true) {
             rpgbot.sendMessage(src, "You must choose a valid number!", rpgchan);
             return;
         }
@@ -4346,11 +4341,11 @@ function RPG(rpgchan) {
         sys.sendMessage(src, "When: " + contentLoc.date, rpgchan);
         sys.sendMessage(src, "", rpgchan);
     };
-    this.callUpdate = function (src) {
+    this.callUpdate = function () {
         runUpdate();
         return;
     };
-    this.reloadChars = function(src, commandData) {
+    this.reloadChars = function(src) {
         try {
             var playerson = sys.playerIds();
             var user, x, gamefile;
@@ -4390,6 +4385,7 @@ function RPG(rpgchan) {
         var r;
         switch (property) {
             case "items":
+            case "item":
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, sys.name(id) + "'s items:", rpgchan);
                 for (r in target.items) {
@@ -4397,6 +4393,7 @@ function RPG(rpgchan) {
                 }
                 sys.sendMessage(src, "", rpgchan);
                 break;
+            case "skill":
             case "skills":
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, sys.name(id) + "'s skills:", rpgchan);
@@ -4594,7 +4591,7 @@ function RPG(rpgchan) {
         SESSION.channels(rpgchan).perm = true;
         SESSION.channels(rpgchan).master = "RiceKirby";
         game.loadLocalContent();
-        contentLoc = JSON.parse(sys.getFileContent("rpglocation.txt"))
+        contentLoc = JSON.parse(sys.getFileContent("rpglocation.txt"));
 	};
 	this.stepEvent = function() {
         try {
@@ -4614,14 +4611,11 @@ function RPG(rpgchan) {
         }
         return false;
 	}
-    function randomElement(arr) {
-		return arr[sys.rand(0, arr.length)];
-	}
     function cap(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
     function shuffle(o) {
-        for (var j, x, i = o.length; i; j = parseInt(Math.random() * i, 10), x = o[--i], o[i] = o[j], o[j] = x);
+        for (var j, x, i = o.length; i; j = parseInt(Math.random() * i, 10), x = o[--i], o[i] = o[j], o[j] = x){}
         return o;
     }
     function readable(arr, last_delim) {
