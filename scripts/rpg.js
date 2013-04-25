@@ -3617,7 +3617,7 @@ function RPG(rpgchan) {
         
         return character;
     };
-    this.saveGame = function(src) {
+    this.saveGame = function(src, commandData) {
         var user = SESSION.users(src);
         
         if (user.rpg === null) {
@@ -3625,8 +3625,8 @@ function RPG(rpgchan) {
             return;
         }
         
-        // var savename = sys.name(src).toLowerCase();
         var savename = user.rpg.name.toLowerCase();
+        var savefolder = "rpgsaves";
         
         /* if (!sys.dbRegistered(savename)) {
             rpgbot.sendMessage(src, "You need to register before saving your game!", rpgchan);
@@ -3638,7 +3638,13 @@ function RPG(rpgchan) {
             return;
         }
         
-        var savefolder = "rpgsaves";
+        if (commandData !== undefined && commandData.toLowerCase() !== "sure") {
+            var currentGame = sys.getFileContent(savefolder + "/" + escape(savename) + ".json");
+            if (currentGame !== undefined && user.rpg.exp < JSON.parse(currentGame).exp) {
+                rpgbot.sendMessage(src, "Warning: You already have a saved character with more Exp. Points! If you want to overwrite it, use '/savechar sure'.", rpgchan);
+                return;
+            }
+        }
         
         sys.makeDir(savefolder);
         sys.writeToFile(savefolder + "/" + escape(savename) + ".json", JSON.stringify(user.rpg));
@@ -3802,9 +3808,6 @@ function RPG(rpgchan) {
         if (user.rpg.isBattling) {
             rpgbot.sendMessage(src, "Finish this battle first!", rpgchan);
             return;
-        }
-        if (user.rpg.party && this.findParty(user.rpg.party) !== null) {
-            this.findParty(user.rpg.party).leave(src);
         }
         
         this.removePlayer(src);
@@ -4578,6 +4581,7 @@ function RPG(rpgchan) {
         if (SESSION.users(src).rpg !== undefined) {
             game.removePlayer(src);
             game.saveGame(src);
+            game.clearChar(src);
         }
     };
 	this.init = function() {
