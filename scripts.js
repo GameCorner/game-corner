@@ -1443,7 +1443,7 @@ init : function() {
     lastCleared = +sys.getVal("Stats/LastCleared");
 
     mafiachan = SESSION.global().channelManager.createPermChannel("Mafia", "Use /help to get started!");
-    casinochan = SESSION.global().channelManager.createPermChannel("Casino", "Use /casinocommands to get started.");
+    casinochan = SESSION.global().channelManager.createPermChannel("RPG", "Use /help to get started! Ask in the chat if you have questions.");
     staffchannel = SESSION.global().channelManager.createPermChannel("Indigo Plateau", "Welcome to the Staff Channel! Discuss of all what users shouldn't hear here! Or more serious stuff...");
     sachannel = SESSION.global().channelManager.createPermChannel("Victory Road","Welcome MAs and SAs!");
     tourchannel = SESSION.global().channelManager.createPermChannel("Tournaments", 'Useful commands are "/join" (to join a tournament), "/unjoin" (to leave a tournament), "/viewround" (to view the status of matches) and "/megausers" (for a list of users who manage tournaments). Please read the full Tournament Guidelines: http://pokemon-online.eu/forums/showthread.php?2079-Tour-Rules');
