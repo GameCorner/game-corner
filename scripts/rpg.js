@@ -1684,7 +1684,7 @@ function RPG(rpgchan) {
         this.turn++;
     };
     function getPlayerHP(x) {
-        return x.name + " (" + x.hp + " HP)";
+        return x.name + " (" + x.hp + " HP, " + x.mp + " MP)";
     }
     function getNumberSign(x) { 
         return (x >= 0 ? "+" + x : x); 
