@@ -4145,6 +4145,7 @@ function RPG(rpgchan) {
 		var help = [
 			"",
 			"*** *********************************************************************** ***",
+			"±RPG: A newcomer's guide by Oksana: http://gamecorner.info/Thread-RPG-Newcomer-s-Guide",
 			"±RPG: /start - To pick a class. See /classes for an explanation. EG: /start mage",
             "±RPG: /classes - Shows all of the current starting classes.",
             "±RPG: /i - To see your items list. Use /i name to equip. EG: /i armor or /i potion to heal during battle - You get some starting items. Equip them. Buy items at the weaponry, use /w weaponry from the inn.",
