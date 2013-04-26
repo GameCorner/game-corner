@@ -64,7 +64,7 @@ function RPG(rpgchan) {
     var altItems = {};
     var classHelp = [];
     
-    this.changeLocation = function(src, commandData) {
+    this.walkTo = function(src, commandData) {
         var player = SESSION.users(src).rpg;
         
         if (player.location === null || player.location === undefined || !(player.location in places)) {
@@ -180,6 +180,17 @@ function RPG(rpgchan) {
             }
         }
         
+        sys.sendMessage(src, "", rpgchan);
+        this.changeLocation(src, loc);
+        if (itemsConsumed.length > 0) {
+            rpgbot.sendMessage(src, "You consumed " + readable(itemsConsumed, "and") + " to enter here!", rpgchan);
+        }
+        sys.sendMessage(src, "", rpgchan);
+    };
+    this.changeLocation = function(src, loc, verb) {
+        var player = SESSION.users(src).rpg;
+        player.location = loc;
+        
         var dest = [], x;
         for (r in places[loc].access) {
             x = places[loc].access[r];
@@ -188,20 +199,15 @@ function RPG(rpgchan) {
             }
         }
         
-        player.location = loc;
-        sys.sendMessage(src, "", rpgchan);
-        rpgbot.sendMessage(src, "You moved to " + places[loc].name + "! ", rpgchan);
+        verb = verb === undefined ? "moved to" : verb;
+        rpgbot.sendMessage(src, "You " + verb + " " + places[loc].name + "! ", rpgchan);
         if (dest.length > 0) {
             rpgbot.sendMessage(src, "From here, you can go to " + readable(dest, "or"), rpgchan);
         }
-        if (itemsConsumed.length > 0) {
-            rpgbot.sendMessage(src, "You consumed " + readable(itemsConsumed, "and") + " to enter here!", rpgchan);
-        }
         rpgbot.sendMessage(src, places[loc].welcome, rpgchan);
-        sys.sendMessage(src, "", rpgchan);
         
         if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
-            this.findParty(player.party).broadcast(player.name + " moved to " + places[loc].name, src);
+            this.findParty(player.party).broadcast(player.name + " " + verb + " " + places[loc].name, src);
         }
     };
     this.talkTo = function(src, commandData) {
@@ -409,8 +415,6 @@ function RPG(rpgchan) {
             sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             sys.sendMessage(src, "",rpgchan);
             return;
-            
-            
         } else if ("buy" in topic && typeof topic.buy === "object") {
             products = topic.buy;
             if (data.length < 3) {
@@ -620,19 +624,15 @@ function RPG(rpgchan) {
                 }
             }
             if ("move" in eff) {
-                player.location = eff.move;
-                rpgbot.sendMessage(src, "You moved to " + places[player.location].name + "!", rpgchan);
-                rpgbot.sendMessage(src, places[player.location].welcome, rpgchan);
+                this.changeLocation(src, eff.move);
             }
             if ("respawn" in eff) {
                 player.respawn = eff.respawn;
                 rpgbot.sendMessage(src, "Your respawn point was set to " + places[player.respawn].name + "!", rpgchan);
             }
-            if ("exp" in eff) {
+            if ("exp" in eff && eff.exp > 0) {
+                rpgbot.sendMessage(src, "You received " + eff.exp + " Exp. Points!", rpgchan);
                 this.receiveExp(src, eff.exp);
-                if (eff.exp > 0) {
-                    rpgbot.sendMessage(src, "You received " + eff.exp + " Exp. Points!", rpgchan);
-                }
             }
             if ("classes" in eff) {
                 for (e in eff.classes) {
@@ -954,25 +954,10 @@ function RPG(rpgchan) {
         }
         
         player.hp = Math.floor(player.maxhp / 2);
-        player.location = player.respawn;
-        rpgbot.sendMessage(src, "You respawned with " + player.hp + " HP at the " + places[player.respawn].name + "!", rpgchan);
         
-        
-        var dest = [], x, r, loc = player.respawn;
-        for (r in places[loc].access) {
-            x = places[loc].access[r];
-            if (!places[x].hide || places[x].hide !== true) {
-                dest.push(places[x].name + " (" + x + ")");
-            }
-        }
-        
-        if (dest.length > 0) {
-            rpgbot.sendMessage(src, "From here, you can go to " + readable(dest, "or"), rpgchan);
-        }
-        if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
-            this.findParty(player.party).broadcast(player.name + " respawned at " + places[player.respawn].name, src);
-        }
-        
+        sys.sendMessage(src, "", rpgchan);
+        this.changeLocation(src, player.respawn, "respawned with " + player.hp + " HP at the");
+        sys.sendMessage(src, "", rpgchan);
     };
     this.watchBattle = function(src, commandData) {
         var bat, b;
@@ -1859,13 +1844,12 @@ function RPG(rpgchan) {
                     
                     var expMultiplier = getPassiveMultiplier(won, "expBonus");
                     gainedExp = Math.floor((monsterExp + Math.floor(playerExp / won.level)) * expMultiplier);
-                    if (gainedExp > 0) {
-                        game.receiveExp(won.id, gainedExp);
-                    }
                     if (gainedExp > 0 || gainedGold > 0) {
                         rpgbot.sendMessage(won.id, "You received " + (gainedExp > 0 ? gainedExp + " Exp. Points" : "") + (gainedExp > 0 && gainedGold > 0 ? " and " : "") + (gainedGold > 0 ? gainedGold + " Gold" : "") + "!", rpgchan);
                     }
-                    
+                    if (gainedExp > 0) {
+                        game.receiveExp(won.id, gainedExp);
+                    }
                 }
             }
         }
@@ -2018,7 +2002,9 @@ function RPG(rpgchan) {
         if (!hideSlot || hideSlot === false) {
             result.push(item.slot === "2-hands" ? "Both Hands" : equipment[item.slot]);
         }
-        
+        if ("element" in item) {
+            result.push(cap(item.element) + "-element");
+        }
         if ("effect" in item) {
             var effect = item.effect;
             if ("maxhp" in effect) {
@@ -3555,6 +3541,7 @@ function RPG(rpgchan) {
         player.publicStats = false;
         player.watchableBattles = false;
         player.fontSize = 11;
+        player.description = "";
         
         player.events = {};
         player.defeated = {};
@@ -3798,6 +3785,9 @@ function RPG(rpgchan) {
         }
         if(!file.fontSize) {
             file.fontSize = 11;
+        }
+        if (!file.description) {
+            file.description = "";
         }
         
         return file;
@@ -4055,7 +4045,12 @@ function RPG(rpgchan) {
         
         var out = [
             "",
-            target.name + "'s stats:",
+            target.name + "'s information:"
+        ];
+        if (target.description !== "") {
+            out.push("Description: " + target.description);
+        }
+        out = out.concat([
             "Class: " + cap(target.job),
             "Level: " + target.level,
             "",
@@ -4068,7 +4063,7 @@ function RPG(rpgchan) {
             "Dexterity: " + target.dex + (target.bonus.equip.dex + target.bonus.skill.dex !== 0 ? (target.bonus.equip.dex + target.bonus.skill.dex > 0 ? " +" : " ") + (target.bonus.equip.dex + target.bonus.skill.dex) : ""),
             "Magic: " + target.mag + (target.bonus.equip.mag + target.bonus.skill.mag !== 0 ? (target.bonus.equip.mag + target.bonus.skill.mag > 0 ? " +" : " ") + (target.bonus.equip.mag + target.bonus.skill.mag) : ""),
             ""
-        ];
+        ]);
         
         out.push(target.name + "'s skills:");
         for (var i in target.skills) {
@@ -4084,6 +4079,19 @@ function RPG(rpgchan) {
         
         for (var x in out) {
             sys.sendMessage(src, out[x], rpgchan);
+        }
+    };
+    this.changeAppearance = function(src, commandData) {
+        if (commandData === "*") {
+            SESSION.users(src).rpg.description = "";
+            rpgbot.sendMessage(src, "Your appearance was cleared! To write an appearance text, use '/appearance text' (please don't use it to break the server rules).", rpgchan);
+        } else {
+            if (commandData.length > 250) {
+                rpgbot.sendMessage(src, "You can only have 250 characters on your appearance description!", rpgchan);
+                return;
+            }
+            SESSION.users(src).rpg.description = commandData;
+            rpgbot.sendMessage(src, "Your appearance was set to '" + commandData + "'.", rpgchan);
         }
     };
     this.changeFontSize = function(src, commandData) {
@@ -4405,6 +4413,11 @@ function RPG(rpgchan) {
                 }
                 sys.sendMessage(src, "", rpgchan);
                 break;
+            case "place":
+            case "location":
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, sys.name(id) + " is currently at " + target.location, rpgchan);
+                sys.sendMessage(src, "", rpgchan);
             default:
                 sys.sendMessage(src, "No such property!", rpgchan);
                 break;
@@ -4414,7 +4427,7 @@ function RPG(rpgchan) {
     
 	this.commands = {
 		actions: {
-            walk: [this.changeLocation, "To go to a different location."],
+            walk: [this.walkTo, "To go to a different location."],
             talk: [this.talkTo, "To talk to an NPC."],
             explore: [this.exploreLocation, "To explore a location for items or monsters."],
             flee: [this.fleeBattle, "To run away from your current battle."],
@@ -4434,6 +4447,7 @@ function RPG(rpgchan) {
             clearchar: [this.clearChar, "To clear your character."],
             // inn: [this.gotoInn, "Pay 10 Gold to fully restore HP and MP."],
             party: [this.manageParty, "To create and manage a party"],
+            appearance: [this.changeAppearance, "To change your appearance description."],
             font: [this.changeFontSize, "To change the Battle Message's size."],
             watch: [this.watchBattle, "To watch someone else's battle."]
         },
@@ -4441,7 +4455,7 @@ function RPG(rpgchan) {
             skill: [this.viewSkills, "Same as /skills."],
             items: [this.useItem, "Same as /item."],
             e: [this.exploreLocation, "Same as /explore."],
-            w: [this.changeLocation, "Same as /walk."],
+            w: [this.walkTo, "Same as /walk."],
             t: [this.talkTo, "Same as /talk."],
             r: [this.reviveSelf, "Same as /revive."],
             i: [this.useItem, "Same as /item."],
