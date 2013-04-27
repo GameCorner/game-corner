@@ -1565,7 +1565,7 @@ function RPG(rpgchan) {
                 }
                 
                 if (moveName === "attack" && player.isPlayer === true && player.equips.rhand && player.equips.rhand !== null && items[player.equips.rhand].message) {
-                    out.push(items[player.equips.rhand].message.replace(/~User~/g, player.name).replace(/~Target~/g, readable(effectsMessages.targets, "and")) + (effectsMessages.damagedNames.length > 0 ? " [" + readable(effectsMessages.damagedNames, "and") + "]" : "") + (effectsMessages.evaded.length > 0 ? " [" + readable(effectsMessages.evaded, "and") + " evaded!]" : ""));
+                    out.push(items[player.equips.rhand].message.replace(/~User~/g, player.name).replace(/~Target~/g, readable(effectsMessages.targets, "and")) + (effectsMessages.damagedNames.length > 0 ? " " + readable(effectsMessages.damagedNames, "and") + "!" : "") + (effectsMessages.evaded.length > 0 ? " " + readable(effectsMessages.evaded, "and") + " evaded!" : ""));
                 } else {
                     out.push(move.message.replace(/~User~/g, player.name).replace(/~Target~/g, readable(effectsMessages.targets, "and")) + (effectsMessages.damagedNames.length > 0 ? " " + readable(effectsMessages.damagedNames, "and") + "!" : "") + (effectsMessages.evaded.length > 0 ? " " + readable(effectsMessages.evaded, "and") + " evaded!" : ""));
                 }
@@ -2070,13 +2070,13 @@ function RPG(rpgchan) {
                 }
             }
             if ("accuracy" in effect) {
-                result.push((effect.accuracy > 1 ? "+" : "") + ((effect.accuracy-1) * 100) + "% Accuracy");
+                result.push((effect.accuracy > 1 ? "+" : "") + Math.round((effect.accuracy-1) * 100) + "% Accuracy");
             }
             if ("evasion" in effect) {
-                result.push((effect.evasion > 1 ? "+" : "") + ((effect.evasion-1) * 100) + "% Evasion");
+                result.push((effect.evasion > 1 ? "+" : "") + Math.round((effect.evasion-1) * 100) + "% Evasion");
             }
             if ("critical" in effect) {
-                result.push((effect.critical > 1 ? "+" : "") + ((effect.critical-1) * 100) + "% Critical");
+                result.push((effect.critical > 1 ? "+" : "") + Math.round((effect.critical-1) * 100) + "% Critical");
             }
         }
         return "[" + result.join(", ") + "]";
