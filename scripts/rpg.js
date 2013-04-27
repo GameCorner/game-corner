@@ -290,6 +290,10 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, topic.denymsg, rpgchan);
                 return;
             }
+            if ("maxlevel" in req && player.level > req.maxlevel) {
+                sys.sendMessage(src, topic.denymsg, rpgchan);
+                return;
+            }
             if ("events" in req) {
                 for (r in req.events) {
                     var ev = req.events[r];
@@ -307,6 +311,14 @@ function RPG(rpgchan) {
             if ("items" in req) {
                 for (r in req.items) {
                     if (!hasItem(player, r, req.items[r])) {
+                        sys.sendMessage(src, topic.denymsg, rpgchan);
+                        return; 
+                    }
+                }
+            }
+            if ("maxitems" in req) {
+                for (r in req.maxitems) {
+                    if (hasItem(player, r, req.maxitems[r] + 1)) {
                         sys.sendMessage(src, topic.denymsg, rpgchan);
                         return; 
                     }
@@ -2136,7 +2148,11 @@ function RPG(rpgchan) {
             out.push("");
             out.push("Equipment:");
             for (i in player.equips) {
-                out.push(equipment[i] + ": " + (player.equips[i] === null ? "Nothing" : items[player.equips[i]].name + " - " + items[player.equips[i]].info + " " + getEquipAttributes(player.equips[i], true)));
+                if (player.equips[i] !== null && !(player.equips[i] in items)) {
+                    out.push(equipment[i] + ": Invalid item '" + player.equips[i] + "' found! Contact an RPG Admin to fix the issue!");
+                } else {
+                    out.push(equipment[i] + ": " + (player.equips[i] === null ? "Nothing" : items[player.equips[i]].name + " - " + items[player.equips[i]].info + " " + getEquipAttributes(player.equips[i], true)));
+                }
             }
             
             out.push("");
@@ -4073,7 +4089,11 @@ function RPG(rpgchan) {
         out.push("");
         out.push(target.name + "'s equipment:");
         for (i in target.equips) {
-            out.push(equipment[i] + ": " + (target.equips[i] === null ? "Nothing" : items[target.equips[i]].name));
+            if (target.equips[i] !== null && !(target.equips[i] in items)) {
+                out.push(equipment[i] + ": Invalid equipment '" + target.equips[i] + "' found! Contact an RPG Admin to fix the issue!");
+            } else {
+                out.push(equipment[i] + ": " + (target.equips[i] === null ? "Nothing" : items[target.equips[i]].name));
+            }
         }
         out.push("");
         
@@ -4143,10 +4163,10 @@ function RPG(rpgchan) {
     };
     this.showHelp = function(src) {
 		var help = [
-			"",
-			"*** *********************************************************************** ***",
-			"±RPG: A newcomer's guide by Oksana: http://gamecorner.info/Thread-RPG-Newcomer-s-Guide",
-			"±RPG: /start - To pick a class. See /classes for an explanation. EG: /start mage",
+            "",
+            "*** *********************************************************************** ***",
+            "±RPG: A newcomer's guide by Oksana: http://gamecorner.info/Thread-RPG-Newcomer-s-Guide",
+            "±RPG: /start - To pick a class. See /classes for an explanation. EG: /start mage",
             "±RPG: /classes - Shows all of the current starting classes.",
             "±RPG: /i - To see your items list. Use /i name to equip. EG: /i armor or /i potion to heal during battle - You get some starting items. Equip them. Buy items at the weaponry, use /w weaponry from the inn.",
             "±RPG: /w inn - To go to the inn, which will tell you all the places you can go. /t owner:inn to rest and /e here to get battles vs slimes. Use /w place to move. EG: /w cave",
@@ -4155,8 +4175,8 @@ function RPG(rpgchan) {
             "±RPG: /skills - See your skills and available skill points. Use /increase to allocate them. See /stats for your stats.",
             "±RPG: /increase - To allocate your stat or skill point. EG: /increase speed OR /increase fire:3",
             "±RPG: /revive - Use this when you have died. You will revive at the inn with half HP, so remember to heal at the inn.",
-			"*** *********************************************************************** ***",
-			""
+            "*** *********************************************************************** ***",
+            ""
 		];
 		for (var x in help) {
            sys.sendMessage(src, help[x], rpgchan);
