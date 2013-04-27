@@ -1289,7 +1289,13 @@ function RPG(rpgchan) {
                         if (evd <= 0) {
                             evd = 1;
                         }
-                        if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > 0.5 + ((acc - evd) / 100)) {
+                        var evadeCheck = 0.65 + ((acc - evd) / 100);
+                        if (evadeCheck < 0.05) {
+                            evadeCheck = 0.05;
+                        } else if (evadeCheck > 0.095) {
+                            evadeCheck = 0.95;
+                        }
+                        if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > evadeCheck) {
                             if (effectsMessages.evaded.indexOf(target.name) === -1) {
                                 effectsMessages.evaded.push(target.name);
                             }
@@ -4252,7 +4258,7 @@ function RPG(rpgchan) {
             if (parsed.config.battle) {
                 var battle = parsed.config.battle;
                 if (battle.evasion) {
-                    battleSetup.evasion = battle.evasion / 100;
+                    battleSetup.evasion = battle.evasion;
                 }
                 if (battle.defense) {
                     battleSetup.defense = battle.defense;
