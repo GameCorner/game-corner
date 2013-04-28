@@ -5091,7 +5091,7 @@ afterChatMessage : function(src, message, chan)
                 return;
             }
             else {
-                poChannel.mute(Config.capsbot, sys.name(src), {'time': 900, 'reason': "Overusing CAPS"});
+                poChannel.mute(Config.capsbot, sys.name(src), {'time': 60, 'reason': "Overusing CAPS"});
             }
         }
     } else if (user.caps > 0) {
