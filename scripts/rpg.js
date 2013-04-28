@@ -1289,7 +1289,7 @@ function RPG(rpgchan) {
                         if (evd <= 0) {
                             evd = 1;
                         }
-                        var evadeCheck = 0.65 + ((acc - evd) / 100);
+                        var evadeCheck = 0.7 + ((acc - evd) / 100);
                         if (evadeCheck < 0.05) {
                             evadeCheck = 0.05;
                         } else if (evadeCheck > 0.095) {
@@ -2355,12 +2355,18 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
             return;
         }
-        if (SESSION.users(targetId).rpg.isBattling === true) {
+        
+        var target = SESSION.users(targetId).rpg;
+        if (target.isBattling === true) {
             rpgbot.sendMessage(src, "Wait for that person to finish their battle!", rpgchan);
             return;
         }
         if (tradeRequests[player.name] !== undefined) {
             rpgbot.sendMessage(src, "Finish or cancel your last offer before making another trade request!", rpgchan);
+            return;
+        }
+        if(player.location !== target.location) {
+            rpgbot.sendMessage(src, "You must be in the same location as your target to request a trade!", rpgchan);
             return;
         }
         
@@ -2418,7 +2424,6 @@ function RPG(rpgchan) {
         }
         
         var playerName = player.name;
-        var target = SESSION.users(targetId).rpg;
         var targetName = target.name;
         
         var offer = typeof itemOffered === "number" ? itemOffered + " Gold" : items[itemOffered].name + (amountOffered > 1 ? " (x" + amountOffered + ")": "");
@@ -3078,19 +3083,33 @@ function RPG(rpgchan) {
         var player = SESSION.users(src).rpg;
         if (commandData === "*") {
             rpgbot.sendMessage(src, "Your current passive skills are " + getSkillsNames(player.passives) + "!", rpgchan);
-            rpgbot.sendMessage(src, "To change your current passive skills, type /passive skill1:skill2.", rpgchan);
+            rpgbot.sendMessage(src, "To change your current passive skills, type /passive skill1:skill2. To clear your passive skills, use '/passive clear'.", rpgchan);
             return;
         }
         
         var data = commandData.split(":");
         var obj = {};
-        var skill;
+        var skill, s;
         
         if (data.length > battleSetup.passive) {
             rpgbot.sendMessage(src, "You can only set up to " + battleSetup.passive + " passive skills!", rpgchan);
             return;
         }
-        for (var s in data) {
+        if (data[0].toLowerCase() === "clear") {
+            player.passives = {};
+            rpgbot.sendMessage(src, "Your current passive skills are " + getSkillsNames(player.passives) + "!", rpgchan);
+        
+            for (s in player.equips) {
+                if (player.equips[s] !== null && canUseItem(player, player.equips[s]) === false) {
+                    rpgbot.sendMessage(src, items[player.equips[s]].name + " unequipped!", rpgchan);
+                    player.equips[s] = null;
+                }
+            }
+            
+            this.updateBonus(src);
+            return;
+        }
+        for (s in data) {
             skill = data[s].toLowerCase();
             
             if (!(skill in skills)) {
