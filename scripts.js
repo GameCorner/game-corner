@@ -5053,7 +5053,7 @@ beforeChatMessage: function(src, message, chan) {
        message = utilities.html_escape(message);
        messagetosend = message;
 	    var colour = script.getColor(src);
-	    sys.sendHtmlAll("<font color='"+colour+"'><timestamp /> "+ Config.musymbol +"<b>"+ sys.name(src) +":</b></font> "+messagetosend, channel);
+	    sys.sendHtmlAll("<font color='"+colour+"'><timestamp /> "+ Config.musymbol +"<b><i>"+ sys.name(src) +":</i></b></font> "+messagetosend, channel);
 		sys.stopEvent();
 		return;
 	}	
