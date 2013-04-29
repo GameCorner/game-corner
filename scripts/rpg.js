@@ -2837,7 +2837,7 @@ function RPG(rpgchan) {
                 return true;
             } 
         } else if (amount < 0) {
-            if (item in player.storage && player.storage[item] >= amount) {
+            if (item in player.storage && player.storage[item] >= (-amount)) {
                 if (leveling.items > 0 && getItemCount(player, item) + (-amount) > leveling.items) {
                     return false;
                 }
