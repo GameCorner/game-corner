@@ -509,6 +509,7 @@ function RPG(rpgchan) {
             if (data.length < 3) {
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, topic.message, rpgchan);
+                sys.sendMessage(src, "", rpgchan);
                 
                 for (i in products) {
                     materials = [];
@@ -525,7 +526,7 @@ function RPG(rpgchan) {
                         if (t === "gold") {
                             rewards.push(products[i].reward[t] + " Gold");
                         } else {
-                            rewards.push(items[t].name + (products[i].reward[t] > 1 ? "(x" + products[i].reward[t] + ")" : ""));
+                            rewards.push(items[t].name + (products[i].reward[t] > 1 ? " (x" + products[i].reward[t] + ")" : ""));
                         }
                     }
                     sys.sendMessage(src, i + ": " + readable(materials, "and") + " for " + readable(rewards, "and"), rpgchan);
@@ -713,7 +714,53 @@ function RPG(rpgchan) {
             }
             return;
         } else if ("storage" in topic) {
-        
+            if (data.length < 3) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.message, rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
+            goods = data[2].toLowerCase();
+            if (goods === "view") {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.storedmsg, rpgchan);
+                this.viewItems(src, "storage");
+                return;
+            }
+            
+            if (!(goods in player.items) && !(goods in player.storage)) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.noitemmsg,rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
+            if (data.length < 4 || isNaN(parseInt(data[3], 10)) === true) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.storedmsg, rpgchan);
+                rpgbot.sendMessage(src, "You have " + (goods in player.storage ? player.storage[goods] : "0") + " " + items[goods].name + "(s) stored!", rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
+            amount = parseInt(data[3], 10);
+            if (this.storeItem(player, goods, amount)) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.acceptmsg, rpgchan);
+                if (amount > 0) {
+                    rpgbot.sendMessage(src, "You stored " + amount + " " + items[goods].name + " in the bank!", rpgchan);
+                } else {
+                    rpgbot.sendMessage(src, "You withdrew " + (-amount) + " " + items[goods].name + " from the bank!", rpgchan);
+                }
+                sys.sendMessage(src, "", rpgchan);
+            } else {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.noitemmsg, rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+            }
+            return;
+            
         } else if ("bank" in topic && topic.bank === true) {
             if (data.length < 3) {
                 sys.sendMessage(src, "", rpgchan);
@@ -2303,8 +2350,14 @@ function RPG(rpgchan) {
                 return 1;
         };
         
+        var itemSource = player.items;
+        
         try {
-            ordered = Object.keys(player.items).sort(sortByName);
+            ordered = data === "storage" ? Object.keys(player.storage).sort(sortByName) : Object.keys(player.items).sort(sortByName);
+            if (data === "storage") {
+                data = "all";
+                itemSource = player.storage;
+            }
         } catch (err) {
             rpgbot.sendMessage(src, "You have an invalid item, so you can't use this command! Contact an RPG admin for help.", rpgchan);
             return;
@@ -2325,16 +2378,16 @@ function RPG(rpgchan) {
                     item = items[id];
                     switch (item.type) {
                         case "usable":
-                            types.usable.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info);
+                            types.usable.push(itemSource[id] + "x " + item.name + " (" + id + "): " + item.info);
                             break;
                         case "equip":
-                            types.equip.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info + " " + getEquipAttributes(id));
+                            types.equip.push(itemSource[id] + "x " + item.name + " (" + id + "): " + item.info + " " + getEquipAttributes(id));
                             break;
                         case "key":
-                            types.key.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info);
+                            types.key.push(itemSource[id] + "x " + item.name + " (" + id + "): " + item.info);
                             break;
                         default:
-                            types.other.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info);
+                            types.other.push(itemSource[id] + "x " + item.name + " (" + id + "): " + item.info);
                             break;
                     }
                 } else {
@@ -2383,7 +2436,7 @@ function RPG(rpgchan) {
                 id = ordered[i];
                 item = items[id];
                 if (item.type === "usable") {
-                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
+                    out.push(itemSource[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
                 }
             }
             noCategory = false;
@@ -2392,7 +2445,7 @@ function RPG(rpgchan) {
                 id = ordered[i];
                 item = items[id];
                 if (item.type === "equip") {
-                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info + " " + getEquipAttributes(id));
+                    out.push(itemSource[id] + "x " + items[id].name + " (" + id + "): " + items[id].info + " " + getEquipAttributes(id));
                 }
             }
             noCategory = false;
@@ -2401,7 +2454,7 @@ function RPG(rpgchan) {
                 id = ordered[i];
                 item = items[id];
                 if (item.type === "key") {
-                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
+                    out.push(itemSource[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
                 }
             }
             noCategory = false;
@@ -2410,7 +2463,7 @@ function RPG(rpgchan) {
                 id = ordered[i];
                 item = items[id];
                 if (item.type !== "usable" && item.type !== "equip" && item.type !== "key") {
-                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
+                    out.push(itemSource[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
                 }
             }
             noCategory = false;
@@ -2421,7 +2474,7 @@ function RPG(rpgchan) {
                         id = ordered[i];
                         item = items[id];
                         if (item.type === "equip" && (item.slot === e || ((e === "lhand" || e === "rhand") && item.slot === "2-hands"))) {
-                            out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info + " " + getEquipAttributes(id));
+                            out.push(itemSource[id] + "x " + items[id].name + " (" + id + "): " + items[id].info + " " + getEquipAttributes(id));
                         }
                     }
                     noCategory = false;
@@ -2785,8 +2838,11 @@ function RPG(rpgchan) {
             } 
         } else if (amount < 0) {
             if (item in player.storage && player.storage[item] >= amount) {
-                changeStorageCount(player, item, -amount);
-                changeItemCount(player, item, amount);
+                if (leveling.items > 0 && getItemCount(player, item) + (-amount) > leveling.items) {
+                    return false;
+                }
+                changeStorageCount(player, item, amount);
+                changeItemCount(player, item, -amount);
                 return true;
             }
         }
