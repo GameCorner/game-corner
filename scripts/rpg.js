@@ -383,6 +383,7 @@ function RPG(rpgchan) {
         }
         
         var it, i, goods, price, amount = 1, products;
+        
         if ("sell" in topic) {
             products = topic.sell;
             if (data.length < 3) {
@@ -709,6 +710,41 @@ function RPG(rpgchan) {
                     }
                     player.hunted[person][e] = eff.hunt[e];
                 }
+            }
+            return;
+        } else if ("storage" in topic) {
+        
+        } else if ("bank" in topic && topic.bank === true) {
+            if (data.length < 3) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.message, rpgchan);
+                rpgbot.sendMessage(src, "You currently have " + player.bank + " Gold stored!", rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
+            amount = parseInt(data[2], 10);
+            
+            if(isNaN(amount) === true) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.nogoldmsg, rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
+            if (this.storeGold(player, amount)) {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.acceptmsg, rpgchan);
+                if (amount > 0) {
+                    rpgbot.sendMessage(src, "You stored " + amount + " Gold in the bank! You now have " + player.bank + " stored!", rpgchan);
+                } else {
+                    rpgbot.sendMessage(src, "You withdrew " + (-amount) + " Gold from the bank! You now have " + player.bank + " stored!", rpgchan);
+                }
+                sys.sendMessage(src, "", rpgchan);
+            } else {
+                sys.sendMessage(src, "", rpgchan);
+                sys.sendMessage(src, topic.nogoldmsg, rpgchan);
+                sys.sendMessage(src, "", rpgchan);
             }
             return;
         }
@@ -2617,7 +2653,7 @@ function RPG(rpgchan) {
         
         if (target.name in tradeRequests && tradeRequests[target.name] !== undefined && tradeRequests[target.name][0] === player.name) {
             var trade = tradeRequests[target.name];
-            this.requestTrade(src, target.name + ":" + trade[2] + "*" + trade[4] + ":" + trade[1] + "*" + trade[3]);
+            this.requestTrade(src, sys.name(targetId) + ":" + trade[2] + "*" + trade[4] + ":" + trade[1] + "*" + trade[3]);
         } else {
             rpgbot.sendMessage(src, "This person didn't offer you anything!", rpgchan);
         }
@@ -2740,26 +2776,33 @@ function RPG(rpgchan) {
         }
         
     };
-    this.gotoInn = function(src) {
-        var player = SESSION.users(src).rpg;
-        if (player.hp === 0) {
-            rpgbot.sendMessage(src, "Use /revive first!", rpgchan);
-            return;
+    this.storeItem = function(player, item, amount) {
+        if (amount > 0) {
+            if (hasItem(player, item, amount)) {
+                changeItemCount(player, item, -amount);
+                changeStorageCount(player, item, amount);
+                return true;
+            } 
+        } else if (amount < 0) {
+            if (item in player.storage && player.storage[item] >= amount) {
+                changeStorageCount(player, item, -amount);
+                changeItemCount(player, item, amount);
+                return true;
+            }
         }
-        if (player.gold < 10) {
-            rpgbot.sendMessage(src, "Not enough Gold! You need at least 10 Gold!", rpgchan);
-            return;
+        return false;
+    };
+    this.storeGold = function(player, amount) {
+        if (amount > 0 && player.gold >= amount) {
+            player.gold -= amount;
+            player.bank += amount;
+            return true;
+        } else if (amount < 0 && player.bank >= -amount) {
+            player.gold -= amount;
+            player.bank += amount;
+            return true;
         }
-        /* if (player.isBattling === true) {
-            rpgbot.sendMessage(src, "Finish this battle before going to an Inn!", rpgchan);
-            return;
-        } */
-        sys.sendMessage(src, "", rpgchan);
-        rpgbot.sendMessage(src, "You slept in the Inn and are fully recovered now!", rpgchan);
-        sys.sendMessage(src, "", rpgchan);
-        player.gold -= 10;
-        player.hp = player.maxhp;
-        player.mp = player.maxmp;
+        return false;
     };
     function changeItemCount(player, item, amount) {
         if (!(item in player.items)) {
@@ -2772,6 +2815,15 @@ function RPG(rpgchan) {
         if (player.items[item] <= 0) {
             game.removeEquip(player.id, item);
             delete player.items[item];
+        }
+    }
+    function changeStorageCount(player, item, amount) {
+        if (!(item in player.storage)) {
+            player.storage[item] = 0;
+        }
+        player.storage[item] += amount;
+        if (player.storage[item] <= 0) {
+            delete player.storage[item];
         }
     }
     function hasItem(player, item, amount) {
@@ -3609,7 +3661,7 @@ function RPG(rpgchan) {
         rpgbot.sendMessage(src, "Your Party (" + this.name + "): ", rpgchan);
         for (var x = 0; x < this.members.length; ++x) {
             var player = SESSION.users(this.members[x]).rpg;
-            rpgbot.sendMessage(src, player.name + (x === 0 ? " (Leader)" : "") + " [" + classes[player.job].name + " Lv. " + player.level + ", at " + places[player.location].name + "]", rpgchan);
+            rpgbot.sendMessage(src, player.name + (x === 0 ? " (Leader)" : "") + " [" + classes[player.job].name + " Lv. " + player.level + ", at " + places[player.location].name + (player.hp === 0 ? " (Dead)" : "") + "]", rpgchan);
         }
         sys.sendMessage(src, "", rpgchan);
     };
@@ -3699,11 +3751,11 @@ function RPG(rpgchan) {
         
         player.gold = startup.gold;
         player.bank = 0;
-        player.storage = {};
         player.items = {};
         for (var x in startup.items) {
             player.items[x] = startup.items[x];
         }
+        player.storage = {};
         
         player.plans = [];
         player.plans.push(player.strategy);
