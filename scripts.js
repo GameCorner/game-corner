@@ -21,6 +21,7 @@ var Config = {
     hangbot: "Unown",
     rpgbot: "Xatu",
     bfbot: "Deoxys",
+	musymbol: "-",
     // suspectvoting.js available, but not in use
     Plugins: ["mafia.js", "amoebagame.js", "tournaments.js", "tourstats.js", "trivia.js", "tours.js", "newtourstats.js", "auto_smute.js", "battlefactory.js", "hangman.js", "casino.js", "poker.js", "cards.js", "rand-utils.js", "rpg.js"],
     Mafia: {
@@ -112,7 +113,7 @@ var updateModule = function updateModule(module_name, callback) {
    }
 };
 
-var channel, getKey, megausers, contributors, mutes, mbans, smutes, detained, hbans, mafiaSuperAdmins, hangmanAdmins, hangmanSuperAdmins, trollchannel, staffchannel, channelbot, normalbot, bot, mafiabot, kickbot, capsbot, checkbot, coinbot, countbot, tourneybot, battlebot, commandbot, querybot, rankingbot, hangbot, rpgbot, bfbot, stepCounter, scriptChecks, lastMemUpdate, bannedUrls, mafiachan, mafiarev, sachannel, tourchannel, dwpokemons, lcpokemons, bannedGSCSleep, bannedGSCTrap, breedingpokemons, rangebans, proxy_ips, mafiaAdmins, rules, authStats, tempBans, nameBans, isSuperAdmin, cmp, key, saveKey, battlesStopped, lineCount, pokeNatures, maxPlayersOnline, pastebin_api_key, pastebin_user_key, getSeconds, getTimeString, sendChanMessage, sendChanAll, sendMainTour, VarsCreated, authChangingTeam, usingBannedWords, repeatingOneself, capsName, CAPSLOCKDAYALLOW, nameWarns, poScript, revchan, triviachan, watchchannel, lcmoves, hangmanchan, ipbans, battlesFought, casinobot, casinochan, lastCleared;
+var channel, getKey, marks, contributors, mutes, mbans, smutes, detained, hbans, mafiaSuperAdmins, hangmanAdmins, hangmanSuperAdmins, trollchannel, staffchannel, channelbot, normalbot, bot, mafiabot, kickbot, capsbot, checkbot, coinbot, countbot, tourneybot, battlebot, commandbot, querybot, rankingbot, hangbot, rpgbot, bfbot, stepCounter, scriptChecks, lastMemUpdate, bannedUrls, mafiachan, mafiarev, sachannel, tourchannel, dwpokemons, lcpokemons, bannedGSCSleep, bannedGSCTrap, breedingpokemons, rangebans, proxy_ips, mafiaAdmins, rules, authStats, tempBans, nameBans, isMarked, isSuperAdmin, cmp, key, saveKey, battlesStopped, lineCount, pokeNatures, maxPlayersOnline, pastebin_api_key, pastebin_user_key, getSeconds, getTimeString, sendChanMessage, sendChanAll, sendMainTour, VarsCreated, authChangingTeam, usingBannedWords, repeatingOneself, capsName, CAPSLOCKDAYALLOW, nameWarns, poScript, revchan, triviachan, watchchannel, lcmoves, hangmanchan, ipbans, battlesFought, casinobot, casinochan, lastCleared;
 
 var isMafiaAdmin = require('mafia.js').isMafiaAdmin;
 var isMafiaSuperAdmin = require('mafia.js').isMafiaSuperAdmin;
@@ -257,8 +258,6 @@ function POUser(id)
     /* user's id */
     this.id = id;
     this.name = sys.name(id);
-    /* whether user is megauser or not */
-    this.megauser = false;
     /* whether user is muted or not */
     this.mute = {active: false, by: null, expires: 0, time: null, reason: null};
     /* whether user is mafiabanned or not */
@@ -1319,7 +1318,7 @@ var commands = {
         "/detain [user]:[reason]:[# Mafia Games]: Sentences a player to probation for # of Mafia Games.",
         "/release [user]: Removes a player from probation in Mafia.",
         "/detainlist [search term]: Searches the detainlist, show full list if no search term is entered.",
-        "/passauth [target]: Passes your mods to another megauser (only for mega-mods) or to your online alt.",
+        "/passauth [target]: Passes your mods to another marked user (only for mega-mods) or to your online alt.",
         "/passauths [target]: Passes your mods silently.",
         "/banlist [search term]: Searches the banlist, shows full list if no search term is entered.",
         "/mutelist [search term]: Searches the mutelist, shows full list if no search term is entered.",
@@ -1342,7 +1341,6 @@ var commands = {
         "/unban [name]: Unbans a user.",
         "/smute xxx: Secretly mutes a user. Can't smute auth.",
         "/sunmute xxx: Removes secret mute from a user.",
-        "/megauser[off] xxx: Adds or removes megauser powers from someone.",
         "/memorydump: Shows the state of the memory.",
         "/nameban regexp: Adds a regexp ban on usernames.",
         "/nameunban full_regexp: Removes a regexp ban on usernames.",
@@ -1358,6 +1356,7 @@ var commands = {
         "/stopBattles: Stops all new battles to allow for server restart with less problems for users.",
         "/imp [name]: Lets you speak as someone",
         "/impOff: Stops your impersonating.",
+        "/mark[off] xxx: Marks or unmarks users.",
         "/contributor[off] xxx:what: Adds or removes contributor status (for indigo access) from someone, with reason.",
         "/clearpass [name]: Clears a user's password.",
         "/autosmute [name]: Adds a player to the autosmute list",
@@ -1484,11 +1483,12 @@ init : function() {
     var breedingList = ["Bulbasaur", "Ivysaur", "Venusaur", "Charmander", "Charmeleon", "Charizard", "Squirtle", "Wartortle", "Blastoise", "Croagunk", "Toxicroak", "Turtwig", "Grotle", "Torterra", "Chimchar", "Monferno", "Infernape", "Piplup", "Prinplup", "Empoleon", "Treecko", "Grovyle", "Sceptile", "Torchic", "Combusken", "Blaziken", "Mudkip", "Marshtomp", "Swampert", "Hitmonlee","Hitmonchan","Hitmontop","Tyrogue", "Porygon", "Porygon2", "Porygon-Z", "Gothorita", "Gothitelle","Pansage", "Pansear", "Panpour", "Simisear", "Simisage", "Simipour"];
     breedingpokemons = breedingList.map(sys.pokeNum);
 
-    /* restore mutes, smutes, mafiabans, rangebans, megausers */
+    /* restore mutes, smutes, mafiabans, rangebans, marks */
     mutes = new MemoryHash("mutes.txt");
     mbans = new MemoryHash("mbans.txt");
     smutes = new MemoryHash("smutes.txt");
     rangebans = new MemoryHash("rangebans.txt");
+	 marks = new MemoryHash("marks.txt");
     contributors = new MemoryHash("contributors.txt");
     mafiaAdmins = new MemoryHash("mafiaadmins.txt");
     mafiaSuperAdmins = new MemoryHash("mafiasuperadmins.txt");
@@ -1562,7 +1562,13 @@ init : function() {
             SESSION.global().BannedUrls = resp.toLowerCase().split(/\n/);
         });
     }
-
+    isMarked = function(id) {
+	    for (var x in marks.hash) {
+		    if (x.toLowerCase() == sys.name(id).toLowerCase()) 
+			return true;
+		}
+   		return false;
+	};	
     isSuperAdmin = function(id) {
         if (typeof Config.superAdmins != "object" || Config.superAdmins.length === undefined) return false;
         if (sys.auth(id) == 0) return false;
@@ -1822,7 +1828,7 @@ canJoinStaffChannel : function(src) {
         return false;
     if (sys.auth(src) > 0)
         return true;
-    if (SESSION.users(src).megauser)
+    if (isMarked(src))
         return true;
     if (SESSION.users(src).contributions !== undefined)
         return true;
@@ -2178,7 +2184,7 @@ afterLogIn : function(src) {
         sys.sendAll('Possible TOR user: ' + sys.name(src), staffchannel);
     }
     
-    if (SESSION.users(src).megauser)
+    if (isMarked(src))
         sys.appendToFile("staffstats.txt", sys.name(src) + "~" + src + "~" + sys.time() + "~" + "Connected as MU" + "\n");
     if (sys.auth(src) > 0 && sys.auth(src) <= 3)
         sys.appendToFile("staffstats.txt", sys.name(src) + "~" + src + "~" + sys.time() + "~" + "Connected as Auth" + "\n");
@@ -2192,7 +2198,7 @@ afterLogIn : function(src) {
 
 
 beforeLogOut : function(src) {
-    if (SESSION.users(src).megauser)
+    if (isMarked(src))
         sys.appendToFile("staffstats.txt", sys.name(src) + "~" + src + "~" + sys.time() + "~" + "Disconnected as MU" + "\n");
     if (sys.auth(src) > 0 && sys.auth(src) <= 3)
         sys.appendToFile("staffstats.txt", sys.name(src) + "~" + src + "~" + sys.time() + "~" + "Disconnected as Auth" + "\n");
@@ -2376,6 +2382,19 @@ userCommand: function(src, command, commandData, tar) {
         this.afterChatMessage(src, '/'+command+' '+commandData,channel);
         return;
     }
+	if (command == "marks") {
+	    sendChanMessage(src, "");
+		sendChanMessage(src, "*** MARKS ***");
+		sendChanMessage(src, "");
+		for (var x in marks.hash) {
+		    if (x === undefined) 
+			sendChanMessage(src, x);
+			else
+			sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);	
+		}
+        sendChanMessage(src, "");
+        return;
+    }		
     if (command == "contributors") {
         sendChanMessage(src, "");
         sendChanMessage(src, "*** CONTRIBUTORS ***");
@@ -2759,7 +2778,7 @@ userCommand: function(src, command, commandData, tar) {
 /*        if(sys.name(src).toLowerCase() !== "pokemonnerd"){
             return;
         }*/
-        sys.changeName(src, "(⌐■_■)");
+        sys.changeName(src, "(¬¦_¦)");
         return;
     }
     return "no command";
@@ -3481,12 +3500,12 @@ modCommand: function(src, command, commandData, tar) {
             // fine
         }
         else {
-            if (sys.auth(src) !== 0 || !SESSION.users(src).megauser) {
+            if (sys.auth(src) !== 0 || isMarked(src) === false) {
                 normalbot.sendChanMessage(src, "You need to be mega-auth to pass auth.");
                 return;
             }
-            if (!SESSION.users(tar).megauser || sys.auth(tar) > 0) {
-                normalbot.sendChanMessage(src, "The target must be megauser and not auth, or from your IP.");
+            if (isMarked(tar) === false || sys.auth(tar) > 0) {
+                normalbot.sendChanMessage(src, "The target must be a marked user and not auth, or from your IP.");
                 return;
             }
         }
@@ -3597,7 +3616,7 @@ adminCommand: function(src, command, commandData, tar) {
             normalbot.sendChanMessage(src, "Your target is not online.");
             return;
         }
-        if (SESSION.users(tar).megauser || SESSION.users(tar).contributions || sys.auth(tar) > 0) {
+        if (isMarked(tar) || SESSION.users(tar).contributions || sys.auth(tar) > 0) {
             normalbot.sendChanMessage(src, "They have already access.");
             return;
         }
@@ -3890,6 +3909,31 @@ ownerCommand: function(src, command, commandData, tar) {
             CAPSLOCKDAYALLOW = true;
             normalbot.sendChanMessage(src, "You turned caps lock day on!");
         }
+        return;
+    }
+    if (command == "mark") {
+        var name = commandData;
+		    if (sys.dbIp(name) === undefined) {
+			    normalbot.sendChanMessage(src, name + " couldn't be found.");
+				return;
+			}
+            normalbot.sendAll("" + name + " was marked by " + nonFlashing(sys.name(src)) + ".");
+            marks.add(name);
+			return;
+    }
+        
+     if (command == "markoff") {
+        var Mark = "";
+		for (var x in marks.hash) {
+		    if (x.toLowerCase() == commandData.toLowerCase()) 
+			Mark = x;
+		}
+        if (Mark === "") {
+            normalbot.sendChanMessage(src, commandData + " is not a marked user.");
+            return;
+     	}
+        marks.remove(Mark);
+        normalbot.sendChanMessage(src, commandData + " is no longer a marked user!");		
         return;
     }
     if (command == "contributor") {
@@ -4185,6 +4229,15 @@ ownerCommand: function(src, command, commandData, tar) {
         }
         return;
     }
+	if (command == "viewsymbol") {
+	    normalbot.sendChanMessage(src, "The current symbol for marked users is " + Config.musymbol);
+		return;
+	}	
+	if (command == "changesymbol") {
+	    normalbot.sendChanMessage(src, "The symbol for marked users has been changed from " + Config.musymbol + " to " + commandData);
+	    Config.musymbol = commandData;
+		return;
+	}	
     if (command == "changeauth" || command == "changeauths") {
         var pos = commandData.indexOf(' ');
         if (pos == -1) return;
@@ -4775,7 +4828,7 @@ beforeChatMessage: function(src, message, chan) {
                 }
             }
         }
-        var BanList = [".tk", "nimp.org", "drogendealer", /\u0E49/, /\u00AD/, "nobrain.dk", /\bn[1i]gg+ers*\b/i,  "¦¦", "¦¦", "__", "¯¯", "___", "……", ".....", "¶¶", "¯¯", "----", "╬═╬"];
+        var BanList = [".tk", "nimp.org", "drogendealer", /\u0E49/, /\u00AD/, "nobrain.dk", /\bn[1i]gg+ers*\b/i,  "¦¦", "¦¦", "__", "¯¯", "___", "……", ".....", "¶¶", "¯¯", "----", "+-+"];
         for (var i = 0; i < BanList.length; ++i) {
             var filter = BanList[i];
             if (typeof filter == "string" && m.indexOf(filter) != -1 || typeof filter == "function" && filter.test(m)) {
@@ -4995,7 +5048,15 @@ beforeChatMessage: function(src, message, chan) {
         sys.stopEvent();
         return;
     }
-
+	// Symbol for marked users
+	if (isMarked(src) && sys.auth(src) == 0) {
+       message = utilities.html_escape(message);
+       messagetosend = message;
+	    var colour = script.getColor(src);
+	    sys.sendHtmlAll("<font color='"+colour+"'><timestamp /> "+ Config.musymbol +"<b>"+ sys.name(src) +":</b></font> "+messagetosend, channel);
+		sys.stopEvent();
+		return;
+	}	
 
     // Secret mute
     if (sys.auth(src) === 0 && SESSION.users(src).smute.active) {
