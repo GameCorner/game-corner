@@ -2085,73 +2085,10 @@ function RPG(rpgchan) {
         var player = SESSION.users(src).rpg;
         
         if (commandData === "*") {
-            // var out = ["", "Items: "];
             var out = [];
-            var types = {
-                usable: [],
-                equip: [],
-                key: [],
-                other: [],
-                broken: []
-            };
-            for (var i in player.items) {
-                if (i in items) {
-                    switch (items[i].type) {
-                        case "usable":
-                            types.usable.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
-                            break;
-                        case "equip":
-                            types.equip.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info + " " + getEquipAttributes(i));
-                            break;
-                        case "key":
-                            types.key.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
-                            break;
-                        default:
-                            types.other.push(player.items[i] + "x " + items[i].name + " (" + i + "): " + items[i].info);
-                            break;
-                    }
-                } else {
-                    types.broken.push(i + ": Unknown item. Contact an RPG admin to fix that.");
-                }
-            }
             
-            if (types.usable.length > 0) {
-                out.push("");
-                out.push("Usable Items:");
-                for (i in types.usable) {
-                    out.push(types.usable[i]);
-                }
-            }
-            if (types.equip.length > 0) {
-                out.push("");
-                out.push("Equipable Items:");
-                for (i in types.equip) {
-                    out.push(types.equip[i]);
-                }
-            }
-            if (types.key.length > 0) {
-                out.push("");
-                out.push("Key Items:");
-                for (i in types.key) {
-                    out.push(types.key[i]);
-                }
-            }
-            if (types.other.length > 0) {
-                out.push("");
-                out.push("Other Items:");
-                for (i in types.other) {
-                    out.push(types.other[i]);
-                }
-            }
-            if (types.broken.length > 0) {
-                out.push("");
-                out.push("Broken Items:");
-                for (i in types.broken) {
-                    out.push(types.broken[i]);
-                }
-            }
+            this.viewItems(src, "all");
             
-            out.push("");
             out.push("Equipment:");
             for (i in player.equips) {
                 if (player.equips[i] !== null && !(player.equips[i] in items)) {
@@ -2311,6 +2248,166 @@ function RPG(rpgchan) {
         } else {
             rpgbot.sendMessage(src, "This item cannot be used!", rpgchan);
         }
+    };
+    this.viewItems = function(src, commandData) {
+        var player = SESSION.users(src).rpg;
+        var out = [];
+        
+        var e, i, item, id, ordered, noCategory = true;
+        var data = commandData.toLowerCase();
+        
+        var sortByName = function (a, b) {
+            var tra = items[a].name;
+            var trb = items[b].name;
+            if (tra == trb)
+                return 0;
+            else if (tra < trb)
+                return -1;
+            else
+                return 1;
+        };
+        
+        try {
+            ordered = Object.keys(player.items).sort(sortByName);
+        } catch (err) {
+            rpgbot.sendMessage(src, "You have an invalid item, so you can't use this command! Contact an RPG admin for help.", rpgchan);
+            return;
+        }
+        
+        if (data === "all" || data === "*") {
+            var types = {
+                usable: [],
+                equip: [],
+                key: [],
+                other: [],
+                broken: []
+            };
+            
+            for (i in ordered) {
+                id = ordered[i];
+                if (id in items) {
+                    item = items[id];
+                    switch (item.type) {
+                        case "usable":
+                            types.usable.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info);
+                            break;
+                        case "equip":
+                            types.equip.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info + " " + getEquipAttributes(id));
+                            break;
+                        case "key":
+                            types.key.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info);
+                            break;
+                        default:
+                            types.other.push(player.items[id] + "x " + item.name + " (" + id + "): " + item.info);
+                            break;
+                    }
+                } else {
+                    types.broken.push(id + ": Unknown item. Contact an RPG admin to fix that.");
+                }
+            }
+            
+            if (types.equip.length > 0) {
+                out.push("");
+                out.push("Equipable Items:");
+                for (i in types.equip) {
+                    out.push(types.equip[i]);
+                }
+            }
+            if (types.key.length > 0) {
+                out.push("");
+                out.push("Key Items:");
+                for (i in types.key) {
+                    out.push(types.key[i]);
+                }
+            }
+            if (types.other.length > 0) {
+                out.push("");
+                out.push("Other Items:");
+                for (i in types.other) {
+                    out.push(types.other[i]);
+                }
+            }
+            if (types.usable.length > 0) {
+                out.push("");
+                out.push("Usable Items:");
+                for (i in types.usable) {
+                    out.push(types.usable[i]);
+                }
+            }
+            if (types.broken.length > 0) {
+                out.push("");
+                out.push("Broken Items:");
+                for (i in types.broken) {
+                    out.push(types.broken[i]);
+                }
+            }
+            noCategory = false;
+        } else if (data === "usable") {
+            for (i in ordered) {
+                id = ordered[i];
+                item = items[id];
+                if (item.type === "usable") {
+                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
+                }
+            }
+            noCategory = false;
+        } else if (data === "equipment" || data === "equip") {
+            for (i in ordered) {
+                id = ordered[i];
+                item = items[id];
+                if (item.type === "equip") {
+                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info + " " + getEquipAttributes(id));
+                }
+            }
+            noCategory = false;
+        } else if (data === "key") {
+            for (i in ordered) {
+                id = ordered[i];
+                item = items[id];
+                if (item.type === "key") {
+                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
+                }
+            }
+            noCategory = false;
+        } else if (data === "other") {
+            for (i in ordered) {
+                id = ordered[i];
+                item = items[id];
+                if (item.type !== "usable" && item.type !== "equip" && item.type !== "key") {
+                    out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info);
+                }
+            }
+            noCategory = false;
+        } else {
+            for (e in equipment) {
+                if (data === e || data === equipment[e].toLowerCase()) {
+                    for (i in ordered) {
+                        id = ordered[i];
+                        item = items[id];
+                        if (item.type === "equip" && (item.slot === e || ((e === "lhand" || e === "rhand") && item.slot === "2-hands"))) {
+                            out.push(player.items[id] + "x " + items[id].name + " (" + id + "): " + items[id].info + " " + getEquipAttributes(id));
+                        }
+                    }
+                    noCategory = false;
+                    break;
+                }
+            }
+        }
+        
+        if (noCategory === true) {
+            rpgbot.sendMessage(src, "No such item category! Valid categories are 'all', 'usable', 'equipment', 'key', 'other', " + readable(Object.keys(equipment).map(function(e){ return "'" + equipment[e].toLowerCase() + "'"; }), "or") + ".", rpgchan);
+            return;
+        }
+        if (out.length === 0) {
+            rpgbot.sendMessage(src, "You have no items in this category!", rpgchan);
+            return;
+        }
+        
+        sys.sendMessage(src, "", rpgchan);
+        for (var x in out) {
+            sys.sendMessage(src, out[x], rpgchan);
+        }
+        sys.sendMessage(src, "", rpgchan);
     };
     this.removeEquip = function(src, item) {
         var equips = SESSION.users(src).rpg.equips;
@@ -2495,15 +2592,36 @@ function RPG(rpgchan) {
                 
             } else {
                 rpgbot.sendMessage(src, "You offered " + offer + " for " + targetName + "'s " + wanted + "!", rpgchan);
-                rpgbot.sendMessage(targetId, playerName + " offered " + offer + " for your " + wanted + "! To accept the trade, type /trade " + sys.name(src) + ":" + itemWanted + (amountWanted > 1 ? "*" + amountWanted : "") + ":" + itemOffered + (amountOffered > 1 ? "*" + amountOffered : ""), rpgchan);
+                rpgbot.sendMessage(targetId, playerName + " offered " + offer + " for your " + wanted + "! To accept it, use /accept " + sys.name(src) + ". To negotiate, use /trade " + sys.name(src) + ":" + itemWanted + (amountWanted > 1 ? "*" + amountWanted : "") + ":" + itemOffered + (amountOffered > 1 ? "*" + amountOffered : ""), rpgchan);
                 
                 rpgbot.sendMessage(src, "You and " + targetName + " didn't come to an agreement!", rpgchan);
                 rpgbot.sendMessage(targetId, "You and " + playerName + " didn't come to an agreement!", rpgchan);
             }
         } else {
             rpgbot.sendMessage(src, "You offered " + offer + " for " + targetName + "'s " + wanted + "!", rpgchan);
-            rpgbot.sendMessage(targetId, playerName + " offered " + offer + " for your " + wanted + "! To accept the trade, type /trade " + sys.name(src) + ":" + itemWanted + (amountWanted > 1 ? "*" + amountWanted : "") + ":" + itemOffered + (amountOffered > 1 ? "*" + amountOffered : ""), rpgchan);
+            rpgbot.sendMessage(targetId, playerName + " offered " + offer + " for your " + wanted + "! To accept it, use /accept " + sys.name(src) + ". To negotiate, use  /trade " + sys.name(src) + ":" + itemWanted + (amountWanted > 1 ? "*" + amountWanted : "") + ":" + itemOffered + (amountOffered > 1 ? "*" + amountOffered : ""), rpgchan);
         }
+    };
+    this.acceptTrade = function(src, commandData) {
+        var player = SESSION.users(src).rpg;
+        var targetId = sys.id(commandData);
+        if (targetId === undefined) {
+            rpgbot.sendMessage(src, "No such player!", rpgchan);
+            return;
+        }
+        var target = SESSION.users(targetId).rpg;
+        if (target === undefined) {
+            rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
+            return;
+        }
+        
+        if (target.name in tradeRequests && tradeRequests[target.name] !== undefined && tradeRequests[target.name][0] === player.name) {
+            var trade = tradeRequests[target.name];
+            this.requestTrade(src, target.name + ":" + trade[2] + "*" + trade[4] + ":" + trade[1] + "*" + trade[3]);
+        } else {
+            rpgbot.sendMessage(src, "This person didn't offer you anything!", rpgchan);
+        }
+        
     };
     this.updateBonus = function(src) {
         var player = SESSION.users(src).rpg;
@@ -3079,6 +3197,26 @@ function RPG(rpgchan) {
         }
         
     };
+    this.getBattlePlan = function(src, commandData) {
+        var player = SESSION.users(src).rpg;
+        
+        switch (commandData) {
+            case "*":
+                rpgbot.sendMessage(src, "Your current plan (raw): " + getPlanString(player.strategy), rpgchan);
+                break;
+            case "1":
+                rpgbot.sendMessage(src, "Your saved plan 1 (raw): " + getPlanString(player.plans[0]), rpgchan);
+                break;
+            case "2":
+                rpgbot.sendMessage(src, "Your saved plan 2 (raw): " + getPlanString(player.plans[1]), rpgchan);
+                break;
+            case "3":
+                rpgbot.sendMessage(src, "Your saved plan 3 (raw): " + getPlanString(player.plans[2]), rpgchan);
+                break;
+            default:
+                rpgbot.sendMessage(src, "No such slot!", rpgchan);
+        }
+    };
     this.setPassiveSkills = function(src, commandData) {
         var player = SESSION.users(src).rpg;
         if (commandData === "*") {
@@ -3179,6 +3317,13 @@ function RPG(rpgchan) {
         }
         // return readable(list, "or");
         return list.join(", ");
+    }
+    function getPlanString(obj) {
+        var result = [];
+        for (var e in obj) {
+            result.push(e + ":" + obj[e]);
+        }
+        return result.join("*");
     }
     
     this.manageParty = function(src, commandData) {
@@ -3553,6 +3698,8 @@ function RPG(rpgchan) {
         player.skillPoints = startup.skills;
         
         player.gold = startup.gold;
+        player.bank = 0;
+        player.storage = {};
         player.items = {};
         for (var x in startup.items) {
             player.items[x] = startup.items[x];
@@ -3721,6 +3868,7 @@ function RPG(rpgchan) {
         
         user.rpg = gamefile;
         user.rpg.id = src;
+        user.party = null;
         rpgbot.sendMessage(src, "Your character has been loaded successfully!", rpgchan);
     };
     this.convertChar = function(gamefile) {
@@ -3829,6 +3977,13 @@ function RPG(rpgchan) {
         }
         if (!file.description) {
             file.description = "";
+        }
+        
+        if (!file.bank) {
+            file.bank = 0;
+        }
+        if (!file.storage) {
+            file.storage = {};
         }
         
         return file;
@@ -4479,7 +4634,8 @@ function RPG(rpgchan) {
             item: [this.useItem, "To use or view your items."],
             challenge: [this.challengePlayer, "To challenge another player to a duel."],
             revive: [this.reviveSelf, "To respawn after you die."],
-            trade: [this.requestTrade, "To request a trade with another player."]
+            trade: [this.requestTrade, "To request a trade with another player."],
+            accept: [this.acceptTrade, "To instantly accept someone's trade offer."],
 		},
         character: {
             plan: [this.setBattlePlan, "To see or set your battle strategy."],
@@ -4494,6 +4650,8 @@ function RPG(rpgchan) {
             party: [this.manageParty, "To create and manage a party"],
             appearance: [this.changeAppearance, "To change your appearance description."],
             font: [this.changeFontSize, "To change the Battle Message's size."],
+            getplan: [this.getBattlePlan, "To get your raw plan text."],
+            it: [this.viewItems, "To view your items by category."],
             watch: [this.watchBattle, "To watch someone else's battle."]
         },
         altactions: {
