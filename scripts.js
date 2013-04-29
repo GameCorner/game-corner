@@ -5049,7 +5049,7 @@ beforeChatMessage: function(src, message, chan) {
         return;
     }
 	// Symbol for marked users
-	if (isMarked(src) && sys.auth(src) == 0) {
+       if (isMarked(src) && (sys.auth(src) == 0 || sys.auth(src) == 4)) {
        message = utilities.html_escape(message);
        messagetosend = message;
 	    var colour = script.getColor(src);
