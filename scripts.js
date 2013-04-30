@@ -1261,6 +1261,7 @@ var commands = {
         "/wiki [Pokémon]: Shows that Pokémon's wiki page",
         "/register: Registers a channel with you as owner.",
         "/resetpass: Clears your password (unregisters you, remember to reregister).",
+        "/superusers: Lists super users.",
         "/auth [owners/admins/mods]: Lists auth of given level, shows all auth if left blank.",
         "/cauth: Lists all users with channel auth in the current channel.",
         "/contributors: Lists contributors.",
@@ -1356,7 +1357,9 @@ var commands = {
         "/stopBattles: Stops all new battles to allow for server restart with less problems for users.",
         "/imp [name]: Lets you speak as someone",
         "/impOff: Stops your impersonating.",
-        "/mark[off] xxx: Marks or unmarks users.",
+        "/superuser[off] xxx: Adds or removes super users.",
+        "/viewsymbol: Shows the current symbol for super users.",
+        "/changesymbol: Changes the symbol for super users",
         "/contributor[off] xxx:what: Adds or removes contributor status (for indigo access) from someone, with reason.",
         "/clearpass [name]: Clears a user's password.",
         "/autosmute [name]: Adds a player to the autosmute list",
@@ -2382,12 +2385,12 @@ userCommand: function(src, command, commandData, tar) {
         this.afterChatMessage(src, '/'+command+' '+commandData,channel);
         return;
     }
-	if (command == "marks") {
+	if (command == "superusers") {
 	    sendChanMessage(src, "");
-		sendChanMessage(src, "*** MARKS ***");
+		sendChanMessage(src, "*** SUPER USERS ***");
 		sendChanMessage(src, "");
 		for (var x in marks.hash) {
-		    if (x === undefined) 
+		    if (sys.id(x) === undefined) 
 			sendChanMessage(src, x);
 			else
 			sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);	
@@ -2773,6 +2776,9 @@ userCommand: function(src, command, commandData, tar) {
         var pokename = sys.pokemon(poke);
         normalbot.sendChanMessage(src, pokename+"'s wikipage is here: http://wiki.pokemon-online.eu/wiki/"+pokename);
         return;
+    }
+    if (isMarked(src) && (command == "mute" || command == "unmute")) {
+    	return this.modCommand(src, command, commandData, tar);
     }
     if(command == "shades"){
 /*        if(sys.name(src).toLowerCase() !== "pokemonnerd"){
@@ -3911,29 +3917,35 @@ ownerCommand: function(src, command, commandData, tar) {
         }
         return;
     }
-    if (command == "mark") {
+    if (command == "superuser") {
         var name = commandData;
+        for (var x in marks.hash) {
+        	if (name.toLowerCase == x.toLowerCase) {
+        		normalbot.sendChanMessage(src, name + " is already a super user")
+        		return;
+        	}
+        }
 		    if (sys.dbIp(name) === undefined) {
 			    normalbot.sendChanMessage(src, name + " couldn't be found.");
 				return;
 			}
-            normalbot.sendAll("" + name + " was marked by " + nonFlashing(sys.name(src)) + ".");
+            normalbot.sendAll("" + name + " was promoted to super user by " + nonFlashing(sys.name(src)) + ".");
             marks.add(name);
 			return;
     }
         
-     if (command == "markoff") {
+     if (command == "superuseroff") {
         var Mark = "";
 		for (var x in marks.hash) {
 		    if (x.toLowerCase() == commandData.toLowerCase()) 
 			Mark = x;
 		}
         if (Mark === "") {
-            normalbot.sendChanMessage(src, commandData + " is not a marked user.");
+            normalbot.sendChanMessage(src, commandData + " is not a super user.");
             return;
      	}
         marks.remove(Mark);
-        normalbot.sendChanMessage(src, commandData + " is no longer a marked user!");		
+        normalbot.sendChanMessage(src, commandData + " is no longer a super user!");		
         return;
     }
     if (command == "contributor") {
@@ -4230,11 +4242,11 @@ ownerCommand: function(src, command, commandData, tar) {
         return;
     }
 	if (command == "viewsymbol") {
-	    normalbot.sendChanMessage(src, "The current symbol for marked users is " + Config.musymbol);
+	    normalbot.sendChanMessage(src, "The current symbol for super users is " + Config.musymbol);
 		return;
 	}	
 	if (command == "changesymbol") {
-	    normalbot.sendChanMessage(src, "The symbol for marked users has been changed from " + Config.musymbol + " to " + commandData);
+	    normalbot.sendChanMessage(src, "The symbol for super users has been changed from " + Config.musymbol + " to " + commandData);
 	    Config.musymbol = commandData;
 		return;
 	}	
