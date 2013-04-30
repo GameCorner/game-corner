@@ -3976,7 +3976,7 @@ function RPG(rpgchan) {
         
         user.rpg = gamefile;
         user.rpg.id = src;
-        user.party = null;
+        user.rpg.party = null;
         rpgbot.sendMessage(src, "Your character has been loaded successfully!", rpgchan);
     };
     this.convertChar = function(gamefile) {
