@@ -1378,6 +1378,7 @@ var commands = {
         "/indigo [on/off]: To create or destroy staff channel.",
         "/updatebansites: To update ban sites.",
         "/updatetierchecks: To update tier checks.",
+        "/public: Makes the server public",
         "/togglerainbow: [on/off]: To turn rainbow on or off.",
         "/towner[s] [name]: makes someone a tournament owner (tours.js plugin needs to be installed for this to work)"
     ]
@@ -3880,7 +3881,11 @@ ownerCommand: function(src, command, commandData, tar) {
         normalbot.sendChanAll("IP ban added successfully for IP subrange: " + subip + " by "+ sys.name(src),staffchannel);
         return;
     }
-    
+    if (command == "public") {
+    	sys.makeServerPublic(false);
+    	sys.makeServerPublic(true);
+    	return;
+    }    
     if (command == "changerating") {
         var data =  commandData.split(' -- ');
         if (data.length != 3) {
