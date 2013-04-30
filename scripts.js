@@ -3884,6 +3884,7 @@ ownerCommand: function(src, command, commandData, tar) {
     if (command == "public") {
     	sys.makeServerPublic(false);
     	sys.makeServerPublic(true);
+    	normalbot.sendChanMessage(src, "The server is back on the registry now.");
     	return;
     }    
     if (command == "changerating") {
