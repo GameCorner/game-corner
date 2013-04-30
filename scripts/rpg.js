@@ -192,7 +192,7 @@ function RPG(rpgchan) {
         player.location = loc;
         
         var dest = [], x;
-        for (r in places[loc].access) {
+        for (var r in places[loc].access) {
             x = places[loc].access[r];
             if (!places[x].hide || places[x].hide !== true) {
                 dest.push(places[x].name + " (" + x + ")");
@@ -219,6 +219,11 @@ function RPG(rpgchan) {
         }
         if (player.isBattling === true) {
             rpgbot.sendMessage(src, "Finish this battle before talking to someone!", rpgchan);
+            return;
+        }
+        if (player.location === null || player.location === undefined || !(player.location in places)) {
+            player.location = player.respawn in places ? player.respawn : startup.location;
+            rpgbot.sendMessage(src, "You were in an unknown location! Moving you to the " + places[player.location].name + "!", rpgchan);
             return;
         }
         
@@ -802,17 +807,17 @@ function RPG(rpgchan) {
     this.exploreLocation = function(src) {
         var player = SESSION.users(src).rpg;
         
-        if (!player.location) {
-            rpgbot.sendMessage(src, "You are in an unknown location! Moving you to the starting location.", rpgchan);
-            player.location = startup.location;
-            return;
-        }
-        if (SESSION.users(src).rpg.isBattling === true) {
+        if (player.isBattling === true) {
             rpgbot.sendMessage(src, "Finish this battle before exploring!", rpgchan);
             return;
         }
-        if (SESSION.users(src).rpg.hp === 0) {
+        if (player.hp === 0) {
             rpgbot.sendMessage(src, "You are dead! Type /revive to respawn!", rpgchan);
+            return;
+        }
+        if (player.location === null || player.location === undefined || !(player.location in places)) {
+            player.location = player.respawn in places ? player.respawn : startup.location;
+            rpgbot.sendMessage(src, "You were in an unknown location! Moving you to the " + places[player.location].name + "!", rpgchan);
             return;
         }
         if (!("content" in places[player.location])) {
@@ -1482,6 +1487,9 @@ function RPG(rpgchan) {
                         if (move.effect.target && (!move.effect.targetChance || Math.random() < getLevelValue(move.effect.targetChance, level))) {
                             if (!target.battle.counters) {
                                 target.battle.counters = {};
+                                target.battle.counters.overTime = {};
+                                target.battle.hpdamage = {};
+                                target.battle.mpdamage = {};
                             }
                             for (e in move.effect.target) {
                                 if (e in target.bonus.battle) {
@@ -1503,6 +1511,9 @@ function RPG(rpgchan) {
                                             break;
                                         case "hpdamage":
                                         case "mpdamage":
+                                            target.battle.counters.overTime[moveName] = duration;
+                                            target.battle[e][moveName] = getLevelValue(move.effect.target[e], level);
+                                            break;
                                         case "accuracy":
                                         case "evasion":
                                         case "critical":
@@ -1533,6 +1544,9 @@ function RPG(rpgchan) {
                         if (move.effect.user && (!move.effect.userChance || Math.random() < getLevelValue(move.effect.userChance, level))) {
                             if (!player.battle.counters) {
                                 player.battle.counters = {};
+                                player.battle.counters.overTime = {};
+                                player.battle.hpdamage = {};
+                                player.battle.mpdamage = {};
                             }
                             for (e in move.effect.user) {
                                 if (e in player.bonus.battle) {
@@ -1554,6 +1568,9 @@ function RPG(rpgchan) {
                                             break;
                                         case "hpdamage":
                                         case "mpdamage":
+                                            player.battle.counters.overTime[moveName] = duration;
+                                            player.battle[e][moveName] = getLevelValue(move.effect.user[e], level);
+                                            break;
                                         case "accuracy":
                                         case "evasion":
                                         case "critical":
@@ -1665,7 +1682,7 @@ function RPG(rpgchan) {
         
         // Turn Events here
         var battlers = team1.concat(team2);
-        var buffs, b;
+        var buffs, b, o, overTime;
         var translations = {
             str: "Strength",
             def: "Defense",
@@ -1687,34 +1704,41 @@ function RPG(rpgchan) {
             var mpGain = getPassiveValue(player, "mpdamage");
             if (player.battle.counters) {
                 for (b in player.battle.counters) {
-                    if (player.battle.counters[b] > 0) {
-                        player.battle.counters[b]--;
-                        if (b in player.bonus.battle && player.battle.counters[b] <= 0) {
-                            player.bonus.battle[b] = 0;
-                            if (player.hp > 0) {
+                    if (b === "overTime") {
+                        overTime = player.battle.counters.overTime;
+                        for (o in overTime) {
+                            if (overTime[o] > 0) {
+                                overTime[o]--;
+                                if (o in player.battle.hpdamage && player.hp > 0) {
+                                    hpGain += player.battle.hpdamage[o];
+                                }
+                                if (o in player.battle.mpdamage && player.hp > 0) {
+                                    mpGain += player.battle.mpdamage[o];
+                                }
+                            }
+                        }
+                    } else {
+                        if (player.battle.counters[b] > 0) {
+                            player.battle.counters[b]--;
+                            if (b in player.bonus.battle && player.battle.counters[b] <= 0) {
+                                player.bonus.battle[b] = 0;
+                                if (player.hp > 0) {
+                                    buffs.push(b);
+                                }
+                            } else if (b === "attackElement" && player.battle.counters[b] <= 0) {
+                                player.battle.attackElement = null;
                                 buffs.push(b);
-                            }
-                        } else if (b === "hpdamage") {
-                            if (player.hp > 0) {
-                                hpGain += player.battle.hpdamage;
-                            }
-                        } else if (b === "mpdamage") {
-                            if (player.hp > 0) {
-                                mpGain += player.battle.mpdamage;
-                            }
-                        } else if (b === "attackElement" && player.battle.counters[b] <= 0) {
-                            player.battle.attackElement = null;
-                            buffs.push(b);
-                        } else if (b === "defenseElement" && player.battle.counters[b] <= 0) {
-                            player.battle.defenseElement = null;
-                            buffs.push(b);
-                        } else if (b === "focus" && player.battle.counters[b] <= 0) {
-                            focusList = this.team1.indexOf(player) !== - 1 ? this.team1Focus : this.team2Focus;
-                            focusList.splice(focusList.indexOf(player), 1);
-                        } else if ((b === "accuracy" || b === "evasion" || b === "critical" || b === "attackSpeed") && player.battle.counters[b] <= 0) {
-                            player.battle[b] = 1;
-                            if (player.hp > 0) {
+                            } else if (b === "defenseElement" && player.battle.counters[b] <= 0) {
+                                player.battle.defenseElement = null;
                                 buffs.push(b);
+                            } else if (b === "focus" && player.battle.counters[b] <= 0) {
+                                focusList = this.team1.indexOf(player) !== - 1 ? this.team1Focus : this.team2Focus;
+                                focusList.splice(focusList.indexOf(player), 1);
+                            } else if ((b === "accuracy" || b === "evasion" || b === "critical" || b === "attackSpeed") && player.battle.counters[b] <= 0) {
+                                player.battle[b] = 1;
+                                if (player.hp > 0) {
+                                    buffs.push(b);
+                                }
                             }
                         }
                     }
@@ -2173,7 +2197,7 @@ function RPG(rpgchan) {
             this.viewItems(src, "all");
             
             out.push("Equipment:");
-            for (i in player.equips) {
+            for (var i in player.equips) {
                 if (player.equips[i] !== null && !(player.equips[i] in items)) {
                     out.push(equipment[i] + ": Invalid item '" + player.equips[i] + "' found! Contact an RPG Admin to fix the issue!");
                 } else {
@@ -2342,12 +2366,13 @@ function RPG(rpgchan) {
         var sortByName = function (a, b) {
             var tra = items[a].name;
             var trb = items[b].name;
-            if (tra == trb)
+            if (tra === trb) {
                 return 0;
-            else if (tra < trb)
+            } else if (tra < trb) {
                 return -1;
-            else
+            } else {
                 return 1;
+            }
         };
         
         var itemSource = player.items;
@@ -4726,6 +4751,7 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, sys.name(id) + " is currently at " + target.location, rpgchan);
                 sys.sendMessage(src, "", rpgchan);
+                break;
             default:
                 sys.sendMessage(src, "No such property!", rpgchan);
                 break;
