@@ -1854,10 +1854,12 @@ function RPG(rpgchan) {
             msg = [msg];
         }
         msg = msg.map(function(x) { return (x === "" ? "" : "<timestamp/>" + x); } ).join("<br/>");
-        
-        for (v in this.colorNames) {
-            reg = new RegExp("\\b" + v, "g");
-            msg = msg.replace(reg, this.colorNames[v]);
+        var colorOrder = Object.keys(this.colorNames).sort(function(a, b){
+          return b.length - a.length; // ASC -> a - b; DESC -> b - a
+        });
+        for (v in colorOrder) {
+            reg = new RegExp("\\b" + colorOrder[v], "g");
+            msg = msg.replace(reg, this.colorNames[colorOrder[v]]);
         }
         
         for (v in this.viewers) {
