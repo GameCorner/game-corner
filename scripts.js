@@ -1138,7 +1138,7 @@ function POGlobal(id)
         plugins.push(plugin);
     }
     this.plugins = plugins;
-    this.coins = 0;
+    this.coins = {};
     this.channelManager = new POChannelManager('channelHash.json');
     var manager = this.channelManager;
     sys.channelIds().forEach(function(id) {
@@ -1221,6 +1221,9 @@ if (typeof SESSION.global() != 'undefined') {
         }
     });
 
+    if (SESSION.global().coins === undefined) {
+        SESSION.global().coins = {};
+    }
 }
 
 // Bot.js binds the global variable 'channel' so we cannot re-use it
