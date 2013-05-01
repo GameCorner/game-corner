@@ -25,7 +25,7 @@ module.exports = (new function () {
     //JSON.parse((casino.memoryHash.get('coins') || "{}"));
     //}
     this.chan = undefined;
-    //this.diceSlider = new DiceSlider(casino);  Error loading module casino.js: TypeError: Result of expression 'DiceSlider' [[object Object]] is not a constructor. on line: 28
+    this.diceSlider = new DiceSlider(casino);  
 
     
     /*
