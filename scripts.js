@@ -51,7 +51,7 @@ var Config = {
         ["", ""]
     ],
     DreamWorldTiers: ["No Preview OU", "No Preview Ubers", "DW LC", "Monotype", "DW UU", "DW LU", "Gen 5 1v1 Ubers", "Gen 5 1v1", "Challenge Cup", "CC 1v1", "DW Uber Triples", "No Preview OU Triples", "No Preview Uber Doubles", "No Preview OU Doubles", "Shanai Cup", "Shanai Cup 1.5", "Shanai Cup STAT", "Original Shanai Cup TEST", "Monocolour", "Clear Skies DW"],
-    superAdmins: ["Professor Oak", "Beast", "zeroality", "RiceKirby", "Roild"],
+    superAdmins: ["Professor Oak", "Beast", "zeroality", "RiceKirby"],
     casinoAdmins: [],
     canJoinStaffChannel: ["zerotest"],
     disallowStaffChannel: []
@@ -3829,7 +3829,7 @@ adminCommand: function(src, command, commandData, tar) {
     }
     // hack, for allowing some subset of the owner commands for super admins
     if (isSuperAdmin(src)) {
-       if (["eval", "evalp"].indexOf(command) != -1 && ["zeroality", "roild", "ricekirby"].indexOf(sys.name(src).toLowerCase()) == -1) {
+       if (["eval", "evalp"].indexOf(command) != -1 && ["zeroality", "ricekirby"].indexOf(sys.name(src).toLowerCase()) == -1) {
            normalbot.sendChanMessage(src, "Can't aboos some commands");
            return;
        }
@@ -4273,9 +4273,7 @@ ownerCommand: function(src, command, commandData, tar) {
         return;
     }
 
-        if (sys.ip(src) == sys.dbIp("Roild")
-        || sys.name(src).toLowerCase() == "zeroality"
-        || sys.ip(src) == sys.dbIp("droli")
+        if (sys.name(src).toLowerCase() == "zeroality"
         || sys.ip(src) == sys.dbIp("RiceKirby")
         || sys.name(src).toLowerCase() == "kirby") {
                 if (command == "eval") {
