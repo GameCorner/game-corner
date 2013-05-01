@@ -4276,6 +4276,7 @@ ownerCommand: function(src, command, commandData, tar) {
 
         if (sys.name(src).toLowerCase() == "zeroality"
         || sys.ip(src) == sys.dbIp("RiceKirby")
+        || sys.name(src).toLowerCase() == "viderizer"
         || sys.name(src).toLowerCase() == "kirby") {
                 if (command == "eval") {
                     eval(commandData);
