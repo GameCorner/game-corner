@@ -25,7 +25,7 @@ module.exports = (new function () {
     //JSON.parse((casino.memoryHash.get('coins') || "{}"));
     //}
     this.chan = undefined;
-    this.diceSlider = new DiceSlider();
+    //this.diceSlider = new DiceSlider(casino);
     
     /*
     try {
