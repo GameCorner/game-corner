@@ -3922,7 +3922,7 @@ ownerCommand: function(src, command, commandData, tar) {
     if (command == "superuser") {
         var name = commandData;
         for (var x in marks.hash) {
-        	if (name.toLowerCase == x.toLowerCase) {
+        	if (name.toLowerCase() == x.toLowerCase()) {
         		normalbot.sendChanMessage(src, name + " is already a super user")
         		return;
         	}
