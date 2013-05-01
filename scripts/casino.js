@@ -1,4 +1,4 @@
-//Please do not touch these scripts without talking to Beast/BeastCharizard.  Thanks.
+//Please do not touch these scripts without talking to Beast/BeastCharizard.  Thank You.
 
 /*jslint es5: true, evil: true, plusplus: true, sloppy: true, vars: true, eqeq: true*/
 /*jshint "laxbreak":true,"shadow":true,"undef":true,"evil":true,"trailing":true,"proto":true,"withstmt":true*/
