@@ -384,10 +384,10 @@ module.exports = (new function () {
             return true;
         }*/
         
-        if (casino.diceSlider[command]) {
-            casino.diceSlider[command](src, commandData);
-            return true;
-        }
+       // if (casino.diceSlider[command]) {
+         //   casino.diceSlider[command](src, commandData);
+           // return true;
+        //}
         
         if (['cal', 'craps', 'slots', 'pr'].indexOf(command) !== -1) {
             if (cooldowns[src]) {
