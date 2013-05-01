@@ -21,7 +21,7 @@ var Config = {
     hangbot: "Unown",
     rpgbot: "Xatu",
     bfbot: "Deoxys",
-	musymbol: "-",
+	musymbol: "~",
     // suspectvoting.js available, but not in use
     Plugins: ["mafia.js", "amoebagame.js", "tournaments.js", "tourstats.js", "trivia.js", "tours.js", "newtourstats.js", "auto_smute.js", "battlefactory.js", "hangman.js", "casino.js", "poker.js", "cards.js", "rand-utils.js", "rpg.js"],
     Mafia: {
