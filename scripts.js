@@ -1625,12 +1625,12 @@ init : function() {
         }
     }
 
-    try {
+    /*try {
         pastebin_api_key = sys.getFileContent(Config.dataDir+"pastebin_api_key").replace("\n", "");
         pastebin_user_key = sys.getFileContent(Config.dataDir+"pastebin_user_key").replace("\n", "");
     } catch(e) {
         normalbot.sendAll("Couldn't load api keys: " + e, staffchannel);
-    }
+    }*/
 
     sendMainTour = function(message) {
         sendChanAll(message, 0);
