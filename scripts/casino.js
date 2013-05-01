@@ -11,21 +11,23 @@ module.exports = (new function () {
         defaultChannel = "Casino";
   
     var utilities = require('utilities.js'),
-        Poker = require('poker.js'),
+        DiceSlider = require('dice-slider.js'),
+        //Poker = require('poker.js'),
         //MemoryHash = require('memoryhash.js'),
         isNonNegative = utilities.is_non_negative;
     
 	var jackpot = 1000,
         stepTimer = 0,
-        cooldowns = {},
-        global = SESSION.global();
+        cooldowns = {};
     
     //this.memoryHash = new MemoryHash('casino-data.json');
-    //if (!global.coins) {
-        global.coins = {};//JSON.parse((casino.memoryHash.get('coins') || "{}"));
+    //if (!SESSION.global().coins) {
+    //JSON.parse((casino.memoryHash.get('coins') || "{}"));
     //}
     this.chan = undefined;
+    this.diceSlider = new DiceSlider(casino);
     
+    /*
     try {
         this.poker = new Poker(casino);
     } catch (e) {
@@ -34,7 +36,7 @@ module.exports = (new function () {
         }
         
         this.poker = {handleCommand: function () {}, step: function () {}};
-    }
+    }*/
     
 	this.playCAL = function (src, commandData) {
         var bet,
@@ -45,17 +47,17 @@ module.exports = (new function () {
             caldice,
             payout;
         
-        if (global.coins[sys.name(src).toLowerCase()] === undefined) {
-	        global.coins[sys.name(src).toLowerCase()] = 100;
+        if (SESSION.global().coins[sys.name(src).toLowerCase()] === undefined) {
+	        SESSION.global().coins[sys.name(src).toLowerCase()] = 100;
         }
         
-        if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
-            global.coins[sys.name(src).toLowerCase()] = 100;
+        if (isNaN(SESSION.global().coins[sys.name(src).toLowerCase()])) {
+            SESSION.global().coins[sys.name(src).toLowerCase()] = 100;
         }
 		if (commandData === undefined) {
 			return;
 		}
-		if (global.coins[sys.name(src).toLowerCase()] <= 0) {
+		if (SESSION.global().coins[sys.name(src).toLowerCase()] <= 0) {
 			casinobot.sendMessage(src, "You don't have any coins so you are not able to play.", casinochan);
 			return;
 		}
@@ -65,7 +67,7 @@ module.exports = (new function () {
             casinobot.sendMessage(src, "You use it like /cal [number you are betting]:[number you want to get].", casinochan);
             return;
         }
-        if (global.coins[sys.name(src).toLowerCase()] < bet) {
+        if (SESSION.global().coins[sys.name(src).toLowerCase()] < bet) {
             casinobot.sendMessage(src, "You don't have enough coins to make that bet.", casinochan);
 			return;
         }
@@ -84,7 +86,7 @@ module.exports = (new function () {
         dice1 = Math.floor((Math.random() * 6) + 1);
         dice2 = Math.floor((Math.random() * 6) + 1);
         dice3 = Math.floor((Math.random() * 6) + 1);
-        global.coins[sys.name(src).toLowerCase()] -= Math.floor(bet);
+        SESSION.global().coins[sys.name(src).toLowerCase()] -= Math.floor(bet);
         caldice = dice1 + dice2 + dice3;
         if (caldice == calnumber) {
             if (calnumber == 3 || calnumber == 18) {
@@ -113,7 +115,7 @@ module.exports = (new function () {
             }
             
             casinobot.sendMessage(src, "You rolled a " + caldice + " and matched your number!! You get " + payout + " coins!", casinochan);
-            global.coins[sys.name(src).toLowerCase()] = global.coins[sys.name(src).toLowerCase()] + payout;
+            SESSION.global().coins[sys.name(src).toLowerCase()] = SESSION.global().coins[sys.name(src).toLowerCase()] + payout;
             if (payout >= 400) {
                 casinobot.sendAll(sys.name(src) + " just got a huge payout of " + payout + " coins!!!!", casinochan);
             }
@@ -125,44 +127,44 @@ module.exports = (new function () {
 	};
 	this.playSlots = function (src) {
         var slot;
-        if (isNaN(global.coins[sys.name(src).toLowerCase()])) {
-            global.coins[sys.name(src).toLowerCase()] = 100;
+        if (isNaN(SESSION.global().coins[sys.name(src).toLowerCase()])) {
+            SESSION.global().coins[sys.name(src).toLowerCase()] = 100;
         }
-        global.coins[sys.name(src).toLowerCase()] -= 1;
+        SESSION.global().coins[sys.name(src).toLowerCase()] -= 1;
 		slot = Math.floor((Math.random() * 300) + 1);
 		if (slot === 1) {
-			global.coins[sys.name(src).toLowerCase()] += jackpot;
+			SESSION.global().coins[sys.name(src).toLowerCase()] += jackpot;
 			casinobot.sendMessage(src, "You hit the jackpot!!!  You got " + jackpot + " coins!", casinochan);
 			casinobot.sendAll(sys.name(src) + " just hit the jackpot and got " + jackpot + " coins in #Casino!!!!!", 0);
 			jackpot = 1000;
 			return;
 		}
 		if (slot <= 5) {
-			global.coins[sys.name(src).toLowerCase()] += 150;
+			SESSION.global().coins[sys.name(src).toLowerCase()] += 150;
 			casinobot.sendMessage(src, "You hit a great number and got 150 coins!!!", casinochan);
 			jackpot += 1;
 			return;
 		}
 		if (slot <= 14) {
-			global.coins[sys.name(src).toLowerCase()] += 100;
+			SESSION.global().coins[sys.name(src).toLowerCase()] += 100;
 			casinobot.sendMessage(src, "You hit a good number and got 100 coins!!", casinochan);
 			jackpot += 1;
 			return;
 		}
 		if (slot <= 30) {
-			global.coins[sys.name(src).toLowerCase()] += 50;
+			SESSION.global().coins[sys.name(src).toLowerCase()] += 50;
 			casinobot.sendMessage(src, "You hit an okay number and got 50 coins!", casinochan);
 			jackpot += 1;
 			return;
 		}
 		if (slot <= 53) {
-			global.coins[sys.name(src).toLowerCase()] += 10;
+			SESSION.global().coins[sys.name(src).toLowerCase()] += 10;
 			casinobot.sendMessage(src, "Your got lucky and won 10 coins.", casinochan);
 			jackpot += 1;
 			return;
 		}
 		if (slot <= 85) {
-			global.coins[sys.name(src).toLowerCase()] += 2;
+			SESSION.global().coins[sys.name(src).toLowerCase()] += 2;
 			casinobot.sendMessage(src, "You got 2 coins.  It is better than nothing.", casinochan);
 			jackpot += 1;
 			return;
@@ -206,13 +208,13 @@ module.exports = (new function () {
         }
         
         data[0] = parseInt(data[0], 10);
-		if (!global.coins.hasOwnProperty(name)) {
-            global.coins[name] = 100;
+		if (!SESSION.global().coins.hasOwnProperty(name)) {
+            SESSION.global().coins[name] = 100;
         }
-        if (isNaN(global.coins[name])) {
-            global.coins[name] = 1;
+        if (isNaN(SESSION.global().coins[name])) {
+            SESSION.global().coins[name] = 1;
         }
-		if (global.coins[name] <= 0) {
+		if (SESSION.global().coins[name] <= 0) {
 			casinobot.sendMessage(src, "You don't have any coins so you are not able to play.", casinochan);
 			return;
 		}
@@ -220,7 +222,7 @@ module.exports = (new function () {
 			casinobot.sendMessage(src, "Specify a valid amount of coins.", casinochan);
 			return;
 		}
-        if (data[0] > global.coins[name]) {
+        if (data[0] > SESSION.global().coins[name]) {
 			casinobot.sendMessage(src, "You don't have that many coins!", casinochan);
 			return;
 		}
@@ -273,10 +275,10 @@ module.exports = (new function () {
         
         if (stats[0] > stats[2]) {
             casinobot.sendMessage(src, "You won! Enjoy " + (Math.floor(data[0] * 2)) + " coins!", casinochan);
-            global.coins[name] += Math.floor(data[0] * 2);
+            SESSION.global().coins[name] += Math.floor(data[0] * 2);
         } else if (stats[2] > stats[0]) {
             casinobot.sendMessage(src, "You lost! There goes " + data[0] + " coins. :(", casinochan);
-            global.coins[name] -= data[0];
+            SESSION.global().coins[name] -= data[0];
         } else {
             casinobot.sendMessage(src, "You tied! Try again.", casinochan);
         }
@@ -294,7 +296,7 @@ module.exports = (new function () {
         });
     };
     this.showmyCoins = function (src) {
-        var myCoins = global.coins[sys.name(src).toLowerCase()];
+        var myCoins = SESSION.global().coins[sys.name(src).toLowerCase()];
         
         if (isNaN(myCoins)) {
             myCoins = 100;
@@ -313,7 +315,7 @@ module.exports = (new function () {
         if (commandData === "chuck" || commandData === "cal" || commandData === "chuck a luck") {
             casinobot.sendMessage(src, "To play type /cal [bet]:[number you are trying to hit]. bet is how many coins you are risking and number is the number you are trying to roll.", casinochan);
             return;
-        }else if (commandData === "slots") {
+        } else if (commandData === "slots") {
             casinobot.sendMessage(src, "To play type /slots. You win depend on how lucky you are.");
             return;
         } else if (commandData === "pr") {
@@ -343,6 +345,7 @@ module.exports = (new function () {
             "/games: To see all the games you are able to play.",
             "/jackpot: To see what the current jackpot is.",
             "/mycoins: To find out how many coins you have.",
+            "/ds-help: Displays help for Dice Slider.",
             ""
 		];
         
@@ -353,7 +356,7 @@ module.exports = (new function () {
     this.commands = {
         user: {
             cal: this.playCAL,
-	    slots: this.playSlots,
+	        slots: this.playSlots,
             pr: this.playPR,
             help: this.showHelp,
             games: this.showGames,
@@ -363,23 +366,29 @@ module.exports = (new function () {
         }
 	};
     this.handleCommand = function (src, message, channel) {
-        var command,
-            commandData,
+        var command = "",
+            commandData = "",
             pos = message.indexOf(' ');
         
         if (pos !== -1) {
-            command = message.substring(0, pos).toLowerCase();
-            commandData = message.substr(pos + 1);
+            command = message.substring(0, pos).toLowerCase() || "";
+            commandData = message.substr(pos + 1) || "";
         } else {
-            command = message.substr(0).toLowerCase();
+            command = message.substr(0).toLowerCase() || "";
         }
         
         if (channel !== casinochan && ['casinocommands'].indexOf(command) === -1) {
             return;
-        }
+        }/*
         if (casino.poker.handleCommand(src, message, channel) === true) {
             return true;
+        }*/
+        
+        if (casino.diceSlider[command]) {
+            casino.diceSlider[command](src, commandData);
+            return true;
         }
+        
         if (['cal', 'craps', 'slots', 'pr'].indexOf(command) !== -1) {
             if (cooldowns[src]) {
                 casinobot.sendMessage(src, "Don't be so eager to lose all your coins!", casinochan);
@@ -421,10 +430,10 @@ module.exports = (new function () {
         // todo: make this run
         step: function () {
             //if (++stepTimer % 60 === 0) { // every minute
-              //  casino.memoryHash.add('coins', JSON.stringify(global.coins));
+              //  casino.memoryHash.add('coins', JSON.stringify(SESSION.global().coins));
             //}
             
-            casino.poker.step();
+            //casino.poker.step();
         },
         onHelp: function (src, topic, channel) {
             if (topic === "casino") {
