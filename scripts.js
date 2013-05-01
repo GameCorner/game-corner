@@ -1261,7 +1261,6 @@ var commands = {
         "/wiki [Pokémon]: Shows that Pokémon's wiki page",
         "/register: Registers a channel with you as owner.",
         "/resetpass: Clears your password (unregisters you, remember to reregister).",
-        "/superusers: Lists super users.",
         "/auth [owners/admins/mods]: Lists auth of given level, shows all auth if left blank.",
         "/cauth: Lists all users with channel auth in the current channel.",
         "/contributors: Lists contributors.",
@@ -2386,7 +2385,7 @@ userCommand: function(src, command, commandData, tar) {
         this.afterChatMessage(src, '/'+command+' '+commandData,channel);
         return;
     }
-	if (command == "superusers") {
+    /*if (command == "superusers") {                            <-- moved to /auth
 	    sendChanMessage(src, "");
 		sendChanMessage(src, "*** SUPER USERS ***");
 		sendChanMessage(src, "");
@@ -2398,7 +2397,7 @@ userCommand: function(src, command, commandData, tar) {
 		}
         sendChanMessage(src, "");
         return;
-    }		
+    }		*/
     if (command == "contributors") {
         sendChanMessage(src, "");
         sendChanMessage(src, "*** CONTRIBUTORS ***");
@@ -2518,6 +2517,16 @@ userCommand: function(src, command, commandData, tar) {
             sys.sendMessage(src, "*** Moderators ***", channel);
             authlist.map(filterByAuth(1)).forEach(printOnlineOffline);
             break;
+        case "superusers":
+            sendChanMessage(src, "*** Super Users ***");
+            sendChanMessage(src, "");
+            for (var x in marks.hash) {
+                if (sys.id(x) === undefined)
+                sendChanMessage(src, x);
+                else
+                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);
+            }
+            break;
         default:
             sys.sendMessage(src, "*** Owners ***", channel);
             authlist.map(filterByAuth(3)).forEach(printOnlineOffline);
@@ -2527,6 +2536,14 @@ userCommand: function(src, command, commandData, tar) {
             sys.sendMessage(src, '', channel);
             sys.sendMessage(src, "*** Moderators ***", channel);
             authlist.map(filterByAuth(1)).forEach(printOnlineOffline);
+            sendChanMessage(src, "*** Super Users ***");
+            sendChanMessage(src, "");
+            for (var x in marks.hash) {
+                if (sys.id(x) === undefined)
+                sendChanMessage(src, x);
+                else
+                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);
+            }
         }
         sys.sendMessage(src, '', channel);
         return;
