@@ -1156,6 +1156,10 @@ function RPG(rpgchan) {
             }
         }
         
+        this.colorOrder = Object.keys(this.colorNames).sort(function(a, b){
+          return b.length - a.length; // ASC -> a - b; DESC -> b - a
+        });
+        
         if (p1 && p2) {
             this.isPVP = true;
         }
@@ -1854,12 +1858,10 @@ function RPG(rpgchan) {
             msg = [msg];
         }
         msg = msg.map(function(x) { return (x === "" ? "" : "<timestamp/>" + x); } ).join("<br/>");
-        var colorOrder = Object.keys(this.colorNames).sort(function(a, b){
-          return b.length - a.length; // ASC -> a - b; DESC -> b - a
-        });
-        for (v in colorOrder) {
-            reg = new RegExp("\\b" + colorOrder[v], "g");
-            msg = msg.replace(reg, this.colorNames[colorOrder[v]]);
+        
+        for (v in this.colorOrder) {
+            reg = new RegExp("\\b" + this.colorOrder[v], "g");
+            msg = msg.replace(reg, this.colorNames[this.colorOrder[v]]);
         }
         
         for (v in this.viewers) {
@@ -2230,7 +2232,7 @@ function RPG(rpgchan) {
         var it = data[0].toLowerCase();
         
         if (!hasItem(player, it, 1)) {
-            if (it in altItems) {
+            if (it in altItems && hasItem(player, altItems[it], 1)) {
                 it = altItems[it];
             } else {
                 rpgbot.sendMessage(src, "You don't have this item!", rpgchan);
@@ -2916,6 +2918,7 @@ function RPG(rpgchan) {
         } else if (player.items[item] >= count) {
             return true;
         }
+        return false;
     }
     function getItemCount(player, item) {
         if (!(item in player.items)) {
@@ -3044,12 +3047,10 @@ function RPG(rpgchan) {
         }
         
         var what = data[0].toLowerCase();
+        var attributes = ["hp", "mana", "mp", "str", "strength", "def", "defense", "spd", "speed", "dex", "dexterity", "mag", "magic"];
         var amount;
         amount = data.length > 1 ? parseInt(data[1], 10) : 1;
         amount = isNaN(amount) ? 1 : amount;
-        
-        
-        var attributes = ["hp", "mana", "mp", "str", "strength", "def", "defense", "spd", "speed", "dex", "dexterity", "mag", "magic"];
         
         if (attributes.indexOf(what) !== -1) {
             if (player.statPoints <= 0) {
@@ -4697,7 +4698,7 @@ function RPG(rpgchan) {
             var user, x, gamefile;
             for (x = 0; x < playerson.length; ++x) {
                 user = SESSION.users(playerson[x]);
-                if (user.rpg) {
+                if (user && user.rpg && user.rpg !== null && user.rpg !== undefined) {
                     gamefile = this.convertChar(user.rpg);
                     user.rpg = gamefile;
                 }
