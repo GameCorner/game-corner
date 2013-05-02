@@ -2519,7 +2519,6 @@ userCommand: function(src, command, commandData, tar) {
             break;
         case "superusers":
             sendChanMessage(src, "*** Super Users ***");
-            sendChanMessage(src, "");
             for (var x in marks.hash) {
                 if (sys.id(x) === undefined)
                 sendChanMessage(src, x);
@@ -2536,8 +2535,8 @@ userCommand: function(src, command, commandData, tar) {
             sys.sendMessage(src, '', channel);
             sys.sendMessage(src, "*** Moderators ***", channel);
             authlist.map(filterByAuth(1)).forEach(printOnlineOffline);
+            sys.sendMessage(src, '', channel);
             sendChanMessage(src, "*** Super Users ***");
-            sendChanMessage(src, "");
             for (var x in marks.hash) {
                 if (sys.id(x) === undefined)
                 sendChanMessage(src, x);
