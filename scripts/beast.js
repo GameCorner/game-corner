@@ -95,20 +95,8 @@ module.exports = function () {
             coins[sys.name(src)] == 100;
         }
 	};
-this.playHighLow = function(src, commandData) {
-	
-	var bet = parseInt(commandData.split(":")[0], 10);
-	var a = Math.floor(Math.random()*13);
-	var	b;
-	var winnings;
-	var payout;
-	
-	global.coins[sys.name(src).toLowerCase()] -= bet;
-	casinobot.sendMessage(src, "Your beginning number is " + a + ". Type /high if you think your next number will be higher or /low if you think your next number will be lower.", casinochan);
-	for (var w;w<6;w++) {
-	b = Math.floor(Math.random()*13);
-	if (command == "high") {
-		if (b >= a) {
+	this.high = function (src) {
+				if (b >= a) {
 			winnings += 1;
 			a = b;
 		return;
@@ -116,9 +104,9 @@ this.playHighLow = function(src, commandData) {
 		else {
 			stop;
 		}
-	}
-	if (command == "low") {
-		if (b <= a) {
+	};
+	this.low = function () {
+				if (b <= a) {
 			winnings += 1;
 			a = b;
 			return;
@@ -127,12 +115,32 @@ this.playHighLow = function(src, commandData) {
 			stop;
 		}
 	}
+this.playHL = function (src, commandData) {
+	if(commandData === undefined){
+		return;
+	}
+	var bet = parseInt(commandData.split(":")[0], 10);
+	var a = Math.floor(Math.random()*13 + 1);
+	var b;
+	var winnings;
+	var payout;
+	
+	coins[sys.name(src)] -= bet;
+	casinobot.sendMessage(src, "Your beginning number is " + a + ". Type /high if you think your next number will be higher or /low if you think your next number will be lower.", casinochan);
+	for (var w;w<6;w++) {
+	b = Math.floor(Math.random()*13 + 1);
+	if (command == "high") {
+this.high();
+	}
+	if (command == "low") {
+this.low();
+	}
 	}
 	if (winnings == 1) {
-		global.coins[sys.name(src).toLowerCase()] += bet;
+		coins[sys.name(src)] += bet;
 	}
 	else if (winnings > 2) {
-		global.coins[sys.name(src).toLowerCase()] += (bet + (10*(winnings -1)));
+		coins[sys.name(src)] += (bet + (10*(winnings -1)));
 		payout = (bet + (10*(winnings -1)));
 		casinobot.sendMessage("Congrats, you were able to win " + payout + " coins!");
 	}
@@ -466,13 +474,13 @@ this.showHelp = function (commandData){
             games: [this.showGames, "To see all the games you can play."],
             mycoins: [this.showmyCoins, "To find out how many coins you have."],
 	    bcasinocommands: [this.showBCommands, "To see a list of possible commands."],
-		nslots: [this.playNSlots, "To play the Nickle slots. Used like /nslots"],
-		qslots: [this.playQSlots, "To play the Quarter slots. Used like /qslots"],
-		dslots: [this.playDSlots, "To play the Dollar slots. Used like /dslots"],
-		HorL: [this.playHighLow, "To play the High or Low game. Used like /HorL bet"]
+	    nslots: [this.playNSlots, "To play the Nickle slots. Used like /nslots"],
+            qslots: [this.playQSlots, "To play the Quarter slots. Used like /qslots"],
+	    dslots: [this.playDSlots, "To play the Dollar slots. Used like /dslots"],
+	    horl: [this.playHL, "To play the High or Low game. Used like /HorL bet"]
         }
 	};
-this.handleCommand = function (src, message, channel) {
+ this.handleCommand = function (src, message, channel) {
         var command;
         var commandData;
         var pos = message.indexOf(' ');
