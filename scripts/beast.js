@@ -95,6 +95,26 @@ module.exports = function () {
             coins[sys.name(src)] == 100;
         }
 	};
+	this.high = function (src) {
+				if (b >= a) {
+			winnings += 1;
+			a = b;
+		return;
+		}
+		else {
+			stop;
+		}
+	};
+	this.low = function () {
+				if (b <= a) {
+			winnings += 1;
+			a = b;
+			return;
+		}
+		else {
+			stop;
+		}
+	}
 this.playHL = function (src, commandData) {
 	if(commandData === undefined){
 		return;
@@ -110,24 +130,10 @@ this.playHL = function (src, commandData) {
 	for (var w;w<6;w++) {
 	b = Math.floor(Math.random()*13 + 1);
 	if (command == "high") {
-		if (b >= a) {
-			winnings += 1;
-			a = b;
-		return;
-		}
-		else {
-			stop;
-		}
+this.high();
 	}
 	if (command == "low") {
-		if (b <= a) {
-			winnings += 1;
-			a = b;
-			return;
-		}
-		else {
-			stop;
-		}
+this.low();
 	}
 	}
 	if (winnings == 1) {
