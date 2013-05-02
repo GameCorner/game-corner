@@ -100,7 +100,7 @@ this.playHL = function (src, commandData) {
 		return;
 	}
 	var bet = parseInt(commandData.split(":")[0], 10);
-	var a = Math.floor(Math.random()*13);
+	var a = Math.floor(Math.random()*13 + 1);
 	var b;
 	var winnings;
 	var payout;
@@ -108,7 +108,7 @@ this.playHL = function (src, commandData) {
 	coins[sys.name(src)] -= bet;
 	casinobot.sendMessage(src, "Your beginning number is " + a + ". Type /high if you think your next number will be higher or /low if you think your next number will be lower.", casinochan);
 	for (var w;w<6;w++) {
-	b = Math.floor(Math.random()*13);
+	b = Math.floor(Math.random()*13 + 1);
 	if (command == "high") {
 		if (b >= a) {
 			winnings += 1;
