@@ -692,8 +692,9 @@ function RPG(rpgchan) {
             if ("resetSkills" in eff) {
                 this.resetSkills(src);
             }
+            var m, list;
             if ("monsters" in eff) {
-                var m = [];
+                m = [];
                 for (e in eff.monsters) {
                     for (var c = 0; c < eff.monsters[e]; ++c) {
                         m.push(this.generateMonster(e));
@@ -706,6 +707,17 @@ function RPG(rpgchan) {
                     } else {
                         list = [[src], [player]];
                     }
+                    this.startBattle(list[0], list[1], m);
+                }
+            } else if ("soloMonsters" in eff) {
+                m = [];
+                for (e in eff.monsters) {
+                    for (var c = 0; c < eff.monsters[e]; ++c) {
+                        m.push(this.generateMonster(e));
+                    }
+                }
+                if (m.length > 0) {
+                    list = [[src], [player]];
                     this.startBattle(list[0], list[1], m);
                 }
             }
@@ -877,7 +889,7 @@ function RPG(rpgchan) {
             }
             
             var list;
-            if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
+            if (places[player.location].noParty !== true && player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
                 list = this.findParty(player.party).findMembersNear(src);
             } else {
                 list = [[src], [player]];
@@ -2580,7 +2592,11 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "Finish or cancel your last offer before making another trade request!", rpgchan);
             return;
         }
-        if(player.location !== target.location) {
+        if (places[player.location].noTrade && places[player.location].noTrade === true) {
+            rpgbot.sendMessage(src, "You can't make a trade in this area!", rpgchan);
+            return;
+        }
+        if (player.location !== target.location) {
             rpgbot.sendMessage(src, "You must be in the same location as your target to request a trade!", rpgchan);
             return;
         }
@@ -2955,7 +2971,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-    	for (e = expTable.length; e >= 0; --e) {
+        	for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
