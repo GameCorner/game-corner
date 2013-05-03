@@ -3956,16 +3956,7 @@ ownerCommand: function(src, command, commandData, tar) {
             marks.add(name);
 			return;
     }
-     if (command == "sortsuperusers") {
-     	marks.hash.sort();
-     	 for (var x in marks.hash) {
-                if (sys.id(x) === undefined)
-                sendChanMessage(src, x);
-                else
-                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);
-            }
-     	return;
-     }   
+    
      if (command == "superuseroff") {
         var Mark = "";
 		for (var x in marks.hash) {
