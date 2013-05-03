@@ -2519,6 +2519,7 @@ userCommand: function(src, command, commandData, tar) {
             break;
         case "superusers":
             sendChanMessage(src, "*** Super Users ***");
+            sendChanMessage(src, "");
             for (var x in marks.hash) {
                 if (sys.id(x) === undefined)
                 sendChanMessage(src, x);
