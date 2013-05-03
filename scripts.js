@@ -2501,6 +2501,13 @@ userCommand: function(src, command, commandData, tar) {
             }
         };
         var authlist = sys.dbAuths().sort();
+        var superUsers = [];
+        var i = 0;
+        for (var x in marks.hash) {
+            superUsers[i] = x.toLowerCase();
+            ++i;
+        }
+        superUsers.sort();
         sendChanMessage(src, "");
         switch (commandData) {
         case "owners":
@@ -2520,11 +2527,11 @@ userCommand: function(src, command, commandData, tar) {
         case "superusers":
             sendChanMessage(src, "*** Super Users ***");
             sendChanMessage(src, "");
-            for (var x in marks.hash) {
-                if (sys.id(x) === undefined)
-                sendChanMessage(src, x);
+            for (i=0;i<superUsers.length;++i) {
+                if (sys.id(superUsers[i]) === undefined)
+                sendChanMessage(src, superUsers[i] + " (Offline)");
                 else
-                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);
+                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + superUsers[i].toCorrectCase() + ' (Online)</font>', channel);
             }
             break;
         default:
@@ -2538,11 +2545,11 @@ userCommand: function(src, command, commandData, tar) {
             authlist.map(filterByAuth(1)).forEach(printOnlineOffline);
             sys.sendMessage(src, '', channel);
             sendChanMessage(src, "*** Super Users ***");
-            for (var x in marks.hash) {
-                if (sys.id(x) === undefined)
-                sendChanMessage(src, x);
+            for (i=0;i<superUsers.length;++i) {
+                if (sys.id(superUsers[i]) === undefined)
+                sendChanMessage(src, superUsers[i] + " (Offline)");
                 else
-                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);
+                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + superUsers[i].toCorrectCase() + ' (Online)</font>', channel);
             }
         }
         sys.sendMessage(src, '', channel);
