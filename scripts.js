@@ -3954,6 +3954,7 @@ ownerCommand: function(src, command, commandData, tar) {
 			}
             normalbot.sendAll("" + name + " was promoted to super user by " + nonFlashing(sys.name(src)) + ".");
             marks.add(name);
+            mars.sort();
 			return;
     }
         
@@ -3968,7 +3969,8 @@ ownerCommand: function(src, command, commandData, tar) {
             return;
      	}
         marks.remove(Mark);
-        normalbot.sendChanMessage(src, commandData + " is no longer a super user!");		
+        normalbot.sendChanMessage(src, commandData + " is no longer a super user!");
+        marks.sort();
         return;
     }
     if (command == "contributor") {
