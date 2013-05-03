@@ -711,8 +711,8 @@ function RPG(rpgchan) {
                 }
             } else if ("soloMonsters" in eff) {
                 m = [];
-                for (e in eff.monsters) {
-                    for (var c = 0; c < eff.monsters[e]; ++c) {
+                for (e in eff.soloMonsters) {
+                    for (var c = 0; c < eff.soloMonsters[e]; ++c) {
                         m.push(this.generateMonster(e));
                     }
                 }
@@ -2971,7 +2971,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-        	for (e = expTable.length; e >= 0; --e) {
+    	for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
