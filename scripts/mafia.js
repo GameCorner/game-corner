@@ -4396,7 +4396,7 @@ return;
     
     /* SCRIPTSYNCSTART */
     this.beforeChatMessage = function(src, message, channel) {
-        if (channel === mafiachan && deadtalkAllowed == false && mafia.ticks > 0 && ["blank", "voting", "entry"].indexOf(mafia.state) == -1 && !mafia.isInGame(sys.name(src)) && sys.auth(src) <= 0 && !mafia.isMafiaAdmin(src)) {
+        if (channel === mafiachan && deadtalkAllowed == false && ["blank", "voting", "entry"].indexOf(mafia.state) == -1 && !mafia.isInGame(sys.name(src)) && sys.auth(src) <= 0 && !mafia.isMafiaAdmin(src)) {
             if (!(is_command(message) && message.substr(1,2).toLowerCase() != "me")) {
                 sys.sendMessage(src, Config.Mafia.notPlayingMsg, mafiachan);
                 return true;
