@@ -1920,8 +1920,10 @@ function RPG(rpgchan) {
         for (var p in loser) {
             var lost = loser[p];
             if (lost.isPlayer) {
-                rpgbot.sendMessage(lost.id, "You lost " + Math.floor(lost.gold * 0.1) + " Gold!", rpgchan);
-                lost.gold = Math.floor(lost.gold * 0.9);
+                if (!places[lost.location].noGoldLoss || places[lost.location].noGoldLoss !== true) {
+                    rpgbot.sendMessage(lost.id, "You lost " + Math.floor(lost.gold * 0.1) + " Gold!", rpgchan);
+                    lost.gold = Math.floor(lost.gold * 0.9);
+                }
             } else {
                 if (lost.gold) {
                     gold += Math.floor(lost.gold);
@@ -2256,6 +2258,11 @@ function RPG(rpgchan) {
         
         if (player.isBattling === true && "inBattle" in item && item.inBattle === false) {
             rpgbot.sendMessage(src, "You can't use this item while battling!", rpgchan);
+            return;
+        }
+        
+        if (item.type === "usable" && places[player.location].noUsable && places[player.location].noUsable === true) {
+            rpgbot.sendMessage(src, "You can't use items here!", rpgchan);
             return;
         }
         
