@@ -41,7 +41,8 @@ function RPG(rpgchan) {
         maxmp: 0,
         maxstats: 0,
         trade: 0,
-        items: 0
+        items: 0,
+        itemsPerLevel: 0
     };
     var equipment = {
         rhand: "Right Hand",
@@ -422,8 +423,8 @@ function RPG(rpgchan) {
                 return;
             }
             
-            if (leveling.items > 0 && getItemCount(player, goods) + amount > leveling.items) {
-                rpgbot.sendMessage(src, "You can't have more than " + leveling.items + " " + items[goods].name + "(s)!",rpgchan);
+            if (!canHoldItems(player, getItemCount(player, goods) + amount)) {
+                rpgbot.sendMessage(src, "You can't have more than " + getItemLimit(player) + " " + items[goods].name + "(s)!",rpgchan);
                 return;
             }
             
@@ -563,8 +564,8 @@ function RPG(rpgchan) {
             rewards = products[goods].reward;
             for (t in rewards) {
                 if (t !== "gold") {
-                    if (leveling.items > 0 && getItemCount(player, t) + rewards[t] > leveling.items) {
-                        rpgbot.sendMessage(src, "You can't have more than " + leveling.items + " " + items[t].name + "(s)!",rpgchan);
+                    if (!canHoldItems(player, getItemCount(player, t) + rewards[t])) {
+                        rpgbot.sendMessage(src, "You can't have more than " + getItemLimit(player) + " " + items[t].name + "(s)!",rpgchan);
                         return;
                     }
                 } 
@@ -642,7 +643,14 @@ function RPG(rpgchan) {
                     player.events[e] = eff.events[e];
                 }
             }
-            if ("move" in eff) {
+            if ("partyMove" in eff) {
+                if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
+                    var party = this.findParty(player.party).findMembersNear(src);
+                    for (e in party[0]) {
+                        this.changeLocation(party[0][e], eff.partyMove);
+                    }
+                }
+            } else if ("move" in eff) {
                 this.changeLocation(src, eff.move);
             }
             if ("respawn" in eff) {
@@ -701,7 +709,7 @@ function RPG(rpgchan) {
                     }
                 }
                 if (m.length > 0) {
-                     var list;
+                    var list;
                     if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
                         list = this.findParty(player.party).findMembersNear(src);
                     } else {
@@ -722,10 +730,10 @@ function RPG(rpgchan) {
                 }
             }
             if ("hunt" in eff) {
+                if (!(person in player.hunted)) {
+                    player.hunted[person] = {};
+                }
                 for (e in eff.hunt) {
-                    if (!(person in player.hunted)) {
-                        player.hunted[person] = {};
-                    }
                     player.hunted[person][e] = eff.hunt[e];
                 }
             }
@@ -849,8 +857,8 @@ function RPG(rpgchan) {
             }
             
             if (item in items) {
-                if (leveling.items > 0 && getItemCount(player, item) + 1 > leveling.items) {
-                    rpgbot.sendMessage(src, "You found a " + items[item].name + ", but you can't carry more than " + leveling.items + "!", rpgchan);
+                if (!canHoldItems(player, getItemCount(player, item) + 1)) {
+                    rpgbot.sendMessage(src, "You found a " + items[item].name + ", but you can't carry more than " + getItemLimit(player) + "!", rpgchan);
                     return;
                 }
                 rpgbot.sendMessage(src, "You found a " + items[item].name + "!", rpgchan);
@@ -1960,7 +1968,7 @@ function RPG(rpgchan) {
                             if (m.loot) {
                                 loot = randomSample(m.loot);
                                 if (loot !== "none") {
-                                    if (leveling.items <= 0 || getItemCount(won, loot) + 1 <= leveling.items) {
+                                    if (canHoldItems(getItemCount(won, loot) + 1)) {
                                         changeItemCount(won, loot, 1);
                                         if (!(loot in lootFound)) {
                                             lootFound[loot] = 0;
@@ -2679,9 +2687,9 @@ function RPG(rpgchan) {
                     tradeRequests[playerName] = undefined;
                     tradeRequests[targetName] = undefined;
                     return;
-                } else if (leveling.items > 0 && getItemCount(target, itemOffered) + amountOffered > leveling.items) {
-                    rpgbot.sendMessage(src, "Trade cancelled because " + targetName + " can't hold more than " + leveling.items + " " + itemOffered + "(s)!", rpgchan);
-                    rpgbot.sendMessage(targetId, "Trade cancelled because you can't hold more than " + leveling.items + " " + itemOffered + "(s)!", rpgchan);
+                } else if (!canHoldItems(target, getItemCount(target, itemOffered) + amountOffered)) {
+                    rpgbot.sendMessage(src, "Trade cancelled because " + targetName + " can't hold more than " + getItemLimit(target) + " " + itemOffered + "(s)!", rpgchan);
+                    rpgbot.sendMessage(targetId, "Trade cancelled because you can't hold more than " + getItemLimit(target) + " " + itemOffered + "(s)!", rpgchan);
                     tradeRequests[playerName] = undefined;
                     tradeRequests[targetName] = undefined;
                     return;
@@ -2692,9 +2700,9 @@ function RPG(rpgchan) {
                     tradeRequests[playerName] = undefined;
                     tradeRequests[targetName] = undefined;
                     return;
-                } else if (leveling.items > 0 && getItemCount(player, itemWanted) + amountWanted > leveling.items) {
-                    rpgbot.sendMessage(targetId, "Trade cancelled because " + playerName + " can't hold more than " + leveling.items + " " + itemWanted + "(s)!", rpgchan);
-                    rpgbot.sendMessage(src, "Trade cancelled because you can't hold more than " + leveling.items + " " + itemWanted + "(s)!", rpgchan);
+                } else if (!canHoldItems(player, getItemCount(player, itemWanted) + amountWanted)) {
+                    rpgbot.sendMessage(targetId, "Trade cancelled because " + playerName + " can't hold more than " + getItemLimit(player) + " " + itemWanted + "(s)!", rpgchan);
+                    rpgbot.sendMessage(src, "Trade cancelled because you can't hold more than " + getItemLimit(player) + " " + itemWanted + "(s)!", rpgchan);
                     tradeRequests[playerName] = undefined;
                     tradeRequests[targetName] = undefined;
                     return;
@@ -2890,7 +2898,7 @@ function RPG(rpgchan) {
             } 
         } else if (amount < 0) {
             if (item in player.storage && player.storage[item] >= (-amount)) {
-                if (leveling.items > 0 && getItemCount(player, item) + (-amount) > leveling.items) {
+                if (!canHoldItems(player, getItemCount(player, item) + (-amount))) {
                     return false;
                 }
                 changeStorageCount(player, item, amount);
@@ -2917,8 +2925,8 @@ function RPG(rpgchan) {
             player.items[item] = 0;
         }
         player.items[item] += amount;
-        if (leveling.items > 0 && player.items[item] > leveling.items) {
-            player.items[item] = leveling.items;
+        if (!canHoldItems(player, player.items[item])) {
+            player.items[item] = getItemLimit(player);
         }
         if (player.items[item] <= 0) {
             game.removeEquip(player.id, item);
@@ -2950,6 +2958,19 @@ function RPG(rpgchan) {
             return player.items[item];
         }
     }
+    function getItemLimit(player) {
+        return leveling.items + player.level * leveling.itemsPerLevel;
+    }
+    function canHoldItems(player, amount) {
+        if (leveling.items === 0 && leveling.itemsPerLevel === 0) {
+            return true;
+        }
+        if (amount > leveling.items + player.level * leveling.itemsPerLevel) {
+            return false;
+        } else {
+            return true;
+        }
+    }
     function canUseItem(player, it) {
         if (!("classes" in items[it])) {
             return true;
@@ -2978,7 +2999,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-    	for (e = expTable.length; e >= 0; --e) {
+		for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -4651,6 +4672,9 @@ function RPG(rpgchan) {
                 }
                 if (level.items) {
                     leveling.items = level.items;
+                }
+                if (level.itemsPerLevel) {
+                    leveling.itemsPerLevel = level.itemsPerLevel;
                 }
             }
             
