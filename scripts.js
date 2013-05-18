@@ -5093,6 +5093,14 @@ beforeChatMessage: function(src, message, chan) {
        if (isMarked(src) && (sys.auth(src) == 0 || sys.auth(src) == 4)) {
        message = utilities.html_escape(message);
        messagetosend = message;
+       var exp = /(\b(https?|ftp|file):\/\/[\-A-Z0-9+&@#\(\)\[\]\/%?=~_|!:,.;']*[\-A-Z0-9+&@#\/\(\)\[\]%=~_|'])/ig;
+       var found = message.match(exp);
+       for (var x in found) {
+           if (found.hasOwnProperty(x)) {
+               messagetosend = ("<a href ='" + found + "'>" + found + "</a>").replace(/&amp;/gi, "&");
+               messagetosend = text.replace(found[x], messagetosend);
+           }
+       }        
 	    var colour = script.getColor(src);
 	    sys.sendHtmlAll("<font color='"+colour+"'><timestamp /> "+ Config.musymbol +"<b><i>"+ sys.name(src) +":</i></b></font> "+messagetosend, channel);
 		sys.stopEvent();
