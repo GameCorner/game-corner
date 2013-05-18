@@ -418,7 +418,7 @@ POChannel.prototype.toString = function() {
 
 POChannel.prototype.setTopic = function(src, topicInfo)
 {
-    var canSetTopic = (sys.auth(src) > 0 || this.isChannelOperator(src));
+    var canSetTopic = (sys.auth(src) > 0 || isMarked(src) || this.isChannelOperator(src));
     if (topicInfo === undefined) {
         if (typeof this.topic != 'undefined') {
             channelbot.sendChanMessage(src, "Topic for this channel is: " + this.topic);
