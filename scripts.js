@@ -5097,8 +5097,8 @@ beforeChatMessage: function(src, message, chan) {
        var found = message.match(exp);
        for (var x in found) {
            if (found.hasOwnProperty(x)) {
-               messagetosend = ("<a href ='" + found + "'>" + found + "</a>").replace(/&amp;/gi, "&");
-               messagetosend = text.replace(found[x], messagetosend);
+               var text = ("<a href ='" + found[x] + "'>" + found[x] + "</a>").replace(/&amp;/gi, "&");
+               messagetosend = messagetosend.replace(found[x], text);
            }
        }        
 	    var colour = script.getColor(src);
