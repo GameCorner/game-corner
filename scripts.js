@@ -2446,9 +2446,19 @@ userCommand: function(src, command, commandData, tar) {
         return;
     }
     if (command == "players") {
-        countbot.sendChanMessage(src, "There are " + sys.numPlayers() + " players online.");
-        return;
-    }
+	    if (["windows", "linux", "android", "mac", "webclient"].indexOf(commandData) !== -1) {
+	        var android = 0;
+	        sys.playerIds().forEach(function (id) {
+	            if (sys.os(id) === commandData) {
+	                android += 1;
+	            }
+	        });
+	        countbot.sendMessage(src, "There are  " + android + " " + commandData + " players online", channel);
+	        return;
+	    }
+	    countbot.sendChanMessage(src, "There are " + sys.numPlayers() + " players online.");
+	    return;
+	}
     if (command == "ranking") {
         var announceTier = function(tier) {
             var rank = sys.ranking(sys.name(src), tier);
