@@ -209,7 +209,7 @@ function saveData()
 
 function isTriviaOwner(src) {
 	var lname = sys.name(src).toLowerCase();
-    var triviaOwners = ['ethan', 'steeledges', 'redjoker25'];
+    var triviaOwners = ['steeledges', 'redjoker25'];
 	if (sys.auth(src) >= 3) return true;
 	if (triviaOwners.indexOf(lname) > -1) return true;
 	return false;
