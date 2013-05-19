@@ -122,7 +122,7 @@ tier_checker.add_new_check(EXCLUDING, Config.DreamWorldTiers, function dwAbility
     return ret;
 });
 
-tier_checker.add_new_check(INCLUDING, ["No Preview OU", "Wifi OU", "Wifi UU", "Wifi LU", "Wifi LC", "DW LC", "Wifi Ubers", "No Preview Ubers", "Clear Skies", "Clear Skies DW", "Monotype", "Monocolour", "Monogen", "Smogon OU", "Smogon UU", "Smogon RU", "Wifi NU", "Metronome"],
+tier_checker.add_new_check(INCLUDING, ["No Preview OU", "Wifi OU", "Wifi UU", "Wifi LU", "Wifi LC", "DW LC", "Wifi Ubers", "No Preview Ubers", "Clear Skies", "Clear Skies DW", "Monotype", "Monocolour", "Monogen", "Smogon OU", "Smogon UU", "Smogon RU", "Smogon NU", "Wifi NU", "Metronome"],
                            function inconsistentCheck(src, team, tier) {
     var moody = sys.abilityNum("Moody");
     var ret = [];
@@ -235,15 +235,15 @@ tier_checker.add_new_check(INCLUDING, ["Smogon OU", "Wifi OU", "No Preview OU"],
     }
 });
 
-tier_checker.add_new_check(INCLUDING, ["Smogon UU"], function droughtCheck(src, team) {
+tier_checker.add_new_check(INCLUDING, ["Smogon UU", "Smogon RU", "Smogon NU"], function droughtCheck(src, team) {
     for(var i = 0; i <6; ++i){
         if(sys.ability(sys.teamPokeAbility(src, team, i)) == "Drought"){
-            return ["Drought is not allowed in Smogon UU"];
+            return ["Drought is not allowed in " + tier + "."];
         }
     }
 });
 
-tier_checker.add_new_check(INCLUDING, ["Wifi UU", "Wifi LU", "Wifi NU", "Wifi LC"], function sandStreamCheck(src, team, tier) {
+tier_checker.add_new_check(INCLUDING, ["Wifi UU", "Wifi LU", "Wifi NU", "Wifi LC", "Smogon UU", "Smogon RU", "Smogon NU"], function sandStreamCheck(src, team, tier) {
     for(var i = 0; i <6; ++i){
         if(sys.ability(sys.teamPokeAbility(src, team, i)) == "Sand Stream"){
             return ["Sand Stream is not allowed in " + tier + "."];
@@ -259,7 +259,7 @@ tier_checker.add_new_check(INCLUDING, ["Wifi UU", "Wifi LU", "Wifi NU"], functio
     }
 });
 
-tier_checker.add_new_check(INCLUDING, ["Wifi OU"], function sandVeilCheck(src, team, tier) {
+tier_checker.add_new_check(INCLUDING, ["Wifi OU", "Smogon OU", "Smogon UU", "Smogon RU", "Smogon NU"], function sandVeilCheck(src, team, tier) {
     for(var i = 0; i <6; ++i){
         if(sys.ability(sys.teamPokeAbility(src, team, i)) == "Sand Veil"){
             return ["Sand Veil is not allowed in " + tier + "."];
@@ -267,7 +267,7 @@ tier_checker.add_new_check(INCLUDING, ["Wifi OU"], function sandVeilCheck(src, t
     }
 });
 
-tier_checker.add_new_check(INCLUDING, ["Wifi OU"], function snowCloakCheck(src, team, tier) {
+tier_checker.add_new_check(INCLUDING, ["Wifi OU", "Smogon OU", "Smogon UU", "Smogon RU", "Smogon NU"], function snowCloakCheck(src, team, tier) {
     for(var i = 0; i <6; ++i){
         if(sys.ability(sys.teamPokeAbility(src, team, i)) == "Snow Cloak"){
             return ["Snow Cloak is not allowed in " + tier + "."];
@@ -286,7 +286,7 @@ tier_checker.add_new_check(INCLUDING, ["Wifi OU"], function bannedPokes(src, tea
     }
 });
 
-tier_checker.add_new_check(INCLUDING, ["Wifi LU"], function smashPassCheck(src, team, tier) {
+tier_checker.add_new_check(INCLUDING, ["Wifi LU", "Smogon RU", "Smogon NU"], function smashPassCheck(src, team, tier) {
     var ret = [];
     for (var i = 0; i < 6; i++) {
         if (sys.hasTeamPokeMove(src, team, i, sys.moveNum("Shell Smash")) && sys.hasTeamPokeMove(src, team, i, sys.moveNum("Baton Pass"))) {
