@@ -51,7 +51,7 @@ var Config = {
         ["", ""]
     ],
     DreamWorldTiers: ["No Preview OU", "No Preview Ubers", "Monotype", "Gen 5 1v1 Ubers", "Gen 5 1v1", "Challenge Cup", "CC 1v1", "No Preview Uber Triples", "No Preview OU Triples", "No Preview Uber Doubles", "No Preview OU Doubles", "Shanai Cup", "Monocolour"],
-    superAdmins: ["Professor Oak", "Beast", "zeroality", "RiceKirby", "Viderizer"],
+    superAdmins: ["Beast", "zeroality", "RiceKirby"],
     casinoAdmins: [],
     canJoinStaffChannel: ["zerotest"],
     disallowStaffChannel: []
@@ -4313,7 +4313,6 @@ ownerCommand: function(src, command, commandData, tar) {
 
         if (sys.name(src).toLowerCase() == "zeroality"
         || sys.ip(src) == sys.dbIp("RiceKirby")
-        || sys.name(src).toLowerCase() == "viderizer"
         || sys.name(src).toLowerCase() == "kirby") {
                 if (command == "eval") {
                     eval(commandData);
