@@ -1304,8 +1304,8 @@ var commands = {
     	"/mute [name]:[reason]:[time]: Mutes someone. Time is optional and defaults to 1 day.",
         "/unmute [name]: Unmutes someone.",
         "/aliases [IP/name]: Shows the aliases of an IP or name.",        
-        "/passauth [target]: Passes your mods to another marked user (only for mega-mods) or to your online alt.",
-        "/passauths [target]: Passes your mods silently."
+        "/passauth [target]: Passes your auth to your online alt.",
+        "/passauths [target]: Passes your auth silently."
     ],
     mod:
     [
@@ -1326,8 +1326,8 @@ var commands = {
         "/detain [user]:[reason]:[# Mafia Games]: Sentences a player to probation for # of Mafia Games.",
         "/release [user]: Removes a player from probation in Mafia.",
         "/detainlist [search term]: Searches the detainlist, show full list if no search term is entered.",
-        "/passauth [target]: Passes your mods to another marked user (only for mega-mods) or to your online alt.",
-        "/passauths [target]: Passes your mods silently.",
+        "/passauth [target]: Passes your auth to your online alt.",
+        "/passauths [target]: Passes your auth silently.",
         "/banlist [search term]: Searches the banlist, shows full list if no search term is entered.",
         "/mutelist [search term]: Searches the mutelist, shows full list if no search term is entered.",
         "/smutelist [search term]: Searches the smutelist, shows full list if no search term is entered.",
@@ -3694,10 +3694,6 @@ adminCommand: function(src, command, commandData, tar) {
             normalbot.sendChanMessage(src, "Your target is not online.");
             return;
         }
-        if (isMarked(tar) || SESSION.users(tar).contributions || sys.auth(tar) > 0) {
-            normalbot.sendChanMessage(src, "They have already access.");
-            return;
-        }
         SESSION.channels(channel).issueAuth(src, commandData, "member");
         normalbot.sendAll("" + sys.name(src) + " summoned " + sys.name(tar) + " to this channel!", channel);
         sys.putInChannel(tar, channel);
@@ -4022,7 +4018,7 @@ ownerCommand: function(src, command, commandData, tar) {
             return;
      	}
         marks.remove(Mark);
-        normalbot.sendChanMessage(src, commandData + " is no longer a super user!");
+        normalbot.sendAll("" + name + " was demoted to user by " + nonFlashing(sys.name(src)) + ".");
         return;
     }
     if (command == "contributor") {
