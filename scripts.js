@@ -1299,6 +1299,14 @@ var commands = {
         "/owner [name]: Gives a user channel owner status.",
         "/deowner [name]: Removes channel owner status from a user."
     ],
+    superuser:
+    [
+    	"/mute [name]:[reason]:[time]: Mutes someone. Time is optional and defaults to 1 day.",
+        "/unmute [name]: Unmutes someone.",
+        "/aliases [IP/name]: Shows the aliases of an IP or name.",        
+        "/passauth [target]: Passes your mods to another marked user (only for mega-mods) or to your online alt.",
+        "/passauths [target]: Passes your mods silently."
+    ],
     mod:
     [
         "/k [name]: Kicks someone.",
@@ -2292,6 +2300,9 @@ userCommand: function(src, command, commandData, tar) {
             }
             sendChanMessage(src, "*** Other Commands ***");
             sendChanMessage(src, "/commands channel: To know of channel commands");
+            if (isMarked(src)) {
+            	sendChanMessage(src, "/commands superuser: To know of super user commands");
+            }
             if (sys.auth(src) > 0) {
                 sendChanMessage(src, "/commands mod: To know of moderator commands");
             }
@@ -2320,6 +2331,7 @@ userCommand: function(src, command, commandData, tar) {
         if ( (commandData == "mod" && sys.auth(src) > 0)
             || (commandData == "admin" && (sys.auth(src) > 1))
             || (commandData == "owner" && (sys.auth(src) > 2 || isSuperAdmin(src)))
+            || (commandData == "superuser" && isMarked(src))
             || (commandData == "channel") ) {
             sendChanMessage(src, "*** " + commandData.toUpperCase() + " Commands ***");
             commands[commandData].forEach(function(help) {
