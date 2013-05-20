@@ -2433,11 +2433,10 @@ userCommand: function(src, command, commandData, tar) {
             require('tours.js').showRules(src, commandData, channel);
             return;
         }
-        var norules = rules.length-1; //formula for getting the right amount of rules
+        var norules = rules.length-4; //formula for getting the right amount of rules
         if(commandData !== undefined && !isNaN(commandData) && commandData >0 && commandData < norules){
             var num = parseInt(commandData, 10);
-            sendChanMessage(src, rules[num]);
-            sendChanMessage(src, rules[num+1]);
+            sendChanMessage(src, rules[num+2]);
             return;
         }
         for (var rule = 0; rule < rules.length; rule++) {
