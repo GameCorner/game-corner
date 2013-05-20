@@ -2815,13 +2815,39 @@ userCommand: function(src, command, commandData, tar) {
     if (isMarked(src) && (command == "mute" || command == "unmute" || command == "aliases")) {
     	return this.modCommand(src, command, commandData, tar);
     }
-    if(command == "shades"){
-/*        if(sys.name(src).toLowerCase() !== "pokemonnerd"){
+    if (isMarked(src) && sys.auth(src) < 1 && (command == "passauth" || command == "passauths")) {
+        if (tar === undefined) {
+            normalbot.sendChanMessage(src, "The target is offline.");
             return;
-        }*/
+        }
+        if (sys.ip(src) == sys.ip(tar) && !isMarked(tar)) {
+            // fine
+        }
+        else {
+            if (sys.auth(tar) > 0) {
+                normalbot.sendChanMessage(src, "The target must not be auth.");
+                return;
+            }
+            normalbot.sendChanMessage(src, "The target's IP is different from yours.");
+            return;
+        }
+        if (!sys.dbRegistered(sys.name(tar))) {
+            normalbot.sendChanMessage(src, "The target name must be registered.");
+            return;
+        }
+        marks.remove(sys.name(src));
+        marks.add(sys.name(tar));
+        if (command == "passauth")
+            normalbot.sendAll(sys.name(src) + " passed their auth to " + sys.name(tar) + "!", staffchannel);
+        return;
+    }    
+/*    if(command == "shades"){
+        if(sys.name(src).toLowerCase() !== "pokemonnerd"){
+            return;
+        }
         sys.changeName(src, "(¬¦_¦)");
         return;
-    }
+    } */
     return "no command";
 },
 
@@ -3546,7 +3572,7 @@ modCommand: function(src, command, commandData, tar) {
                 return;
             }
             if (isMarked(tar) === false || sys.auth(tar) > 0) {
-                normalbot.sendChanMessage(src, "The target must be a marked user and not auth, or from your IP.");
+                normalbot.sendChanMessage(src, "The target must be a super user and not auth, or from your IP.");
                 return;
             }
         }
