@@ -2300,7 +2300,7 @@ userCommand: function(src, command, commandData, tar) {
             }
             sendChanMessage(src, "*** Other Commands ***");
             sendChanMessage(src, "/commands channel: To know of channel commands");
-            if (isMarked(src)) {
+            if (isMarked(src) || sys.auth(src) > 0) {
             	sendChanMessage(src, "/commands superuser: To know of super user commands");
             }
             if (sys.auth(src) > 0) {
@@ -2331,7 +2331,7 @@ userCommand: function(src, command, commandData, tar) {
         if ( (commandData == "mod" && sys.auth(src) > 0)
             || (commandData == "admin" && (sys.auth(src) > 1))
             || (commandData == "owner" && (sys.auth(src) > 2 || isSuperAdmin(src)))
-            || (commandData == "superuser" && isMarked(src))
+            || (commandData == "superuser" && (isMarked(src) || sys.auth(src) > 0))
             || (commandData == "channel") ) {
             sendChanMessage(src, "*** " + commandData.toUpperCase() + " Commands ***");
             commands[commandData].forEach(function(help) {
