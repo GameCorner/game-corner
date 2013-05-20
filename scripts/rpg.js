@@ -13,6 +13,7 @@ function RPG(rpgchan) {
     var items;
     var places;
     var elements;
+    var quests;
     
     var tick = 0;
     
@@ -793,6 +794,18 @@ function RPG(rpgchan) {
                 this.startBattle(list[0], list[1], m);
             }
         }
+        if ("quests" in eff) {
+            var updatedQuests = [];
+            
+            for (e in eff.quests) {
+                player.quests[e] = eff.quests[e];
+                updatedQuests.push(quests[e].name);
+            }
+            
+            if (updatedQuests.length > 0) {
+                rpgbot.sendMessage(src, "The following quests have been updated: " + readable(updatedQuests, "and") + ".", rpgchan);
+            }
+        }
         if ("hunt" in eff) {
             if (!(person in player.hunted)) {
                 player.hunted[person] = {};
@@ -914,6 +927,23 @@ function RPG(rpgchan) {
                 if (huntNeeded.length > 0) {
                     deny = true;
                     warnings.push("hunt " + readable(huntNeeded, "and"));
+                }
+            }
+            if ("quests" in req) {
+                var q;
+                for (r in req.quests) {
+                    q = req.quests[r];
+                    if (Array.isArray(q)) {
+                        if (player.quests[r] < q[0] || player.quests[r] > q[1]) {
+                            deny = true;
+                            break;
+                        }
+                    } else {
+                        if (player.quests[r] !== q) {
+                            deny = true;
+                            break;
+                        }
+                    }
                 }
             }
             
@@ -4271,6 +4301,8 @@ function RPG(rpgchan) {
         player.defeated = {};
         player.hunted = {};
         
+        player.quests = {};
+        
         this.updateBonus(src);
         
         rpgbot.sendMessage(src, "Character successfully created!", rpgchan);
@@ -4521,6 +4553,9 @@ function RPG(rpgchan) {
         if (!file.storage) {
             file.storage = {};
         }
+        if (!file.quests) {
+            file.quests = {};
+        }
         
         return file;
     };
@@ -4713,17 +4748,34 @@ function RPG(rpgchan) {
             sys.sendMessage(src, out[x], rpgchan);
         }
     };
-    this.viewPlaces = function(src) {
-        var out = [""];
-        var sk;
-        for (var s in places) {
-            sk = places[s];
-            out.push(sk.name + " (" + s + "): " + sk.info);
-        }
-        out.push("");
+    this.viewQuests = function(src) {
+        var player = SESSION.users(src).rpg;
+        var ongoing = [], finished = [], q, quest, progress;
         
-        for (var x in out) {
-            sys.sendMessage(src, out[x], rpgchan);
+        for (q in player.quests) {
+            progress = player.quests[q];
+            quest = quests[q];
+            
+            if (progress === quest.steps) {
+                finished.push(quest.name + ": " + quest.messages[progress]);
+            } else {
+                ongoing.push(quest.name + " (" + progress + "/" + (quest.steps ? quest.steps : "??") + "): " + quest.messages[progress]);
+            }
+        }
+        
+        if (ongoing.length > 0) {
+            sys.sendMessage(src, "", rpgchan);
+            sys.sendMessage(src, "Ongoing Quests (" + ongoing.length + "):", rpgchan);
+            for (s in ongoing) {
+                sys.sendMessage(src, ongoing[s], rpgchan);
+            }
+        }
+        if (finished.length > 0) {
+            sys.sendMessage(src, "", rpgchan);
+            sys.sendMessage(src, "Finished Quests (" + finished.length + "):", rpgchan);
+            for (s in finished) {
+                sys.sendMessage(src, finished[s], rpgchan);
+            }
         }
     };
     this.viewClasses = function(src) {
@@ -4962,6 +5014,7 @@ function RPG(rpgchan) {
             skills = parsed.skills;
             items = parsed.items;
             places = parsed.places;
+            quests = parsed.quests;
             expTable = parsed.config.levels;
             elements = parsed.config.elements || {};
             
@@ -5188,11 +5241,10 @@ function RPG(rpgchan) {
             passive: [this.setPassiveSkills, "To view or set your passive skills."],
             stats: [this.viewStats, "To view your character status."],
             skills: [this.viewSkills, "To view the available skills."],
+            quests: [this.viewQuests, "To view the quests you started or completed."],
             increase: [this.addPoint, "To increase your stats or skills after you level up."],
-            // resetchar: [this.resetChar, "To reset your build without erasing your character."],
             savechar: [this.saveGame, "To save your progress."],
             clearchar: [this.clearChar, "To clear your character."],
-            // inn: [this.gotoInn, "Pay 10 Gold to fully restore HP and MP."],
             party: [this.manageParty, "To create and manage a party"],
             partytalk: [this.talkToParty, "To talk to your party."],
             appearance: [this.changeAppearance, "To change your appearance description."],
@@ -5212,6 +5264,7 @@ function RPG(rpgchan) {
             i: [this.useItem, "Same as /item."],
             f: [this.fleeBattle, "Same as /flee"],
             c: [this.challengePlayer, "Same as /challenge."],
+            q: [this.viewQuests, "Same as /quests."],
             p: [this.manageParty, "Same as /party."],
             pt: [this.talkToParty, "Same as /partytalk."]
         },
@@ -5221,7 +5274,6 @@ function RPG(rpgchan) {
             classes: [this.viewClasses, "To view basic information about each class."],
             start: [this.startGame, "To create your character and begin your game."],
             loadchar: [this.loadGame, "To load your previously saved game."],
-            //places: [this.viewPlaces, "To view the available locations."],
             view: [this.viewPlayer, "To view someone else's stats."]
 		},
 		op: {
