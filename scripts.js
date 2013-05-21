@@ -3686,15 +3686,15 @@ adminCommand: function(src, command, commandData, tar) {
     }
     if (command == "indigoinvite") {
 
-        if (channel != staffchannel && channel != sachannel) {
+/*        if (channel != staffchannel && channel != sachannel) {
             normalbot.sendChanMessage(src, "Can't use on this channel.");
             return;
-        }
+        } */
         if (tar === undefined) {
             normalbot.sendChanMessage(src, "Your target is not online.");
             return;
         }
-        SESSION.channels(channel).issueAuth(src, commandData, "member");
+//        SESSION.channels(channel).issueAuth(src, commandData, "member");
         normalbot.sendAll("" + sys.name(src) + " summoned " + sys.name(tar) + " to this channel!", channel);
         sys.putInChannel(tar, channel);
         normalbot.sendChanMessage(tar, "" + sys.name(src) + " made you join this channel!");
