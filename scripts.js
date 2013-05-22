@@ -4019,7 +4019,7 @@ ownerCommand: function(src, command, commandData, tar) {
             normalbot.sendChanMessage(src, commandData + " is not a super user.");
             return;
      	}
-        normalbot.sendAll("" + name + " was demoted to user by " + nonFlashing(sys.name(src)) + ".");
+        normalbot.sendAll("" + commandData + " was demoted to user by " + nonFlashing(sys.name(src)) + ".");
         marks.remove(Mark);
         return;
     }
