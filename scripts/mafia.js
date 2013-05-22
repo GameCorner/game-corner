@@ -4180,7 +4180,9 @@ return;
                             this.sendPlayer(haxPlayer, "±Game: " + name + " is " + playerRole + "!");
                             haxTypes.push("revealRole");
                         }
-
+                        if (haxTypes.length > 0) {
+                            haxers.push(haxPlayer + " [" + haxTypes.join("/") + "]");
+                        }
                     }
                 }
                 if (haxers.length > 0) {
