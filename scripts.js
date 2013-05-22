@@ -3694,7 +3694,9 @@ adminCommand: function(src, command, commandData, tar) {
             normalbot.sendChanMessage(src, "Your target is not online.");
             return;
         }
-//        SESSION.channels(channel).issueAuth(src, commandData, "member");
+        if (channel == staffchannel) {
+            SESSION.channels(channel).issueAuth(src, commandData, "member");
+        }    
         normalbot.sendAll("" + sys.name(src) + " summoned " + sys.name(tar) + " to this channel!", channel);
         sys.putInChannel(tar, channel);
         normalbot.sendChanMessage(tar, "" + sys.name(src) + " made you join this channel!");
@@ -4017,8 +4019,8 @@ ownerCommand: function(src, command, commandData, tar) {
             normalbot.sendChanMessage(src, commandData + " is not a super user.");
             return;
      	}
-        marks.remove(Mark);
         normalbot.sendAll("" + name + " was demoted to user by " + nonFlashing(sys.name(src)) + ".");
+        marks.remove(Mark);
         return;
     }
     if (command == "contributor") {
