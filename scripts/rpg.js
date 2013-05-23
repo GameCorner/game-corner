@@ -6,6 +6,7 @@ function RPG(rpgchan) {
     var contentLoc;
     
     var charVersion = 1.1;
+    var savefolder = "rpgsaves";
     
     var classes;
     var monsters;
@@ -930,16 +931,17 @@ function RPG(rpgchan) {
                 }
             }
             if ("quests" in req) {
-                var q;
+                var q, qp;
                 for (r in req.quests) {
                     q = req.quests[r];
+                    qp = player.quests[r] || 0;
                     if (Array.isArray(q)) {
-                        if (player.quests[r] < q[0] || player.quests[r] > q[1]) {
+                        if (qp < q[0] || qp > q[1]) {
                             deny = true;
                             break;
                         }
                     } else {
-                        if (player.quests[r] !== q) {
+                        if (qp !== q) {
                             deny = true;
                             break;
                         }
@@ -1066,6 +1068,14 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You cancelled your challenge!", rpgchan);
             duelChallenges[player.name] = undefined;
             return;
+        } else if (commandData === "on") {
+            player.canChallenge = true;
+            rpgbot.sendMessage(src, "Now accepting challenges from other players!", rpgchan);
+            return;
+        } else if (commandData === "off") {
+            player.canChallenge = false;
+            rpgbot.sendMessage(src, "Now rejecting challenges from other players!", rpgchan);
+            return;
         }
         var targetId = sys.id(commandData);
         if (targetId === undefined) {
@@ -1087,6 +1097,10 @@ function RPG(rpgchan) {
         }
         if (opponent.location !== player.location) {
             rpgbot.sendMessage(src, "You must be at the same location of the person you want to challenge!", rpgchan);
+            return;
+        }
+        if (opponent.canChallenge === false) {
+            rpgbot.sendMessage(src, "This person is not accepting challenges!", rpgchan);
             return;
         }
         var playerName = sys.name(src);
@@ -1158,20 +1172,23 @@ function RPG(rpgchan) {
         var battle = new Battle(viewers, team1, team2);
         var names1 = [];
         var names2 = [];
+        var player;
         for (var p in team1) {
-            names1.push(team1[p].name);
-            if (team1[p].isPlayer) {
-                team1[p].isBattling = true;
+            player = team1[p];
+            names1.push(player.name + (player.defenseElement !== "none" ? " [" + cap(player.defenseElement) + "]" : ""));
+            if (player.isPlayer) {
+                player.isBattling = true;
             }
         }
         for (p in team2) {
-            names2.push(team2[p].name);
-            if (team2[p].isPlayer) {
-                team2[p].isBattling = true;
+            player = team2[p];
+            names2.push(player.name + (player.defenseElement !== "none" ? " [" + cap(player.defenseElement) + "]" : ""));
+            if (player.isPlayer) {
+                player.isBattling = true;
             }
         }
         
-        battle.sendToViewers("A battle between " + readable(names1, "and") + " and " + readable(names2, "and") + " has started!");
+        battle.sendToViewers("A battle between " + readable(names1, "and") + " and " + readable(names2, "and") + " has started!", true);
         
         currentBattles.push(battle);
     };
@@ -2123,7 +2140,7 @@ function RPG(rpgchan) {
         
         return winner;
     };
-    Battle.prototype.sendToViewers = function(msg) {
+    Battle.prototype.sendToViewers = function(msg, bypass) {
         var size, v, viewer, reg;
         
         if (typeof msg === "string") { 
@@ -2139,7 +2156,9 @@ function RPG(rpgchan) {
         for (v in this.viewers) {
             viewer = this.viewers[v];
             size = SESSION.users(viewer).rpg.fontSize || 11;
-            sys.sendHtmlMessage(viewer, '<span style="font-size:' + size + 'px;">' + msg + '</span>', rpgchan);
+            if (size > 0 || bypass === true) {
+                sys.sendHtmlMessage(viewer, '<span style="font-size:' + size + 'px;">' + msg + '</span>', rpgchan);
+            }
         }
     };
     Battle.prototype.finishBattle = function(win) {
@@ -2160,9 +2179,9 @@ function RPG(rpgchan) {
             }
         } else {
             if (win === 0) {
-                this.sendToViewers("The battle between " + readable(winNames, "and") + " and " + readable(loseNames, "and") + " ended in a draw!");
+                this.sendToViewers("The battle between " + readable(winNames, "and") + " and " + readable(loseNames, "and") + " ended in a draw!", true);
             } else {
-                this.sendToViewers(readable(winNames, "and") + " defeated " + readable(loseNames, "and") + "!");
+                this.sendToViewers(readable(winNames, "and") + " defeated " + readable(loseNames, "and") + "!", true);
             }
         }
         
@@ -4294,6 +4313,7 @@ function RPG(rpgchan) {
         player.version = charVersion;
         player.publicStats = false;
         player.watchableBattles = false;
+        player.canChallenge = false;
         player.fontSize = 11;
         player.description = "";
         
@@ -4369,7 +4389,6 @@ function RPG(rpgchan) {
         }
         
         var savename = user.rpg.name.toLowerCase();
-        var savefolder = "rpgsaves";
         
         /* if (!sys.dbRegistered(savename)) {
             rpgbot.sendMessage(src, "You need to register before saving your game!", rpgchan);
@@ -4408,7 +4427,6 @@ function RPG(rpgchan) {
             return;
         }
         
-        var savefolder = "rpgsaves";
         var content = sys.getFileContent(savefolder + "/" + escape(savename) + ".json");
         if (content === undefined) {
             rpgbot.sendMessage(src, "You haven't saved a game!", rpgchan);
@@ -4536,6 +4554,9 @@ function RPG(rpgchan) {
         }
         if (!file.publicStats) {
             file.publicStats = false;
+        }
+        if (!file.canChallenge) {
+            file.canChallenge = true;
         }
         if (!file.watchableBattles) {
             file.watchableBattles = false;
@@ -4692,6 +4713,174 @@ function RPG(rpgchan) {
         
         this.updateBonus(src);
     };
+    this.resetCharData = function(player) {
+        var data = classes[player.job];
+        
+        for (var e in data.stats) {
+            player[e] = data.stats[e];
+        }
+        player.maxhp = player.hp;
+        player.maxmp = player.mp;
+        player.basehp = player.maxhp;
+        player.basemp = player.maxmp;
+        
+        player.statPoints = startup.stats + leveling.stats * (player.level - 1);
+        
+        if (classes[player.job].growth) {
+            var growth = classes[player.job].growth;
+            var inc;
+            for (var i = 1; i < player.level; ++i) {
+                for (var g in growth) {
+                    inc = getLevelValue(growth[g], (i - 1) % growth[g].length);
+                    if (g === "maxhp") {
+                        if (leveling.maxhp > 0 && player.basehp + inc > leveling.maxhp) {
+                            inc = leveling.maxhp - player.basehp;
+                        }
+                    } else if (g === "maxmp") {
+                        if (leveling.maxmp > 0 && player.basemp + inc > leveling.maxmp) {
+                            inc = leveling.maxmp - player.basemp;
+                        }
+                    } else {
+                        if (leveling.maxstats > 0 && player[g] + inc > leveling.maxstats) {
+                            inc = leveling.maxstats - player[g];
+                        }
+                    }
+                    
+                    player[g] += inc;
+                    if (g === "maxhp") {
+                        player.basehp += inc;
+                    } else if (g === "maxmp") {
+                        player.basemp += inc;
+                    }
+                }
+            }
+        }
+        
+        player.equips = {};
+        for (e in equipment) {
+            player.equips[e] = null;
+        }
+        
+        player.bonus = {
+            battle: {
+                str: 0,
+                def: 0,
+                spd: 0,
+                dex: 0,
+                mag: 0
+            },
+            equip: {
+                maxhp: 0,
+                maxmp: 0,
+                str: 0,
+                def: 0,
+                spd: 0,
+                dex: 0,
+                mag: 0
+            },
+            skill: {
+                maxhp: 0,
+                maxmp: 0,
+                str: 0,
+                def: 0,
+                spd: 0,
+                dex: 0,
+                mag: 0
+            }
+        };
+        
+        player.skills = {};
+        for (var e in data.skills) {
+            player.skills[e] = data.skills[e];
+        }
+        player.passives = {};
+        player.strategy = {};
+        for (e in data.strategy) {
+            player.strategy[e] = data.strategy[e];
+        }
+        player.plans = [];
+        player.plans.push(player.strategy);
+        player.plans.push(player.strategy);
+        player.plans.push(player.strategy);
+        
+        player.skillPoints = startup.skills + leveling.skills * (player.level - 1);
+        
+        for (e in player.equips) {
+            if (player.equips[e] !== null && canUseItem(player, player.equips[e]) === false) {
+                player.equips[e] = null;
+            }
+        }
+        
+        return player;
+    };
+    this.punishPlayer = function(src, commandData) {
+        if (["ricekirby", "thepiggy"].indexOf(sys.name(src).toLowerCase()) === -1) {
+            rpgbot.sendMessage(src, "You cannot use this command!", rpgchan);
+            return;
+        }
+        
+        var data, player, id, name, levels;
+        data = commandData.split(":");
+        if (data.length < 2) {
+            rpgbot.sendMessage(src, "Incorrect format! Use /punish name:levels to be reduced.", rpgchan);
+            return;
+        }
+        
+        name = data[0].toLowerCase();
+        levels = parseInt(data[1], 10);
+        
+        if (isNaN(levels)) {
+            rpgbot.sendMessage(src, "You must define a valid number for the levels you want to remove!", rpgchan);
+            return;
+        }
+        
+        id = sys.id(name);
+        var charLoaded = false;
+        if (id !== undefined) {
+            if (SESSION.users(id).rpg !== undefined && SESSION.users(id).rpg !== null) {
+                player = SESSION.users(id).rpg;
+                charLoaded = true;
+            } else {
+                try {
+                    player = JSON.parse(sys.getFileContent(savefolder + "/" + escape(name) + ".json"));
+                } catch (e) {
+                    rpgbot.sendMessage(src, "Error: " + e, rpgchan);
+                    return;
+                }
+            }
+        } else {
+            try {
+                player = JSON.parse(sys.getFileContent(savefolder + "/" + escape(name) + ".json"));
+            } catch (e) {
+                rpgbot.sendMessage(src, "Error: " + e, rpgchan);
+                return;
+            }
+        }
+        
+        player.level -= levels;
+        if (player.level < 1) {
+            player.level = 1;
+        }
+        if (player.level === 1) {
+            player.exp = 0;
+        } else {
+            player.exp = expTable[player.level - 2];
+        }
+        
+        player = this.resetCharData(player);
+        
+        if (charLoaded) {
+            this.removePlayer(id, true);
+            SESSION.users(id).rpg = player;
+            SESSION.users(id).rpg.location = startup.location;
+            this.saveGame(src, "sure");
+        } else {
+            sys.makeDir(savefolder);
+            sys.writeToFile(savefolder + "/" + escape(name) + ".json", JSON.stringify(player));
+        }
+        
+        rpgbot.sendAll("Player " + name + " was punished and went back to level " + player.level + "!", rpgchan);
+    };
     
     this.viewStats = function(src) {
         var player = SESSION.users(src).rpg;
@@ -4759,7 +4948,7 @@ function RPG(rpgchan) {
             if (progress === quest.steps) {
                 finished.push(quest.name + ": " + quest.messages[progress]);
             } else {
-                ongoing.push(quest.name + " (" + progress + "/" + (quest.steps ? quest.steps : "??") + "): " + quest.messages[progress]);
+                ongoing.push(quest.name + " (" + progress + "/" + (quest.hiddenSteps !== true ? quest.steps : "??") + "): " + quest.messages[progress]);
             }
         }
         
@@ -5281,6 +5470,7 @@ function RPG(rpgchan) {
 		master: {
             reloadchars: [this.reloadChars, "To reload everyone's character after an update."],
             unbork: [this.unborkChar, "To manually fix someone's character."],
+            punish: [this.punishPlayer, "To punish a player's character."],
             updatelocal: [this.loadLocalContent, "To load RPG content from the directory."],
             updaterpg: [this.loadURLContent, "To load RPG content from the web. If you don't specify an URL, the default one will be used."],
             updategame: [this.callUpdate, "Update the RPG Scripts."],
