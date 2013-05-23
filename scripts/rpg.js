@@ -4873,7 +4873,7 @@ function RPG(rpgchan) {
             this.removePlayer(id, true);
             SESSION.users(id).rpg = player;
             SESSION.users(id).rpg.location = startup.location;
-            this.saveGame(src, "sure");
+            this.saveGame(id, "sure");
         } else {
             sys.makeDir(savefolder);
             sys.writeToFile(savefolder + "/" + escape(name) + ".json", JSON.stringify(player));
