@@ -4450,7 +4450,7 @@ function RPG(rpgchan) {
             }
         }
         
-        if (!(gamefile.job in classes) {
+        if (!(gamefile.job in classes)) {
             rpgbot.sendMessage(src, "This character has an invalid class, so you cannot load it!", rpgchan);
             return;
         }
