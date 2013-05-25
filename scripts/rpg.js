@@ -15,6 +15,7 @@ function RPG(rpgchan) {
     var places;
     var elements;
     var quests;
+    var classSets = {};
     
     var tick = 0;
     
@@ -59,7 +60,8 @@ function RPG(rpgchan) {
         critical: 1.5,
         instantCast: false,
         passive: 2,
-        party: 6
+        party: 6,
+        partyLevelDiff: 99
     };
     
     var altSkills = {};
@@ -741,6 +743,9 @@ function RPG(rpgchan) {
             for (e in eff.skills) {
                 if (!(e in player.skills)) {
                     player.skills[e] = 0;
+                } else if (eff.skills[e] === "*") {
+                    delete player.skills[e];
+                    continue;
                 }
                 player.skills[e] += eff.skills[e];
                 if (player.skills[e] < 0) {
@@ -1468,7 +1473,9 @@ function RPG(rpgchan) {
                     } else {
                         var missingItems = [];
                         for (n in move.effect.itemCost) {
-                            if(hasItem(player, n, move.effect.itemCost[n]) === false) {
+                            if (move.effect.itemCost[n] < 0) {
+                                continue;
+                            } else if(hasItem(player, n, move.effect.itemCost[n]) === false) {
                                 missingItems.push(move.effect.itemCost[n] + " " + items[n].name + "(s)");
                             }
                         }
@@ -3356,17 +3363,34 @@ function RPG(rpgchan) {
             return true;
         } else {
             var item = items[it];
-            if (item.classes.indexOf(player.job) === -1) {
-                var allowedClasses = getPassiveClasses(player, "itemsFromClass");
-                for (var c in item.classes) {
-                    if (allowedClasses.indexOf(item.classes[c]) !== -1) {
-                        return true;
-                    }
-                }
-                return false;
-            } else {
+            var canUseClasses = [];
+            var name, c, n;
+            
+            if (item.classes.indexOf(player.job) !== -1) {
                 return true;
             }
+            
+            for (c in item.classes) {
+                name = item.classes[c];
+                if (name[0] === "*") {
+                    name = name.substring(1);
+                    if (name in classSets) {
+                        canUseClasses = canUseClasses.concat(classSets[name]);
+                    }
+                } else {
+                    canUseClasses.push(name);
+                }
+            }
+            
+            var allowedClasses = getPassiveClasses(player, "itemsFromClass");
+            allowedClasses.push(player.job);
+            for (c in allowedClasses) {
+                if (canUseClasses.indexOf(allowedClasses[c]) !== -1) {
+                    return true;
+                }
+            }
+            
+            return false;
         }
     }
     
@@ -3379,7 +3403,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-    	for (e = expTable.length; e >= 0; --e) {
+		for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -4222,7 +4246,7 @@ function RPG(rpgchan) {
         for (var p in this.members) {
             id = this.members[p];
             target = SESSION.users(id).rpg;
-            if (target.location === loc && target.isBattling === false && target.hp > 0) {
+            if (target.location === loc && target.isBattling === false && target.hp > 0 && Math.abs(player.level - target.level) < battleSetup.partyLevelDiff) {
                 battlers.push(target);
                 viewers.push(id);
             }
@@ -4313,7 +4337,7 @@ function RPG(rpgchan) {
         player.version = charVersion;
         player.publicStats = false;
         player.watchableBattles = false;
-        player.canChallenge = false;
+        player.canChallenge = true;
         player.fontSize = 11;
         player.description = "";
         
@@ -5235,6 +5259,9 @@ function RPG(rpgchan) {
                 if (battle.party) {
                     battleSetup.party = battle.party;
                 }
+                if (battle.partyLevelDiff) {
+                    battleSetup.partyLevelDiff = battle.partyLevelDiff;
+                }
             }
             
             startup.classes = parsed.config.startup.classes;
@@ -5243,6 +5270,10 @@ function RPG(rpgchan) {
             startup.items = parsed.config.startup.items;
             startup.stats = parsed.config.startup.stats;
             startup.skills = parsed.config.startup.skills;
+            
+            if (parsed.config.classSets) {
+                classSets = parsed.config.classSets;
+            }
             
             if (parsed.config.leveling) {
                 var level = parsed.config.leveling;
