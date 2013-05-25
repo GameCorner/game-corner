@@ -1,7 +1,6 @@
 // Global variables inherited from scripts.js
 /*global rpgbot, updateModule, sys, SESSION, sendChanAll, escape, module*/
 function RPG(rpgchan) {
-    var name = "RPG";
     var game = this;
     var contentLoc;
     
@@ -3403,7 +3402,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-		for (e = expTable.length; e >= 0; --e) {
+    	for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -3953,7 +3952,7 @@ function RPG(rpgchan) {
         }
         
         var data = commandData.split(":");
-        var action = data[0];
+        var action = data[0].toLowerCase();
         var target;
         
         if (data.length > 1) {
@@ -5629,15 +5628,15 @@ function RPG(rpgchan) {
         }
     };
 	this.init = function() {
-		var name="RPG";
+		var name = "Game Corner";
 		if (sys.existChannel(name)) {
             rpgchan = sys.channelId(name);
         } else {
             rpgchan = sys.createChannel(name);
         }
-        SESSION.global().channelManager.restoreSettings(rpgchan);
+        /* SESSION.global().channelManager.restoreSettings(rpgchan);
         SESSION.channels(rpgchan).perm = true;
-        SESSION.channels(rpgchan).master = "RiceKirby";
+        SESSION.channels(rpgchan).master = "RiceKirby"; */
         game.loadLocalContent();
         contentLoc = JSON.parse(sys.getFileContent("rpglocation.txt"));
 	};
@@ -5710,15 +5709,15 @@ function RPG(rpgchan) {
 module.exports = function() {
     var id;
     var init = function() {
-        var name = "RPG";
+        var name = "Game Corner";
         if (sys.existChannel(name)) {
             id = sys.channelId(name);
         } else {
             id = sys.createChannel(name);
         }
-        SESSION.global().channelManager.restoreSettings(id);
+        /* SESSION.global().channelManager.restoreSettings(id);
         SESSION.channels(id).perm = true;
-        SESSION.channels(id).master = "RiceKirby";
+        SESSION.channels(id).master = "RiceKirby"; */
     };
 
     var game = new RPG(id);
