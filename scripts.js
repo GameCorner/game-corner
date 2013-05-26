@@ -3077,46 +3077,8 @@ modCommand: function(src, command, commandData, tar) {
         script.issueBan("mute", src, tar, commandData);
         return;
     }
-    if (command == "ipban") {
-        var subip;
-        var comment;
-        var space = commandData.indexOf(' ');
-        if (space != -1) {
-            subip = commandData.substring(0,space);
-            comment = commandData.substring(space+1);
-        } else {
-            subip = commandData;
-            comment = '';
-        }
-        /* check ip */
-        var i = 0;
-        var nums = 0;
-        var dots = 0;
-        var correct = (subip.length > 0); // zero length ip is baaad
-        while (i < subip.length) {
-            var c = subip[i];
-            if (c == '.' && nums > 0 && dots < 3) {
-                nums = 0;
-                ++dots;
-                ++i;
-            } else if (c == '.' && nums === 0) {
-                correct = false;
-                break;
-            } else if (/^[0-9]$/.test(c) && nums < 3) {
-                ++nums;
-                ++i;
-            } else {
-                correct = false;
-                break;
-            }
-        }
-        if (!correct) {
-            normalbot.sendChanMessage(src, "The IP address looks strange, you might want to correct it: " + subip);
-            return;
-        }
-        ipbans.add(subip, "Name: " +sys.name(src) + " Comment: " + rangebans.escapeValue(comment));
-        normalbot.sendChanAll("IP ban added successfully for IP subrange: " + subip + " by "+ sys.name(src),staffchannel);
-        return;
+    if ((sys.auth(src) > 1 || sys.name(src) == "Yui") && command == "ipban") {
+    	return this.ownerCommand(src, command, commandData, tar);
     }
     if (command == "banlist") {
         var list=sys.banList();
@@ -3953,6 +3915,47 @@ adminCommand: function(src, command, commandData, tar) {
 },
 
 ownerCommand: function(src, command, commandData, tar) {
+    if (command == "ipban") {
+        var subip;
+        var comment;
+        var space = commandData.indexOf(' ');
+        if (space != -1) {
+            subip = commandData.substring(0,space);
+            comment = commandData.substring(space+1);
+        } else {
+            subip = commandData;
+            comment = '';
+        }
+        /* check ip */
+        var i = 0;
+        var nums = 0;
+        var dots = 0;
+        var correct = (subip.length > 0); // zero length ip is baaad
+        while (i < subip.length) {
+            var c = subip[i];
+            if (c == '.' && nums > 0 && dots < 3) {
+                nums = 0;
+                ++dots;
+                ++i;
+            } else if (c == '.' && nums === 0) {
+                correct = false;
+                break;
+            } else if (/^[0-9]$/.test(c) && nums < 3) {
+                ++nums;
+                ++i;
+            } else {
+                correct = false;
+                break;
+            }
+        }
+        if (!correct) {
+            normalbot.sendChanMessage(src, "The IP address looks strange, you might want to correct it: " + subip);
+            return;
+        }
+        ipbans.add(subip, "Name: " +sys.name(src) + " Comment: " + rangebans.escapeValue(comment));
+        normalbot.sendChanAll("IP ban added successfully for IP subrange: " + subip + " by "+ sys.name(src),staffchannel);
+        return;
+    }	
     if (command == "public") {
     	sys.makeServerPublic(false);
     	sys.makeServerPublic(true);
