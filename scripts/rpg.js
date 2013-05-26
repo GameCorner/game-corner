@@ -1816,20 +1816,6 @@ function RPG(rpgchan) {
                                 effectsMessages.castBreak.push(target.name);
                             }
                         }
-                        if (damage > 0) {
-                            if (move.effect.hpabsorb) {
-                                player.hp += Math.floor(damage * getLevelValue(move.effect.hpabsorb, level));
-                            }
-                            if (move.effect.mpabsorb) {
-                                player.mp += Math.floor(damage * getLevelValue(move.effect.mpabsorb, level));
-                            }
-                            if (hasEquipEffect(player, "hpabsorb")) {
-                                player.hp += Math.floor(damage * getEquipPercentage(player, "hpabsorb"));
-                            }
-                            if (hasEquipEffect(player, "mpabsorb")) {
-                                player.mp += Math.floor(damage * getEquipPercentage(player, "mpabsorb"));
-                            }
-                        }
                         if ("summon" in move.effect) {
                             if (!("summons" in target.battle)) {
                                 target.battle.summons = {};
@@ -1872,6 +1858,21 @@ function RPG(rpgchan) {
                             if (summonFailed) {
                                 effectsMessages.summonFailed = true;
                             }
+                        }
+                    }
+                    
+                    if (damage > 0) {
+                        if (move.effect && move.effect.hpabsorb) {
+                            player.hp += Math.floor(damage * getLevelValue(move.effect.hpabsorb, level));
+                        }
+                        if (move.effect && move.effect.mpabsorb) {
+                            player.mp += Math.floor(damage * getLevelValue(move.effect.mpabsorb, level));
+                        }
+                        if (hasEquipEffect(player, "hpabsorb")) {
+                            player.hp += Math.floor(damage * getEquipPercentage(player, "hpabsorb"));
+                        }
+                        if (hasEquipEffect(player, "mpabsorb")) {
+                            player.mp += Math.floor(damage * getEquipPercentage(player, "mpabsorb"));
                         }
                     }
                     
