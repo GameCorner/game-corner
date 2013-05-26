@@ -1839,6 +1839,8 @@ canJoinStaffChannel : function(src) {
         return false;
     if (sys.auth(src) > 0)
         return true;
+    if (sys.maxAuth(sys.ip(src)) > 0) 
+        return true;
     if (isMarked(src))
         return true;
     if (SESSION.users(src).contributions !== undefined)
