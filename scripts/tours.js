@@ -12,7 +12,7 @@ touradmins.json, tastats.json, tourseeds.json, tourhistory.json, tours_cache.jso
 /*global print, script, sys, SESSION, sendChanAll, sendChanHtmlAll, require, Config, module*/
 
 if (typeof tourschan !== "string") {
-    tourschan = sys.channelId("Game Corner");
+    tourschan = sys.channelId("Tournaments");
 }
 
 if (typeof tourserrchan !== "string") {
