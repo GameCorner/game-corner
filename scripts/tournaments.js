@@ -174,7 +174,7 @@ function Tournament(channel)
             mode = modeOfTier(tier);
         }
         else {
-            var singlesonlytiers = ["DW 1v1", "DW 1v1 Ubers", "CC 1v1", "Wifi CC 1v1", "GBU Singles", "Adv Ubers", "Adv OU", "DP Ubers", "DP OU", "DW OU", "DW Ubers", "Wifi OU", "Wifi Ubers"];
+            var singlesonlytiers = ["Gen 5 1v1", "Gen 5 1v1 Ubers", "CC 1v1", "Wifi CC 1v1", "GBU Singles", "Adv Ubers", "Adv OU", "HGSS Ubers", "HGSS OU", "DW OU", "DW Ubers", "BW OU", "BW Ubers"];
             if ((modeOfTier(tier) == "Doubles" || modeOfTier(tier) == "Triples" || singlesonlytiers.indexOf(tier) != -1) && !cmp(commandpart[2], modeOfTier(tier))) {
                 sendPM(source, "The "+tier+" tier can only be played in " + modeOfTier(tier) + " mode!");
                 return;
