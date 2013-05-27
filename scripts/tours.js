@@ -1036,7 +1036,7 @@ function getEventTour(datestring) {
                     var parameterset = p;
                     var parametervalue = parameterdata[p];
                     if (cmp(parameterset, "mode")) {
-                        var singlesonlytiers = ["Gen 5 1v1", "Gen 5 1v1 Ubers", "CC 1v1", "Wifi CC 1v1", "GBU Singles", "Adv Ubers", "Adv OU", "DP Ubers", "DP OU", "No Preview OU", "No Preview Ubers", "Wifi OU", "Wifi Ubers"];
+                        var singlesonlytiers = ["Gen 5 1v1", "Gen 5 1v1 Ubers", "CC 1v1", "Wifi CC 1v1", "GBU Singles", "Adv Ubers", "Adv OU", "HGSS Ubers", "HGSS OU", "DW OU", "DW Ubers", "BW OU", "BW Ubers"];
                         if ((modeOfTier(thetier) == "Doubles" || modeOfTier(thetier) == "Triples" || singlesonlytiers.indexOf(thetier) != -1) && !cmp(parametervalue, modeOfTier(thetier))) {
                             sendBotAll("The "+thetier+" tier can only be played in " + modeOfTier(thetier) + " mode!", tourserrchan, false);
                         }
@@ -1217,7 +1217,7 @@ function tourStep() {
         }
         else if (tours.keys.length === 0) {
             // start a cycle from tourarray
-            var tourarray = ["Challenge Cup", "Wifi NU", "CC 1v1", "Random Battle", "Wifi OU", "Gen 5 1v1", "Wifi UU", "Monotype", "Challenge Cup", "Clear Skies", "Wifi CC 1v1", "Wifi LC", "Wifi OU", "Wifi LU", "Wifi Ubers", "No Preview OU"];
+            var tourarray = ["Challenge Cup", "BW NU", "CC 1v1", "Random Battle", "BW OU", "Gen 5 1v1", "BW UU", "Monotype", "Challenge Cup", "Clear Skies", "Wifi CC 1v1", "BW LC", "BW OU", "BW RU", "BW Ubers", "DW OU"];
             var doubleelimtiers = ["CC 1v1", "Wifi CC 1v1", "Gen 5 1v1"];
             var tourtostart = tourarray[tours.key%tourarray.length];
             var tourtype = doubleelimtiers.indexOf(tourtostart) != -1 ? "double" : "single";
@@ -1839,7 +1839,7 @@ function tourCommand(src, command, commandData) {
                         var parameterset = parameterinfo[0];
                         var parametervalue = parameterinfo[1];
                         if (cmp(parameterset, "mode")) {
-                            var singlesonlytiers = ["Gen 5 1v1", "Gen 5 1v1 Ubers", "CC 1v1", "Wifi CC 1v1", "GBU Singles", "Adv Ubers", "Adv OU", "DP Ubers", "DP OU", "No Preview OU", "No Preview Ubers", "Wifi OU", "Wifi Ubers"];
+                            var singlesonlytiers = ["Gen 5 1v1", "Gen 5 1v1 Ubers", "CC 1v1", "Wifi CC 1v1", "GBU Singles", "Adv Ubers", "Adv OU", "HGSS Ubers", "HGSS OU", "DW OU", "DW Ubers", "BW OU", "BW Ubers"];
                             if ((modeOfTier(tourtier) == "Doubles" || modeOfTier(tourtier) == "Triples" || singlesonlytiers.indexOf(tourtier) != -1) && !cmp(parametervalue, modeOfTier(tourtier))) {
                                 sendBotMessage(src, "The "+tourtier+" tier can only be played in " + modeOfTier(tourtier) + " mode!", tourschan, false);
                                 return true;
@@ -1886,7 +1886,7 @@ function tourCommand(src, command, commandData) {
                             parameters.maxplayers = players;
                         }
                         else if (cmp(parameterset, "wifi")) {
-                            if (['CC 1v1', 'Wifi CC 1v1', 'Wifi Ubers', 'Wifi OU', 'No Preview Ubers', 'No Preview OU', 'Wifi Triples', 'Wifi Uber Triples', 'No Preview OU Triples', 'No Preview Uber Triples', 'Wifi OU Doubles', 'Wifi Uber Doubles', 'No Preview OU Doubles', 'No Preview Uber Doubles'].indexOf(tourtier) > -1) {
+                            if (['CC 1v1', 'Wifi CC 1v1', 'BW Ubers', 'BW OU', 'DW Ubers', 'DW OU', 'Wifi Triples', 'Wifi Uber Triples', 'No Preview OU Triples', 'No Preview Uber Triples', 'Wifi OU Doubles', 'Wifi Uber Doubles', 'No Preview OU Doubles', 'No Preview Uber Doubles'].indexOf(tourtier) > -1) {
                                 sendBotMessage(src, "You cannot change the Team Preview Setting for the "+tourtier+" tier!", tourschan, false);
                                 return true;
                             }
