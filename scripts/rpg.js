@@ -25,6 +25,8 @@ function RPG(rpgchan) {
     var tradeRequests = {};
     var currentParties = [];
     
+    var leaderboards = {};
+    
     var startup = {
         classes: [],
         location: null,
@@ -5174,6 +5176,7 @@ function RPG(rpgchan) {
         var tempDuels = duelChallenges;
         var tempTrades = tradeRequests;
         var tempParty = currentParties;
+        var tempBoards = leaderboards;
         
         var POglobal = SESSION.global();
         var index, source;
@@ -5188,7 +5191,7 @@ function RPG(rpgchan) {
                 POglobal.plugins[index] = module;
                 module.source = source;
                 module.init();
-                module.game.restoreValues(tempBattles, tempDuels, tempTrades, tempParty);
+                module.game.restoreValues(tempBattles, tempDuels, tempTrades, tempParty, tempBoards);
                 
             });
             sendChanAll("Updating RPG game...", rpgchan);
@@ -5355,11 +5358,12 @@ function RPG(rpgchan) {
 			sys.sendAll("Error loading RPG Game data: " + err, rpgchan);
 		}
 	};
-    this.restoreValues = function(tempBattles, tempDuels, tempTrades, tempParty) {
+    this.restoreValues = function(tempBattles, tempDuels, tempTrades, tempParty, tempBoards) {
         tradeRequests = tempTrades;
         currentBattles = tempBattles;
         duelChallenges = tempDuels;
         currentParties = tempParty;
+        leaderboards = tempBoards;
     };
     this.viewContentFile = function(src) {
         sys.sendMessage(src, "", rpgchan);
@@ -5447,6 +5451,70 @@ function RPG(rpgchan) {
         }
         //TO DO: Code to edit or remove properties from a borked character.
     };
+    this.updateLeaderboard = function() {
+        leaderboards = {};
+        
+        var saves = sys.filesForDirectory("rpgsaves");
+        var overall = [];
+        
+        var data;
+        for (var s = 0; s < saves.length; ++s) {
+            data = JSON.parse(sys.getFileContent(savefolder + "/" + saves[s]));
+            
+            overall.push([data.exp, data.level, data.name, data.job]);
+            
+            if (!(data.job in leaderboards)) {
+                leaderboards[data.job] = [];
+            }
+            
+            leaderboards[data.job].push([data.exp, data.level, data.name, data.job]);
+        }
+        
+        overall.sort(sortByExp);
+        for (s in leaderboards) {
+            leaderboards[s].sort(sortByExp);
+        }
+        
+        leaderboards["overall"] = overall;
+        
+        sys.writeToFile("rpgleaderboard.json", JSON.stringify(leaderboards));
+        
+        sys.sendHtmlAll("", rpgchan);
+        rpgbot.sendAll("RPG Leaderboards updated!", rpgchan);
+        sys.sendHtmlAll("", rpgchan);
+    };
+    this.viewLeaderboard = function(src, commandData) {
+        var name = commandData.toLowerCase();
+        
+        var list;
+        if (name === "*") {
+            list = leaderboards["overall"];
+        } else if (name in classes) {
+            list = leaderboards[name];
+        } else {
+            rpgbot.sendMessage(src, "No such list!", rpgchan);
+            return;
+        }
+        
+        var out = [];
+        out.push("Leaderboards (" + (name === "*" ? "Overall" : classes[name].name) + "): "  );
+        out.push("<table><tr><th>Pos.</th><th>Player</th><th>Level</th><th>Class</th></tr>");
+        
+        var data;
+        var len = list.length > 20 ? 20 : list.length;
+        for (var s = 0; s < len; ++s) {
+            data = list[s];
+            out.push('<tr><td>' + (s + 1) + '</td><td>' + data[2] + '</td><td>' + data[1] + '</td><td>' + classes[data[3]].name + '</td></tr>');
+        }
+        
+        out.push("</table>")
+        sys.sendHtmlMessage(src, "", rpgchan);
+        sys.sendHtmlMessage(src, out.join(""), rpgchan);
+        sys.sendHtmlMessage(src, "", rpgchan);
+    };
+    function sortByExp(a, b) {
+        return b[0] - a[0];
+    }
     
 	this.commands = {
 		actions: {
@@ -5495,16 +5563,18 @@ function RPG(rpgchan) {
         },
 		channel: {
 			help: [this.showHelp, "To learn how to play the game."],
-			commands: [this.showCommands, "To see the list of commands."],
+			rpgcommands: [this.showCommands, "To see the list of commands."],
             classes: [this.viewClasses, "To view basic information about each class."],
             start: [this.startGame, "To create your character and begin your game."],
             loadchar: [this.loadGame, "To load your previously saved game."],
-            view: [this.viewPlayer, "To view someone else's stats."]
+            view: [this.viewPlayer, "To view someone else's stats."],
+            leaderboard: [this.viewLeaderboard, "To view the RPG Leaderboards."],
 		},
 		op: {
 		},
 		master: {
             reloadchars: [this.reloadChars, "To reload everyone's character after an update."],
+            updateleaderboard: [this.updateLeaderboard, "To manually update the RPG Leaderboards."],
             unbork: [this.unborkChar, "To manually fix someone's character."],
             punish: [this.punishPlayer, "To punish a player's character."],
             updatelocal: [this.loadLocalContent, "To load RPG content from the directory."],
