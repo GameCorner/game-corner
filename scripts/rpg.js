@@ -3405,7 +3405,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-    	for (e = expTable.length; e >= 0; --e) {
+		for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -5489,7 +5489,7 @@ function RPG(rpgchan) {
         var list;
         if (name === "*") {
             list = leaderboards["overall"];
-        } else if (name in classes) {
+        } else if (name in classes && name in leaderboards) {
             list = leaderboards[name];
         } else {
             rpgbot.sendMessage(src, "No such list!", rpgchan);
