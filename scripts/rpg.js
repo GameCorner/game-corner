@@ -3405,7 +3405,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-		for (e = expTable.length; e >= 0; --e) {
+    	for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -3419,6 +3419,8 @@ function RPG(rpgchan) {
             
             sys.sendAll("", rpgchan);
             rpgbot.sendAll(player.name + "'s Level increased from " + player.level + " to " + e + "!", rpgchan);
+            
+            player.levelUpDate = new Date().getTime();
             
             if (classes[player.job].growth) {
                 var growth = classes[player.job].growth;
@@ -4609,6 +4611,10 @@ function RPG(rpgchan) {
             file.quests = {};
         }
         
+        if (!file.levelUpDate) {
+            file.levelUpDate = new Date().getTime()
+        }
+        
         return file;
     };
     this.clearChar = function(src) {
@@ -5457,20 +5463,33 @@ function RPG(rpgchan) {
         var saves = sys.filesForDirectory("rpgsaves");
         var overall = [];
         
-        var data;
-        for (var s = 0; s < saves.length; ++s) {
+        var data, s, p, o, player;
+        for (s = 0; s < saves.length; ++s) {
             data = JSON.parse(sys.getFileContent(savefolder + "/" + saves[s]));
-            
-            overall.push([data.exp, data.level, data.name, data.job]);
             
             if (!(data.job in leaderboards)) {
                 leaderboards[data.job] = [];
             }
             
-            leaderboards[data.job].push([data.exp, data.level, data.name, data.job]);
+            player = {
+                name: data.name,
+                level: data.level,
+                exp: data.exp, 
+                job: data.job,
+                date: data.levelUpDate
+            };
+            
+            overall.push(player);
+            leaderboards[data.job].push(player);
         }
         
         overall.sort(sortByExp);
+        
+        for (s = 0; s < overall.length; ++s) {
+            player = overall[s];
+            player.overall = s + 1;
+        }
+        
         for (s in leaderboards) {
             leaderboards[s].sort(sortByExp);
         }
@@ -5481,7 +5500,6 @@ function RPG(rpgchan) {
         
         sys.sendHtmlAll("", rpgchan);
         rpgbot.sendAll("RPG Leaderboards updated!", rpgchan);
-        sys.sendHtmlAll("", rpgchan);
     };
     this.viewLeaderboard = function(src, commandData) {
         var name = commandData.toLowerCase();
@@ -5498,13 +5516,34 @@ function RPG(rpgchan) {
         
         var out = [];
         out.push("Leaderboards (" + (name === "*" ? "Overall" : classes[name].name) + "): "  );
-        out.push("<table><tr><th>Pos.</th><th>Player</th><th>Level</th><th>Class</th></tr>");
+        out.push("<table border='1' cellpadding='3' cellspacing='1'><tr><th>Pos.</th><th>Player</th><th>Level</th><th>" + (name === "*" ? "Class" : "Overall Pos.") + "</th><th>Level Up Date</th></tr>");
         
-        var data;
+        var data, job, date;
         var len = list.length > 20 ? 20 : list.length;
+        
+        var self = sys.name(src).toLowerCase(), selfFound = false;
+        
         for (var s = 0; s < len; ++s) {
             data = list[s];
-            out.push('<tr><td>' + (s + 1) + '</td><td>' + data[2] + '</td><td>' + data[1] + '</td><td>' + classes[data[3]].name + '</td></tr>');
+            job = name === "*" ? classes[data.job].name : data.overall;
+            date = data.date ? new Date(data.date).toUTCString() : "N/A";
+            out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + date + '</td></tr>');
+            
+            if (data.name.toLowerCase() === self) {
+                selfFound = true;
+            }
+        }
+        
+        if (!selfFound) {
+            for (s = len; s < list.length; ++s) {
+                data = list[s];
+                if (data.name.toLowerCase() === self) {
+                    job = name === "*" ? classes[data.job].name : data.overall;
+                    date = data.date ? new Date(data.date).toUTCString() : "N/A";
+                    out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + date + '</td></tr>');
+                    break;
+                }
+            }
         }
         
         out.push("</table>")
@@ -5513,7 +5552,11 @@ function RPG(rpgchan) {
         sys.sendHtmlMessage(src, "", rpgchan);
     };
     function sortByExp(a, b) {
-        return b[0] - a[0];
+        if (b.exp === a.exp) {
+            return a.date - b.date;
+        } else {
+            return b.exp - a.exp;
+        }
     }
     
 	this.commands = {
