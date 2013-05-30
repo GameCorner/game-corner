@@ -75,8 +75,8 @@ require = function require(module_name) {
             try {
                  eval(sys.getFileContent("scripts/"+module_name));
             } catch(e) {
-                if (this.staffchannel)
-                    sys.sendAll("Error loading module " + module_name + ": " + e + (e.lineNumber ? " on line: " + e.lineNumber : ""), this.staffchannel);
+                if (staffchannel)
+                    sys.sendAll("Error loading module " + module_name + ": " + e + (e.lineNumber ? " on line: " + e.lineNumber : ""), staffchannel);
                 else
                     sys.sendAll("Error loading module " + module_name + ": " + e);
             }
@@ -2791,7 +2791,7 @@ userCommand: function(src, command, commandData, tar) {
         }
         var parts = lastLogin.split("-");
         var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10)-1, parseInt(parts[2], 10));
-        querybot.sendChanMessage(src, commandData + " was last seen: "+ d.toDateString());
+        querybot.sendChanMessage(src, commandData + " was last seen: "+ d.toUTCString());
         return;
     }
     if (command == "dwreleased") {
@@ -3957,7 +3957,17 @@ ownerCommand: function(src, command, commandData, tar) {
         ipbans.add(subip, "Name: " +sys.name(src) + " Comment: " + rangebans.escapeValue(comment));
         normalbot.sendChanAll("IP ban added successfully for IP subrange: " + subip + " by "+ sys.name(src),staffchannel);
         return;
-    }	
+    }
+    if (command == "ipunban") {
+        var subip = commandData;
+        if (ipbans.get(subip) !== undefined) {
+            ipbans.remove(subip);
+            normalbot.sendChanMessage(src, "IP ban removed successfully for IP subrange: " + subip);
+        } else {
+            normalbot.sendChanMessage(src, "No such IP ban.");
+        }
+        return;
+    }     
     if (command == "public") {
     	sys.makeServerPublic(false);
     	sys.makeServerPublic(true);
