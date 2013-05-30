@@ -3079,7 +3079,7 @@ modCommand: function(src, command, commandData, tar) {
         script.issueBan("mute", src, tar, commandData);
         return;
     }
-    if ((sys.auth(src) > 1 || sys.name(src) == "Yui") && command == "ipban") {
+    if ((sys.auth(src) > 1 || sys.name(src) == "Yui") && (command == "ipban" || command == "ipunban")) {
     	return this.ownerCommand(src, command, commandData, tar);
     }
     if (command == "banlist") {
