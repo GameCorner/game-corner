@@ -198,12 +198,12 @@ function StopGame() {
             }
             
         } catch (err) {
-            stop.sendMessage(src, "Error loading Stop themes from " + data + ": " + err, stopchan);
+            stopbot.sendMessage(src, "Error loading Stop themes from " + data + ": " + err, stopchan);
         }
     };
     this.stepEvent = function() {
         stopGame.tickDown();
-    };
+	};
     this.tickDown = function() {
         if (ticks > 0) {
             ticks--;
