@@ -233,6 +233,9 @@ function StopGame(stopchan) {
 			command = message.substr(0).toLowerCase();
 		}
         
+        if (channel !== stopchan) {
+            return;
+        }
         try {
 			stopGame.handleStopCommand(src, command, commandData, channel);
             return true;
