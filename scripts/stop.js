@@ -19,6 +19,8 @@ function StopGame(stopchan) {
     var lowCaseAnswers = [];
     var admins = ["kirby", "icekirby", "ricekirby", "black mage", "thepiggy"];
 
+    this.lastAdvertise = 0;
+    
     this.startTheme = function(src, data) {
         var name = sys.name(src);
         
@@ -41,6 +43,16 @@ function StopGame(stopchan) {
         players = {};
         usedLetters = [];
         ticks = 30;
+        
+        if (sys.playersOfChannel(stopchan).length < 15) {
+            var time = parseInt(sys.time(), 10);
+            if (time > this.lastAdvertise + 60 * 15) {
+                this.lastAdvertise = time;
+                this.advertiseToChannel(0);
+            }
+        }
+        
+        
     };
     this.startRound = function() {
         currentAnswers = {};
@@ -137,6 +149,13 @@ function StopGame(stopchan) {
         }
         sys.sendAll(border, stopchan);
         sys.sendAll("", stopchan);
+    };
+    this.advertiseToChannel = function(channel) {
+        sendChanAll("", channel);
+        sendChanAll(border, channel);
+        sendChanAll("±Game: A new " + currentTheme.name + "-themed Stop game was started at #" + sys.channel(stopchan) + "!", channel);
+        sendChanAll(border, channel);
+        sendChanAll("", channel);
     };
 
     function isInGame(name) {
