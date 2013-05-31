@@ -1,5 +1,5 @@
 /*global stopbot, sys, module*/
-function StopGame() {
+function StopGame(stopchan) {
     var stopGame = this;
     var state;
     var theme;
@@ -9,7 +9,6 @@ function StopGame() {
     var defaultTheme = "pokemon";
     
     var border = "***************************************************************************************";
-    var stopchan;
     // var answerSymbol = "=";
     var currentAnswers = {};
     var usedLetters = [];
@@ -128,12 +127,12 @@ function StopGame() {
         state = "Blank";
         sys.sendAll("", stopchan);
         sys.sendAll(border, stopchan);
-        sys.sendAll("=== Game is over! ===:");
+        sys.sendAll("=== Game is over! ===:", stopchan);
         ticks = 30;
         var names = Object.keys(players);
         names.sort(function(a,b) { return players[b].points - players[a].points; } );
         for (var p = 0; p < names.length; ++p) {
-            stopbot.sendAll(names[p] + " got " + players[names[p]].points + " points!");
+            stopbot.sendAll(names[p] + " got " + players[names[p]].points + " points!", stopchan);
         }
         sys.sendAll(border, stopchan);
         sys.sendAll("", stopchan);
@@ -162,12 +161,13 @@ function StopGame() {
         }
     };
     this.init = function() {
-        var name = "Stop";
-        if (sys.existChannel(name)) {
+        var name = "stop";
+    	if (sys.existChannel(name)) {
             stopchan = sys.channelId(name);
         } else {
             stopchan = sys.createChannel(name);
         }
+        
         state = "Blank";
         players = {};
         theme = null;
@@ -296,7 +296,17 @@ function StopGame() {
 }
 
 module.exports = function() {
-    var game = new StopGame();
+    var id;
+    var init = function() {
+        var name = "Stop";
+        if (sys.existChannel(name)) {
+            id = sys.channelId(name);
+        } else {
+            id = sys.createChannel(name);
+        }
+    };
+
+    var game = new StopGame(id);
 
     return {
         game: game,
