@@ -22,6 +22,7 @@ function StopGame(stopchan) {
     this.startTheme = function(src, data) {
         var name = sys.name(src);
         
+        theme = data;
         currentTheme = themes[data];
         lowCaseAnswers = currentTheme.answers.map(function(x) { return x.toLowerCase(); } );
         possibleLetters = {};
@@ -88,7 +89,7 @@ function StopGame(stopchan) {
             players[name].points += pointsGained;
             players[name].answered = true;
             currentAnswers[answer.toLowerCase()] = name;
-            var correctCase = themes[theme].answers[lowCaseAnswers.indexOf(answer.toLowerCase())];
+            var correctCase = currentTheme.answers[lowCaseAnswers.indexOf(answer.toLowerCase())];
             stopbot.sendAll(name + " answered " + correctCase + " and got " + pointsGained + " points!", stopchan);
         } else {
             stopbot.sendMessage(src, "Invalid answer! Try again!", stopchan);
@@ -114,7 +115,7 @@ function StopGame(stopchan) {
         var name = sys.name(src);
         if (admins.indexOf(name.toLowerCase()) !== -1) {
             if (state !== "Blank") {
-                stopbot.sendAll(name + " stoped the game!", stopchan);
+                stopbot.sendAll(name + " stopped the game!", stopchan);
                 this.endGame();
             } else {
                 stopbot.sendMessage(src, "No game running!", stopchan);
@@ -162,7 +163,7 @@ function StopGame(stopchan) {
     };
     this.init = function() {
         var name = "Stop";
-    	if (sys.existChannel(name)) {
+		if (sys.existChannel(name)) {
             stopchan = sys.channelId(name);
         } else {
             stopchan = sys.createChannel(name);
