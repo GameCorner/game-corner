@@ -163,7 +163,7 @@ function StopGame(stopchan) {
     };
     this.init = function() {
         var name = "Stop";
-		if (sys.existChannel(name)) {
+    	if (sys.existChannel(name)) {
             stopchan = sys.channelId(name);
         } else {
             stopchan = sys.createChannel(name);
@@ -222,7 +222,7 @@ function StopGame(stopchan) {
             }
         }
     };
-    this.handleCommand = function(src, message) {
+    this.handleCommand = function(src, message, channel) {
         var command;
 		var commandData = '*';
 		var pos = message.indexOf(' ');
@@ -234,7 +234,7 @@ function StopGame(stopchan) {
 		}
         
         try {
-			stopGame.handleStopCommand(src, command, commandData);
+			stopGame.handleStopCommand(src, command, commandData, channel);
             return true;
         } catch(e) {
             if (e !== "No valid command") {
@@ -246,7 +246,7 @@ function StopGame(stopchan) {
             }
         }
     };
-    this.handleStopCommand = function(src, command, data) {
+    this.handleStopCommand = function(src, command, data, chan) {
         var name = sys.name(src);
         
         if (command === "a") {
@@ -282,7 +282,7 @@ function StopGame(stopchan) {
         } else if (command === "end") {
             this.interruptGame(src);
             return true;
-        } else if (command === "commands") {
+        } else if (command === "commands" && chan === stopchan) {
             this.showCommands(src);
             return true;
         } else if (command === "loadthemes") {
