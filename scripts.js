@@ -1258,15 +1258,14 @@ var commands = {
         "/myalts: Lists your alts.",
         "/me [message]: Sends a message with *** before your name.",
         "/selfkick: Kicks all other accounts with IP.",
-        //"/importable: Posts an importable of your team to pastebin.",
         "/dwreleased [Pokemon]: Shows the released status of a Pokemon's Dream World Ability",
         "/wiki [Pokémon]: Shows that Pokémon's wiki page",
         "/register: Registers a channel with you as owner.",
         "/resetpass: Clears your password (unregisters you, remember to reregister).",
-        "/auth [owners/admins/mods]: Lists auth of given level, shows all auth if left blank.",
+        "/auth [owners/admins/mods/superusers]: Lists auth of given level, shows all auth if left blank.",
         "/cauth: Lists all users with channel auth in the current channel.",
         "/contributors: Lists contributors.",
-        "/league: Lists gym leaders and elite four of the PO league.",
+        //"/league: Lists gym leaders and elite four of the PO league.",
         "/uptime: Shows time since the server was last offline.",
         "/players: Shows the number of players online.",
         "/sameTier [on/off]: Turn on/off auto-rejection of challenges from players in a different tier from you.",
@@ -1357,7 +1356,7 @@ var commands = {
         "/namewarn regexp: Adds a namewarning",
         "/nameunwarn full_regexp: Removes a namewarning",
         "/destroychan [channel]: Destroy a channel (official channels are protected).",
-        "/indigoinvite [name]: To invite somebody to staff channels.",
+        "/indigoinvite [name]: To invite somebody to channels.",
         "/indigodeinvite: To deinvite unwanted visitors from staff channel."
     ],
     owner:
@@ -2183,18 +2182,6 @@ afterLogIn : function(src) {
 
     callplugins("afterLogIn", src);
 
-//   if (SESSION.users(src).android) {
-//        sys.changeTier(src, "Challenge Cup");
-//        if (sys.existChannel("PO Android")) {
-//            var androidChan = sys.channelId("PO Android");
-//            sys.putInChannel(src, androidChan);
-//            sys.kick(src, 0);
-//            sys.sendMessage(src, "*********", androidChan);
-//            sys.sendMessage(src, "Message: Hello " + sys.name(src) + "! You seem to be using Pokemon Online for Android. With it you are able to battle with random pokemon. If you want to battle with your own made team, please surf to http://pokemon-online.eu/download with your computer and download the desktop application to your desktop. With it you can export full teams to your Android device! If you using the version with ads from Android Market, download adfree version from http://code.google.com/p/pokemon-online-android/downloads/list", androidChan);
-//            sys.sendMessage(src, "*********", androidChan);
-//        }
-//    }
-
     if (SESSION.users(src).hostname.toLowerCase().indexOf('tor') !== -1) {
         sys.sendAll('Possible TOR user: ' + sys.name(src), staffchannel);
     }
@@ -2401,19 +2388,6 @@ userCommand: function(src, command, commandData, tar) {
         this.afterChatMessage(src, '/'+command+' '+commandData,channel);
         return;
     }
-    /*if (command == "superusers") {                            <-- moved to /auth
-	    sendChanMessage(src, "");
-		sendChanMessage(src, "*** SUPER USERS ***");
-		sendChanMessage(src, "");
-		for (var x in marks.hash) {
-		    if (sys.id(x) === undefined) 
-			sendChanMessage(src, x);
-			else
-			sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + x.toCorrectCase() + ' (Online)</font>', channel);	
-		}
-        sendChanMessage(src, "");
-        return;
-    }		*/
     if (command == "contributors") {
         sendChanMessage(src, "");
         sendChanMessage(src, "*** CONTRIBUTORS ***");
@@ -2426,7 +2400,7 @@ userCommand: function(src, command, commandData, tar) {
         sendChanMessage(src, "");
         return;
     }
-    if (command == "league") {
+/*    if (command == "league") {    
         if (!Config.League) return;
         sendChanMessage(src, "");
         sendChanMessage(src, "*** Pokemon Online League ***");
@@ -2439,7 +2413,7 @@ userCommand: function(src, command, commandData, tar) {
         }
         sendChanMessage(src, "");
         return;
-    }
+    }*/
     if (command == "rules") {
         if (commandData === "mafia") {
             require('mafia.js').showRules(src, commandData, channel);
@@ -3908,7 +3882,7 @@ adminCommand: function(src, command, commandData, tar) {
     }
     // hack, for allowing some subset of the owner commands for super admins
     if (isSuperAdmin(src)) {
-       if (["eval", "evalp"].indexOf(command) != -1 && ["zeroality", "ricekirby", "viderizer"].indexOf(sys.name(src).toLowerCase()) == -1) {
+       if (["eval", "evalp"].indexOf(command) != -1 && ["zeroality", "ricekirby"].indexOf(sys.name(src).toLowerCase()) == -1) {
            normalbot.sendChanMessage(src, "Can't aboos some commands");
            return;
        }
@@ -4974,25 +4948,7 @@ beforeChatMessage: function(src, message, chan) {
                 ++caps;
         }
         return (caps > 7 && 2*name.length < 3*caps);
-    });
-    
-    // Commenting out since no Shanai
-
-    /*var shanaiForward = function(msg) {
-        var shanai = sys.id("Shanai");
-        if (shanai !== undefined) {
-            sys.sendMessage(shanai,"CHANMSG " + chan + " " + src + " :" + msg);
-        } else {
-            sys.sendMessage(src, "+ShanaiGhost: Shanai is offline, your command will not work. Ping nixeagle if he's online.", chan);
-        }
-        sys.stopEvent();
-    };
-
-    // Forward some commands to Shanai
-    if (['|', '\\'].indexOf(message[0]) > -1 && !usingBannedWords() && name != 'coyotte508') {
-        shanaiForward(message);
-        return;
-    }*/
+    });    
     
     var command;
     if ((message[0] == '/' || message[0] == "!") && message.length > 1 && utilities.isLetter(message[1])) {
@@ -5056,47 +5012,7 @@ beforeChatMessage: function(src, message, chan) {
                 return;
             }
         }
-        // Shanai commands
-        if ((sys.auth(src) > 3 && sys.name(src) == "Shanai") || (command == "silencetriviaoff" && sys.auth(src) > 1)) {
-            if (command == "sendhtmlall") {
-                sendChanHtmlAll(commandData,channel);
-                return;
-            }
-            if (command == "sendhtmlmessage") {
-                var channelToSend = parseInt(commandData.split(":::")[0], 10);
-                var targets = commandData.split(":::")[1].split(":");
-                var htmlToSend = commandData.split(":::")[2];
-                for (var i=0; i<targets.length; ++i) {
-                    var id = sys.id(targets[i]);
-                    if (id !== undefined && sys.isInChannel(id, channelToSend))
-                        sys.sendHtmlMessage(id,htmlToSend,channelToSend);
-                }
-                return;
-            }
-            if (command == "silencetrivia") {
-                var id = sys.channelId("Trivia");
-                if (id === undefined) return;
-                SESSION.channels(id).triviaon = true;
-                return;
-            }
-            if (command == "silencetriviaoff") {
-                var id = sys.channelId("Trivia");
-                if (id === undefined) return;
-                SESSION.channels(id).triviaon = false;
-                return;
-            }
-            if (command == "teaminfo") {
-                var id = sys.id(commandData);
-                var team = 0;
-                if (id) {
-                    var data = {type: 'TeamInfo', id: id, name: sys.name(id), gen: sys.gen(id,team), tier: sys.tier(id,team), importable: this.importable(id,team).join("\n"),
-                        registered: sys.dbRegistered(sys.name(id)), ip: sys.ip(id)};
-                    sendChanMessage(src, ":"+JSON.stringify(data));
-                }
-            }
-        }
-
-
+        
         commandbot.sendChanMessage(src, "The command " + command + " doesn't exist");
         return;
     } /* end of commands */
@@ -5191,22 +5107,6 @@ beforeChatMessage: function(src, message, chan) {
         return;
     }
 
-    if (channel === 0 && typeof clanmute != 'undefined') {
-       var bracket1 = sys.name(src).indexOf("[");
-       var bracket2 = sys.name(src).indexOf("]");
-       if (bracket1 >= 0 && bracket2 > 0 && bracket1 < bracket2) {
-           normalbot.sendMessage(src, "Sorry, clan members can't speak on the main chat.");
-           sys.stopEvent();
-           return;
-       }
-       bracket1 = sys.name(src).indexOf("{");
-       bracket2 = sys.name(src).indexOf("}");
-       if (bracket1 >= 0 && bracket2 > 0 && bracket1 < bracket2) {
-           normalbot.sendMessage(src, "Sorry, clan members can't speak on the main chat.");
-           sys.stopEvent();
-           return;
-       }
-    }
 
     if (typeof CAPSLOCKDAYALLOW != 'undefined' && CAPSLOCKDAYALLOW === true) {
     var date = new Date();
@@ -5226,14 +5126,6 @@ afterChatMessage : function(src, message, chan)
     var poChannel = SESSION.channels(chan);
     channel = chan;
     lineCount+=1;
-
-   // if (channel == sys.channelId("PO Android")) {
-       // if (/f[uo]ck|\bass|\bcum|\bdick|\bsex|pussy|bitch|porn|\bfck|nigga|\bcock|\bgay|\bhoe\b|slut|whore|cunt|clitoris/i.test(message) && user.android) {
-           // kickbot.sendAll(sys.name(src) + " got kicked for foul language.", channel);
-           // sys.kick(src);
-           // return;
-       // }
-   // }
 
     // hardcoded
     var ignoreChans = [staffchannel, sachannel, sys.channelId("trivreview"), sys.channelId("Watch"), mafiarev];
@@ -5334,14 +5226,14 @@ beforeBattleStarted: function(src, dest, clauses, rated, mode, bid, team1, team2
    }
 },
 
-battleSetup: function(p1,p2,battle) {
+/*battleSetup: function(p1,p2,battle) {
 	if (sys.auth(p1) > 3 && sys.name(p1) != "Darkness") {
 		sys.prepareItems(battle,0,{"124":1});
 	}
 	if (sys.auth(p2) > 3 && sys.name(p2) != "Darkness") {
 		sys.prepareItems(battle,1,{"124":1});
 	}
-},
+},*/
 
 afterBattleStarted: function(src, dest, clauses, rated, mode, bid) {
     callplugins("afterBattleStarted", src, dest, clauses, rated, mode, bid);
