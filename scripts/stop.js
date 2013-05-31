@@ -161,7 +161,7 @@ function StopGame(stopchan) {
         }
     };
     this.init = function() {
-        var name = "stop";
+        var name = "Stop";
     	if (sys.existChannel(name)) {
             stopchan = sys.channelId(name);
         } else {
@@ -312,7 +312,7 @@ module.exports = function() {
         game: game,
         init: game.init,
         handleCommand: game.handleCommand,
-        beforeLogOut: game.beforeLogOut,
+        // beforeLogOut: game.beforeLogOut,
         // beforeSendMessage: game.beforeSendMessage,
         // afterChannelMessage: game.afterChannelMessage,
         stepEvent: game.stepEvent
