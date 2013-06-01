@@ -3987,35 +3987,43 @@ ownerCommand: function(src, command, commandData, tar) {
         }
         return;
     }
-    if (command == "superuser") {
+    if (command == "superuser" || command == "superusers") {
         var name = commandData;
         for (var x in marks.hash) {
-        	if (name.toLowerCase() == x.toLowerCase()) {
+            if (name.toLowerCase() == x.toLowerCase()) {
         		normalbot.sendChanMessage(src, name + " is already a super user")
         		return;
-        	}
+            }
         }
-		    if (sys.dbIp(name) === undefined) {
-			    normalbot.sendChanMessage(src, name + " couldn't be found.");
-				return;
-			}
-            normalbot.sendAll("" + name + " was promoted to super user by " + nonFlashing(sys.name(src)) + ".");
-            marks.add(name);
-			return;
+        if (sys.dbIp(name) === undefined) {
+	    normalbot.sendChanMessage(src, name + " couldn't be found.");
+	    return;
+	}
+        marks.add(name);
+        if (command == "superusers") {
+            normalbot.sendAll("" + name + " was promoted to super user by " + nonFlashing(sys.name(src)) + ".", staffchannel);	
+            return;
+        }
+        normalbot.sendAll("" + name + " was promoted to super user by " + nonFlashing(sys.name(src)) + ".");
+	return;
     }
     
-     if (command == "superuseroff") {
+     if (command == "superuseroff" || command == "superusersoff") {
         var Mark = "";
-		for (var x in marks.hash) {
-		    if (x.toLowerCase() == commandData.toLowerCase()) 
-			Mark = x;
-		}
+	for (var x in marks.hash) {
+	    if (x.toLowerCase() == commandData.toLowerCase()) 
+                Mark = x;
+	}
         if (Mark === "") {
             normalbot.sendChanMessage(src, commandData + " is not a super user.");
             return;
      	}
-        normalbot.sendAll("" + commandData + " was demoted to user by " + nonFlashing(sys.name(src)) + ".");
         marks.remove(Mark);
+        if (command == "superusersoff") {
+            normalbot.sendAll("" + commandData + " was demoted to user by " + nonFlashing(sys.name(src)) + ".", staffchannel);
+            return;
+        }
+        normalbot.sendAll("" + commandData + " was demoted to user by " + nonFlashing(sys.name(src)) + ".");
         return;
     }
     if (command == "contributor") {
@@ -4324,16 +4332,7 @@ ownerCommand: function(src, command, commandData, tar) {
             normalbot.sendMessage(src, "Cancelled the ending of periodic calls.");
         }
         return;
-    }
-	if (command == "viewsymbol") {
-	    normalbot.sendChanMessage(src, "The current symbol for super users is " + Config.musymbol);
-		return;
-	}	
-	if (command == "changesymbol") {
-	    normalbot.sendChanMessage(src, "The symbol for super users has been changed from " + Config.musymbol + " to " + commandData);
-	    Config.musymbol = commandData;
-		return;
-	}	
+    }	
     if (command == "changeauth" || command == "changeauths") {
         var pos = commandData.indexOf(' ');
         if (pos == -1) return;
