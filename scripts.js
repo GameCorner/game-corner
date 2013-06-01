@@ -1751,6 +1751,10 @@ issueBan : function(type, src, tar, commandData, maxTime) {
             banbot.sendChanMessage(src, "He/she's already " + verb + ".");
             return;
         }
+        if (isMarked(src) && isMarked(tar)) {
+            banbot.sendChanMessage(src, "You don't have sufficient auth to " + nomi + " " + commandData + ".");
+            return;	
+        }
         if (sys.auth(tar) >= sys.auth(src) && sys.auth(tar) > 0) {
             banbot.sendChanMessage(src, "You don't have sufficient auth to " + nomi + " " + commandData + ".");
             return;
