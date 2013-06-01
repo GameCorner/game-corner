@@ -3405,7 +3405,7 @@ function RPG(rpgchan) {
         }
         
         var e;
-    	for (e = expTable.length; e >= 0; --e) {
+        for (e = expTable.length; e >= 0; --e) {
 			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
@@ -4250,7 +4250,7 @@ function RPG(rpgchan) {
         for (var p in this.members) {
             id = this.members[p];
             target = SESSION.users(id).rpg;
-            if (target.location === loc && target.isBattling === false && target.hp > 0 && Math.abs(player.level - target.level) < battleSetup.partyLevelDiff) {
+            if (target.location === loc && target.isBattling === false && target.hp > 0 && Math.abs(player.level - target.level) <= battleSetup.partyLevelDiff) {
                 battlers.push(target);
                 viewers.push(id);
             }
@@ -4494,22 +4494,6 @@ function RPG(rpgchan) {
         var file = gamefile;
         
         var i;
-        if (Array.isArray(file.items)) {
-            var bag = {};
-            for (i = 0; i < file.items.length; ++i) {
-                if (!(file.items[i] in bag)) {
-                    bag[file.items[i]] = 0;
-                }
-                bag[file.items[i]] += 1;
-            }
-            file.items = bag;
-        }
-        if (!("dex" in file)) {
-            file.dex = classes[file.job].stats.dex;
-            file.bonus.battle.dex = 0;
-            file.bonus.equip.dex = 0;
-            file.bonus.skill.dex = 0;
-        }
         if(!("element" in file)) {
             file.element = "none";
         }
@@ -4613,6 +4597,11 @@ function RPG(rpgchan) {
         
         if (!file.levelUpDate) {
             file.levelUpDate = new Date().getTime()
+        }
+        
+        if (!file.updateReset) {
+            file = this.resetCharData(file);
+            file.updateReset = true;
         }
         
         return file;
@@ -4871,20 +4860,20 @@ function RPG(rpgchan) {
             return;
         }
         
-        id = sys.id(name);
-        var charLoaded = false;
-        if (id !== undefined) {
-            if (SESSION.users(id).rpg !== undefined && SESSION.users(id).rpg !== null) {
-                player = SESSION.users(id).rpg;
-                charLoaded = true;
-            } else {
-                try {
-                    player = JSON.parse(sys.getFileContent(savefolder + "/" + escape(name) + ".json"));
-                } catch (e) {
-                    rpgbot.sendMessage(src, "Error: " + e, rpgchan);
-                    return;
-                }
+        var playerson = sys.playerIds();
+        var playerFound = false;
+        for (var p in playerson) {
+            id = playerson[p];
+            if (SESSION.users(id) && SESSION.users(id).rpg && SESSION.users(id).rpg.name && SESSION.users(id).rpg.name.toLowerCase() === name) {
+                playerFound = true;
+                break;
             }
+        }
+        
+        var charLoaded = false;
+        if (playerFound) {
+            player = SESSION.users(id).rpg;
+            charLoaded = true;
         } else {
             try {
                 player = JSON.parse(sys.getFileContent(savefolder + "/" + escape(name) + ".json"));
@@ -5476,7 +5465,8 @@ function RPG(rpgchan) {
                 level: data.level,
                 exp: data.exp, 
                 job: data.job,
-                date: data.levelUpDate
+                date: data.levelUpDate,
+                dateString: (data.levelUpDate ? new Date(data.levelUpDate).toUTCString() : "N/A")
             };
             
             overall.push(player);
@@ -5526,8 +5516,7 @@ function RPG(rpgchan) {
         for (var s = 0; s < len; ++s) {
             data = list[s];
             job = name === "*" ? classes[data.job].name : data.overall;
-            date = data.date ? new Date(data.date).toUTCString() : "N/A";
-            out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + date + '</td></tr>');
+            out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + data.dateString + '</td></tr>');
             
             if (data.name.toLowerCase() === self) {
                 selfFound = true;
@@ -5539,8 +5528,7 @@ function RPG(rpgchan) {
                 data = list[s];
                 if (data.name.toLowerCase() === self) {
                     job = name === "*" ? classes[data.job].name : data.overall;
-                    date = data.date ? new Date(data.date).toUTCString() : "N/A";
-                    out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + date + '</td></tr>');
+                    out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + data.dateString + '</td></tr>');
                     break;
                 }
             }
