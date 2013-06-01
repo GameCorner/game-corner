@@ -1,4 +1,12 @@
 /*global stopbot, sys, module*/
+
+/*
+    TO-DO:
+    -Auto-End game if there are no players.
+    -Bind cauth to Stop Auth
+    -Auto-Start when all slots are filled
+    -Remove players
+*/
 function StopGame(stopchan) {
     var stopGame = this;
     var state;
@@ -44,15 +52,13 @@ function StopGame(stopchan) {
         usedLetters = [];
         ticks = 30;
         
-        if (sys.playersOfChannel(stopchan).length < 15) {
+        if (sys.playersOfChannel(stopchan).length < 50) {
             var time = parseInt(sys.time(), 10);
             if (time > this.lastAdvertise + 60 * 15) {
                 this.lastAdvertise = time;
                 this.advertiseToChannel(0);
             }
         }
-        
-        
     };
     this.startRound = function() {
         currentAnswers = {};
@@ -157,6 +163,9 @@ function StopGame(stopchan) {
         sendChanAll(border, channel);
         sendChanAll("", channel);
     };
+    this.viewThemes = function(src){ 
+        stopbot.sendMessage(src, "Current themes: " + Object.keys(themes).join(", "), stopchan);
+    };
 
     function isInGame(name) {
         return name in players;
@@ -172,6 +181,7 @@ function StopGame(stopchan) {
             "/start [theme]: To start a game.",
             "/join: To join a game.",
             "/unjoin: To leave a game.",
+            "/themes: To view the installed themes.",
             "/end: To stop a game (admin-only).",
             ""
         ];
@@ -182,7 +192,7 @@ function StopGame(stopchan) {
     };
     this.init = function() {
         var name = "Stop";
-    	if (sys.existChannel(name)) {
+		if (sys.existChannel(name)) {
             stopchan = sys.channelId(name);
         } else {
             stopchan = sys.createChannel(name);
@@ -306,6 +316,9 @@ function StopGame(stopchan) {
             return true;
         } else if (command === "commands" && chan === stopchan) {
             this.showCommands(src);
+            return true;
+        } else if (command === "themes") {
+            this.viewThemes(src);
             return true;
         } else if (command === "loadthemes") {
             if (name === "RiceKirby") {
