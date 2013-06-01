@@ -1,12 +1,4 @@
 /*global stopbot, sys, module*/
-
-/*
-    TO-DO:
-    -Auto-End game if there are no players.
-    -Bind cauth to Stop Auth
-    -Auto-Start when all slots are filled
-    -Remove players
-*/
 function StopGame(stopchan) {
     var stopGame = this;
     var state;
@@ -17,7 +9,7 @@ function StopGame(stopchan) {
     var defaultTheme = "pokemon";
     
     var border = "***************************************************************************************";
-    // var answerSymbol = "=";
+    var answerSymbol = "=";
     var currentAnswers = {};
     var usedLetters = [];
     var possibleLetters = {};
@@ -25,7 +17,7 @@ function StopGame(stopchan) {
     var players = {};
     var ticks = 0;
     var lowCaseAnswers = [];
-    var admins = ["kirby", "icekirby", "ricekirby", "black mage", "thepiggy"];
+    var cantJoinPlayers = {};
 
     this.lastAdvertise = 0;
     
@@ -49,6 +41,7 @@ function StopGame(stopchan) {
         
         state = "Entry";
         players = {};
+        cantJoinPlayers = {};
         usedLetters = [];
         ticks = 30;
         
@@ -89,10 +82,6 @@ function StopGame(stopchan) {
     this.validateAnswer = function(src, answer) {
         var name = sys.name(src);
         
-        if (!isInGame(name)) {
-            stopbot.sendMessage(src, "You are not in the game! Type /join to join the game.", stopchan);
-            return;
-        }
         if (players[name].answered !== false) {
             stopbot.sendMessage(src, "You already answered this round! Wait for the next round.", stopchan);
             return;
@@ -123,15 +112,30 @@ function StopGame(stopchan) {
     this.unjoinGame = function(src) {
         var name = sys.name(src);
         if (isInGame(name)) {
-            delete players[name];
             stopbot.sendAll(name + " left the game!", stopchan);        
+            this.removePlayer(name);
         } else {
             stopbot.sendMessage(src, "You didn't even join!", stopchan);
         }
     };
+    this.shovePlayer = function(src, name) {
+        if (isInGame(name)) {
+            cantJoinPlayers[name] = 1;
+            stopbot.sendAll(sys.name(src) + " removed " + name + " from the game!", stopchan);  
+            this.removePlayer(name);
+        } else {
+            stopbot.sendMessage(src, "This person is not playing!", stopchan);
+        }
+    };
+    this.removePlayer = function(name) {
+        delete players[name];
+        if (Object.keys(players).length === 0) {
+            this.endGame();
+        }
+    };
     this.interruptGame = function(src) {
         var name = sys.name(src);
-        if (admins.indexOf(name.toLowerCase()) !== -1) {
+        if (getStopAuth(src) > 0) {
             if (state !== "Blank") {
                 stopbot.sendAll(name + " stopped the game!", stopchan);
                 this.endGame();
@@ -170,6 +174,20 @@ function StopGame(stopchan) {
     function isInGame(name) {
         return name in players;
     }
+    function getStopAuth(src) {
+		if (sys.auth(src) >= 1) {
+            return 2;
+        }
+        var name = sys.name(src).toLowerCase();
+        if (SESSION.channels(stopchan).masters.indexOf(name) !== -1) {
+            return 3;
+        } else if (SESSION.channels(stopchan).admins.indexOf(name) !== -1) {
+            return 2;
+        } else if (SESSION.channels(stopchan).operators.indexOf(name) !== -1) {
+            return 1;
+        }
+        return 0;
+	}
     function cap(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
@@ -177,14 +195,21 @@ function StopGame(stopchan) {
     this.showCommands = function(src) {
         var out = [
             "",
-            "/a [word]: To answer a name.",
+            "=[word]: To answer a name.",
             "/start [theme]: To start a game.",
             "/join: To join a game.",
             "/unjoin: To leave a game.",
-            "/themes: To view the installed themes.",
-            "/end: To stop a game (admin-only).",
-            ""
+            "/themes: To view the installed themes."
         ];
+        
+        var auth = getStopAuth(src);
+        if (auth > 0) {
+            out.push("/end: To stop a game.");
+            if (auth > 1) {
+                out.push("/shove: To remove a player from a game.");
+            }
+        };
+        out.push("");
         
         for (var x in out) {
             sys.sendMessage(src, out[x], stopchan);
@@ -278,17 +303,25 @@ function StopGame(stopchan) {
             }
         }
     };
+    this.afterChatMessage = function(src, message, chan) {
+        if (chan !== stopchan) return;
+        
+        if (state === "Running" && isInGame(sys.name(src)) && message[0] === answerSymbol) {
+            stopGame.validateAnswer(src, message.substring(1));
+        };
+    };
     this.handleStopCommand = function(src, command, data, chan) {
         var name = sys.name(src);
         
-        if (command === "a") {
+        /* if (command === "a") {
             if (state === "Running") {
                 this.validateAnswer(src, data);
             } else {
                 stopbot.sendMessage(src, "No game running! Use /start [theme] to start a game!!", stopchan);
             }
             return true;
-        } else if (command === "start") {
+        } else  */
+        if (command === "start") {
             if (state === "Blank") {
                 this.startTheme(src, themes.hasOwnProperty(data.toLowerCase()) ? data.toLowerCase() : defaultTheme);
             } else {
@@ -298,8 +331,15 @@ function StopGame(stopchan) {
         } else if (command === "join") {
             if (state !== "Blank") {
                 if (!isInGame(name)) {
-                    if (Object.keys(currentAnswers).length < points.length) {
+                    if (name in cantJoinPlayers) {
+                        stopbot.sendMessage(src, "You can't join this round!", stopchan);
+                        return true;
+                    }
+                    if (Object.keys(players).length < points.length) {
                         this.joinGame(name);
+                        if (state === "Entry" && Object.keys(players).length === points.length) {
+                            ticks = 1;
+                        }
                     } else {
                         stopbot.sendMessage(src, "All slots filled!", stopchan);
                     }
@@ -314,17 +354,18 @@ function StopGame(stopchan) {
         } else if (command === "end") {
             this.interruptGame(src);
             return true;
-        } else if (command === "commands" && chan === stopchan) {
+        } else if (command === "commands") {
             this.showCommands(src);
             return true;
         } else if (command === "themes") {
             this.viewThemes(src);
             return true;
-        } else if (command === "loadthemes") {
-            if (name === "RiceKirby") {
-                this.updateThemes(src, data);
-                return true;
-            } 
+        } else if (command === "shove" && getStopAuth(src) === 2) {
+            this.shovePlayer(src, data);
+            return true;
+        } else if (command === "loadthemes" && getStopAuth(src) === 3) {
+            this.updateThemes(src, data);
+            return true;
         }
         
         throw("No valid command");
@@ -350,7 +391,7 @@ module.exports = function() {
         handleCommand: game.handleCommand,
         // beforeLogOut: game.beforeLogOut,
         // beforeSendMessage: game.beforeSendMessage,
-        // afterChannelMessage: game.afterChannelMessage,
+        afterChatMessage: game.afterChatMessage,
         stepEvent: game.stepEvent
     };
 }();
