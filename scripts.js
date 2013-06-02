@@ -5092,6 +5092,7 @@ beforeChatMessage: function(src, message, chan) {
 	    var colour = script.getColor(src);
 	    sys.sendHtmlAll("<font color='"+colour+"'><timestamp /> "+ Config.musymbol +"<b><i>"+ sys.name(src) +":</i></b></font> "+messagetosend, channel); 
 	     	sys.stopEvent();
+            this.afterChatMessage(src, message, channel);
 		return;
 	}	
 
