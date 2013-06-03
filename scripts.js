@@ -3275,6 +3275,10 @@ modCommand: function(src, command, commandData, tar) {
             if(ip !== undefined && mutes.get(ip)) {
                 normalbot.sendAll("" + commandData + " was unmuted by " + nonFlashing(sys.name(src)) + "!");
                 mutes.remove(ip);
+                sys.playerIds().forEach(function(id) {
+                    if (sys.loggedIn(id) && sys.ip(id) === ip)
+                        SESSION.users(id).un("mute");
+                });
                 return;
             }
             normalbot.sendChanMessage(src, "He/she's not muted.");
@@ -3289,6 +3293,10 @@ modCommand: function(src, command, commandData, tar) {
            return;
         }
         SESSION.users(tar).un("mute");
+        sys.playerIds().forEach(function(id) {
+            if (sys.loggedIn(id) && sys.ip(id) === sys.ip(tar))
+                SESSION.users(id).un("mute");
+        });
         normalbot.sendAll("" + commandData + " was unmuted by " + nonFlashing(sys.name(src)) + "!");
         return;
     }
