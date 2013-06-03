@@ -1302,7 +1302,7 @@ function RPG(rpgchan) {
             return;
         }
         var target = SESSION.users(id).rpg;
-        if (target.watchableBattles === false) {
+        if (target.watchableBattles === false && !isRPGAdmin(src)) {
             rpgbot.sendMessage(src, "You can't watch this person's battles!", rpgchan);
             return;
         }
@@ -4362,6 +4362,7 @@ function RPG(rpgchan) {
         player.hunted = {};
         
         player.quests = {};
+        player.updateReset = true;
         
         this.updateBonus(src);
         
@@ -4857,7 +4858,7 @@ function RPG(rpgchan) {
             return;
         }
         
-        var data, player, id, name, levels;
+        var data, player, id, name, levels, newClass;
         data = commandData.split(":");
         if (data.length < 2) {
             rpgbot.sendMessage(src, "Incorrect format! Use /punish name:levels to be reduced.", rpgchan);
@@ -4870,6 +4871,14 @@ function RPG(rpgchan) {
         if (isNaN(levels)) {
             rpgbot.sendMessage(src, "You must define a valid number for the levels you want to remove!", rpgchan);
             return;
+        }
+        
+        if (data.length > 2) {
+            newClass = data[2].toLowerCase();
+            if (!(newClass in classes)) {
+                rpgbot.sendMessage(src, "No such class!", rpgchan);
+                return;
+            }
         }
         
         var playerson = sys.playerIds();
@@ -4903,6 +4912,10 @@ function RPG(rpgchan) {
             player.exp = 0;
         } else {
             player.exp = expTable[player.level - 2];
+        }
+        
+        if (newClass) {
+            player.job = newClass;
         }
         
         player = this.resetCharData(player);
