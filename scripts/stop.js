@@ -318,9 +318,13 @@ function StopGame(stopchan) {
         
         if (command === "a") {
             if (state === "Running") {
-                this.validateAnswer(src, data, true);
+                if (isInGame(name)) {
+                    this.validateAnswer(src, data, true);
+                } else {
+                    stopbot.sendMessage(src, "You are not in the game! Type /join to play.", stopchan);
+                }
             } else {
-                stopbot.sendMessage(src, "No game running! Use /start [theme] to start a game!!", stopchan);
+                stopbot.sendMessage(src, "No game running! Use /start [theme] to start a game!", stopchan);
             }
             return true;
         } else if (command === "start") {
