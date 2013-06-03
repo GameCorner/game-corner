@@ -576,6 +576,13 @@ function RPG(rpgchan) {
                 return;
             }
             
+            if (items[goods].noStore) {
+                sys.sendMessage(src, "", rpgchan);
+                rpgbot.sendMessage(src, "You can't store this item!", rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                return;
+            }
+            
             if (data.length < 4 || isNaN(parseInt(data[3], 10)) === true) {
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, topic.storedmsg, rpgchan);
@@ -5443,6 +5450,16 @@ function RPG(rpgchan) {
             case "exp":
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, sys.name(id) + " currently has " + target.exp + " Exp. Points.", rpgchan);
+                sys.sendMessage(src, "", rpgchan);
+                break;
+            case "party":
+                sys.sendMessage(src, "", rpgchan);
+                var pt = this.findParty(target.party);
+                if (pt) {
+                    sys.sendMessage(src, "Party '" + pt.name + "' consists of " + pt.members.map(function(x){ return sys.name(x);}).join(", "), rpgchan);
+                } else {
+                    sys.sendMessage(src, sys.name(id) + " is not in a party!", rpgchan);
+                }
                 sys.sendMessage(src, "", rpgchan);
                 break;
             default:
