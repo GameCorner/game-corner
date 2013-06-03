@@ -3502,6 +3502,11 @@ function RPG(rpgchan) {
         amount = data.length > 1 ? parseInt(data[1], 10) : 1;
         amount = isNaN(amount) ? 1 : amount;
         
+        if (amount < 0) {
+            rpgbot.sendMessage(src, "That's not a valid amount!", rpgchan);
+            return;
+        }
+        
         if (attributes.indexOf(what) !== -1) {
             if (player.statPoints <= 0) {
                 rpgbot.sendMessage(src, "You have no stat points to increase!", rpgchan);
