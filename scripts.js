@@ -2493,7 +2493,7 @@ userCommand: function(src, command, commandData, tar) {
         return;
     }
     if (command == "auth") {
-        var DoNotShowIfOffline = ["loseyourself", "oneballjay"];
+        var DoNotShowIfOffline = ["abdelrahman", "aurist", "lamperi", "mademoiselle c"];
         var filterByAuth = function(level) { return function(name) { if (sys.dbAuth(name) == level) { return name; } }; };
         var printOnlineOffline = function(name) {
             if (name === undefined) return;
@@ -2531,10 +2531,7 @@ userCommand: function(src, command, commandData, tar) {
             sendChanMessage(src, "*** Super Users ***");
             sendChanMessage(src, "");
             for (i=0;i<superUsers.length;++i) {
-                if (sys.id(superUsers[i]) === undefined)
-                sendChanMessage(src, superUsers[i] + " (Offline)");
-                else
-                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + superUsers[i].toCorrectCase() + ' (Online)</font>', channel);
+                printOnlineOffline(superUsers[i]);
             }
             break;
         default:
@@ -2549,10 +2546,7 @@ userCommand: function(src, command, commandData, tar) {
             sys.sendMessage(src, '', channel);
             sendChanMessage(src, "*** Super Users ***");
             for (i=0;i<superUsers.length;++i) {
-                if (sys.id(superUsers[i]) === undefined)
-                sendChanMessage(src, superUsers[i] + " (Offline)");
-                else
-                sys.sendHtmlMessage(src, '<timestamp/><font color = "green">' + superUsers[i].toCorrectCase() + ' (Online)</font>', channel);
+                printOnlineOffline(superUsers[i]);	
             }
         }
         sys.sendMessage(src, '', channel);
