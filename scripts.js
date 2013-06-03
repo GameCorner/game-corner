@@ -4964,9 +4964,8 @@ beforeChatMessage: function(src, message, chan) {
 
         sys.stopEvent();
         print("-- Command: " + sys.name(src) + ": " + message);
-        if (sys.auth(src) < 1) {
-            sys.sendAll(sys.name(src) + ": " + message, sys.channelId("Watch"));
-        }
+        sys.sendAll(sys.name(src) + ": " + nonFlashing(message), sys.channelId("Watch"));
+
         
         var commandData;
         var pos = message.indexOf(' ');
