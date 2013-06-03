@@ -79,9 +79,11 @@ function StopGame(stopchan) {
         sys.sendAll("", stopchan);
         ticks = 30;
     };
-    this.validateAnswer = function(src, answer) {
+    this.validateAnswer = function(src, answer, display) {
         var name = sys.name(src);
-        
+        if(display) {
+            sys.sendAll(name + ": =" + answer, stopchan);
+        }
         if (players[name].answered !== false) {
             stopbot.sendMessage(src, "You already answered this round! Wait for the next round.", stopchan);
             return;
@@ -196,6 +198,7 @@ function StopGame(stopchan) {
         var out = [
             "",
             "=[word]: To answer a name.",
+            "/a [word]: To answer a name.",
             "/start [theme]: To start a game.",
             "/join: To join a game.",
             "/unjoin: To leave a game.",
@@ -313,15 +316,14 @@ function StopGame(stopchan) {
     this.handleStopCommand = function(src, command, data, chan) {
         var name = sys.name(src);
         
-        /* if (command === "a") {
+        if (command === "a") {
             if (state === "Running") {
-                this.validateAnswer(src, data);
+                this.validateAnswer(src, data, true);
             } else {
                 stopbot.sendMessage(src, "No game running! Use /start [theme] to start a game!!", stopchan);
             }
             return true;
-        } else  */
-        if (command === "start") {
+        } else if (command === "start") {
             if (state === "Blank") {
                 this.startTheme(src, themes.hasOwnProperty(data.toLowerCase()) ? data.toLowerCase() : defaultTheme);
             } else {
