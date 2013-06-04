@@ -177,13 +177,10 @@ function StopGame(stopchan) {
         return name in players;
     }
     function getStopAuth(src) {
-		if (sys.auth(src) >= 1) {
-            return 2;
-        }
         var name = sys.name(src).toLowerCase();
         if (SESSION.channels(stopchan).masters.indexOf(name) !== -1) {
             return 3;
-        } else if (SESSION.channels(stopchan).admins.indexOf(name) !== -1) {
+        } else if (SESSION.channels(stopchan).admins.indexOf(name) !== -1 || sys.auth(src) >= 1) {
             return 2;
         } else if (SESSION.channels(stopchan).operators.indexOf(name) !== -1) {
             return 1;
