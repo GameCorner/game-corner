@@ -3557,32 +3557,26 @@ modCommand: function(src, command, commandData, tar) {
         return;
     }
     if (command == "passauth" || command == "passauths") {
-        if (tar === undefined) {
-            normalbot.sendChanMessage(src, "The target is offline.");
+        if (sys.dbIp(commandData) === undefined) {
+            normalbot.sendChanMessage(src, "That player does not exist.");
             return;
         }
-        if (sys.ip(src) == sys.ip(tar) && sys.auth(tar) === 0) {
+        if ((sys.ip(src) == sys.dbIp(commandData)) && (sys.dbAuth(commandData) === 0)) {
             // fine
         }
         else {
-            if (sys.auth(src) !== 0 || isMarked(src) === false) {
-                normalbot.sendChanMessage(src, "You need to be mega-auth to pass auth.");
-                return;
-            }
-            if (isMarked(tar) === false || sys.auth(tar) > 0) {
-                normalbot.sendChanMessage(src, "The target must be a super user and not auth, or from your IP.");
-                return;
-            }
+            normalbot.sendChanMessage(src, "The target must not be auth, or from your IP.");
+            return;
         }
-        if (!sys.dbRegistered(sys.name(tar))) {
+        if (!sys.dbRegistered(commandData) {
             normalbot.sendChanMessage(src, "The target name must be registered.");
             return;
         }
         var current = sys.auth(src);
         sys.changeAuth(src, 0);
-        sys.changeAuth(tar, current);
+        sys.changedbAuth(commandData, current);
         if (command == "passauth")
-            normalbot.sendAll(sys.name(src) + " passed their auth to " + sys.name(tar) + "!", staffchannel);
+            normalbot.sendAll(sys.name(src) + " passed their auth to " + commandData + "!", staffchannel);
         return;
     }
     if (command == "skmute" && (sys.auth(src) >= 1 || [/* insert mod list here when this goes to admin+ */].indexOf(sys.name(src).toLowerCase()) >= 0)) {
