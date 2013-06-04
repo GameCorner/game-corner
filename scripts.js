@@ -3568,7 +3568,7 @@ modCommand: function(src, command, commandData, tar) {
             normalbot.sendChanMessage(src, "The target must not be auth, or from your IP.");
             return;
         }
-        if (!sys.dbRegistered(commandData) {
+        if (!sys.dbRegistered(commandData)) {
             normalbot.sendChanMessage(src, "The target name must be registered.");
             return;
         }
