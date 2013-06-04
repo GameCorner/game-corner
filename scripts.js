@@ -1583,7 +1583,6 @@ init : function() {
 	};	
     isSuperAdmin = function(id) {
         if (typeof Config.superAdmins != "object" || Config.superAdmins.length === undefined) return false;
-        if (sys.auth(id) == 0) return false;
         var name = sys.name(id);
         for (var i = 0; i < Config.superAdmins.length; ++i) {
             if (cmp(name, Config.superAdmins[i]))
