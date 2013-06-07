@@ -1658,7 +1658,7 @@ function RPG(rpgchan) {
                             }
                             def *= 1 - pierce;
                         }
-                        if (def <= 0) {
+                        if (def < 1) {
                             def = 1;
                         }
                         
