@@ -2798,7 +2798,7 @@ userCommand: function(src, command, commandData, tar) {
         normalbot.sendChanMessage(src, pokename+"'s wikipage is here: http://wiki.pokemon-online.eu/wiki/"+pokename);
         return;
     }
-    if (isMarked(src) && (command == "mute" || command == "unmute" || command == "aliases")) {
+    if (isMarked(src) && (command == "mute" || command == "unmute" || command == "aliases" || command == "mutelist")) {
     	return this.modCommand(src, command, commandData, tar);
     }
     if (isMarked(src) && sys.auth(src) < 1 && (command == "passauth" || command == "passauths")) {
