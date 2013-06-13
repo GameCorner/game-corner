@@ -19,6 +19,8 @@ module.exports = function () {
 	var dice2;
 	var dice3;
 	var slot;
+	var a;
+	var winnings;
 	var jackpot = 1000;
 	
 	
@@ -95,59 +97,71 @@ module.exports = function () {
             coins[sys.name(src)] == 100;
         }
 	};
-	this.high = function (src) {
-				if (b >= a) {
-			winnings += 1;
-			a = b;
-		return;
-		}
-		else {
-			stop;
-		}
-	};
-	this.low = function () {
-				if (b <= a) {
-			winnings += 1;
-			a = b;
-			return;
-		}
-		else {
-			stop;
-		}
-	}
 this.playHL = function (src, commandData) {
-	if(commandData === undefined){
-		return;
-	}
-	var bet = parseInt(commandData.split(":")[0], 10);
-	var a = Math.floor(Math.random()*13 + 1);
-	var b;
-	var winnings;
-	var payout;
-	
-	coins[sys.name(src)] -= bet;
-	casinobot.sendMessage(src, "Your beginning number is " + a + ". Type /high if you think your next number will be higher or /low if you think your next number will be lower.", casinochan);
-	for (var w;w<6;w++) {
-	b = Math.floor(Math.random()*13 + 1);
-	if (command == "high") {
-this.high();
-	}
-	if (command == "low") {
-this.low();
-	}
-	}
-	if (winnings == 1) {
-		coins[sys.name(src)] += bet;
-	}
-	else if (winnings > 2) {
-		coins[sys.name(src)] += (bet + (10*(winnings -1)));
-		payout = (bet + (10*(winnings -1)));
-		casinobot.sendMessage("Congrats, you were able to win " + payout + " coins!");
-	}
-	else {
-		casinobot.sendMessage("Sadly you didn't do well and lost " + bet + " coins.");
-	}
+if(commandData === undefined){
+return;
+}
+var bet = parseInt(commandData.split(":")[0], 10);
+a = Math.floor(Math.random()*13 + 1);
+var b;
+var payout;
+
+coins[sys.name(src)] -= bet;
+casinobot.sendMessage(src, "Your beginning number is " + a + ". Type /high if you think your next number will be higher or /low if you think your next number will be lower.", casinochan);
+for (var w;w<6;w++) {
+b = Math.floor(Math.random()*13 + 1);
+if (command == "high") {
+this.high(src);
+}
+if (command == "low") {
+this.low(src)
+}
+}
+if (winnings == 1) {
+coins[sys.name(src)] += bet;
+}
+else if (winnings > 2) {
+coins[sys.name(src)] += (bet + (10*(winnings -1)));
+payout = (bet + (10*(winnings -1)));
+casinobot.sendMessage("Congrats, you were able to win " + payout + " coins!");
+}
+else {
+casinobot.sendMessage("Sadly you didn't do well and lost " + bet + " coins.");
+}
+a = undefined;
+b = undefined;
 };
+
+this.high = function (src) {
+if (a === undefined) {
+casinobot.sendMessage("You are not playing the game High or Low right now.")
+}
+if (a >= b) {
+a = b;
+casinobot.sendMessage("You were wrong! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+else if (b > a) {
+winnings++;
+a = b;
+casinobot.sendMessage("You were right! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+};
+
+this.low = function (src) {
+if (a === undefined) {
+casinobot.sendMessage("You are not playing the game High or Low right now.")
+}
+if(a < b) {
+a = b;
+casinobot.sendMessage("You were wrong! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+else if (a >= b) {
+winnings++;
+a = b;
+casinobot.sendMessage("You were right! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+};
+
 this.playCraps = function (src, commandData){
 		if(commandData === undefined){
 			return;
@@ -477,7 +491,9 @@ this.showHelp = function (commandData){
 	    nslots: [this.playNSlots, "To play the Nickle slots. Used like /nslots"],
             qslots: [this.playQSlots, "To play the Quarter slots. Used like /qslots"],
 	    dslots: [this.playDSlots, "To play the Dollar slots. Used like /dslots"],
-	    horl: [this.playHL, "To play the High or Low game. Used like /HorL bet"]
+	    horl: [this.playHL, "To play the High or Low game. Used like /HorL bet"],
+	    high: [this.high, "Only used when playing the High or Low game."],
+	    low: [this.low, "Only used when playing the High or Low game."]
         }
 	};
  this.handleCommand = function (src, message, channel) {
