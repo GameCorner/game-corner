@@ -15,7 +15,9 @@ module.exports = (new function () {
         //Poker = require('poker.js'),
         //MemoryHash = require('memoryhash.js'),
         isNonNegative = utilities.is_non_negative;
-    
+    	
+    	var a;
+    	var winnings;
 	var jackpot = 1000,
         stepTimer = 0,
         cooldowns = {};
@@ -126,6 +128,72 @@ module.exports = (new function () {
             return;
         }
 	};
+	
+	this.playHL = function (src, commandData) {
+if(commandData === undefined){
+return;
+}
+var bet = parseInt(commandData.split(":")[0], 10);
+a = Math.floor(Math.random()*13 + 1);
+var b;
+var payout;
+
+coins[sys.name(src)] -= bet;
+casinobot.sendMessage(src, "Your beginning number is " + a + ". Type /high if you think your next number will be higher or /low if you think your next number will be lower.", casinochan);
+for (var w;w<6;w++) {
+b = Math.floor(Math.random()*13 + 1);
+if (command == "high") {
+this.high(src);
+}
+if (command == "low") {
+this.low(src)
+}
+}
+if (winnings == 1) {
+coins[sys.name(src)] += bet;
+}
+else if (winnings > 2) {
+coins[sys.name(src)] += (bet + (10*(winnings -1)));
+payout = (bet + (10*(winnings -1)));
+casinobot.sendMessage("Congrats, you were able to win " + payout + " coins!");
+}
+else {
+casinobot.sendMessage("Sadly you didn't do well and lost " + bet + " coins.");
+}
+a = undefined;
+b = undefined;
+};
+
+this.high = function (src) {
+if (a === undefined) {
+casinobot.sendMessage("You are not playing the game High or Low right now.")
+}
+if (a >= b) {
+a = b;
+casinobot.sendMessage("You were wrong! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+else if (b > a) {
+winnings++;
+a = b;
+casinobot.sendMessage("You were right! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+};
+
+this.low = function (src) {
+if (a === undefined) {
+casinobot.sendMessage("You are not playing the game High or Low right now.")
+}
+if(a < b) {
+a = b;
+casinobot.sendMessage("You were wrong! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+else if (a >= b) {
+winnings++;
+a = b;
+casinobot.sendMessage("You were right! Now guess wether your next number is higher or lower than " + a + " with /high or /low .");
+}
+};
+
 	this.playSlots = function (src) {
         var slot;
         if (isNaN(SESSION.global().coins[sys.name(src).toLowerCase()])) {
@@ -357,12 +425,15 @@ module.exports = (new function () {
     this.commands = {
         user: {
             cal: this.playCAL,
-	        slots: this.playSlots,
+	    slots: this.playSlots,
             pr: this.playPR,
             help: this.showHelp,
             games: this.showGames,
             jackpot: this.showJackpot,
             mycoins: this.showmyCoins,
+            horl: this.playHL,
+            high: this.high,
+            low: this.low,
             casinocommands: this.showCommands
         }
 	};
