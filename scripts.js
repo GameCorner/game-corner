@@ -1257,19 +1257,21 @@ var commands = {
         "/ranking: Shows your ranking in your current tier.",
         "/myalts: Lists your alts.",
         "/me [message]: Sends a message with *** before your name.",
-        "/selfkick: Kicks all other accounts with IP.",
-        "/dwreleased [Pokemon]: Shows the released status of a Pokemon's Dream World Ability",
-        "/wiki [Pokémon]: Shows that Pokémon's wiki page",
+        "/rainbow [message]: Sends a message with your name in different colours.",        
         "/register: Registers a channel with you as owner.",
         "/resetpass: Clears your password (unregisters you, remember to reregister).",
         "/auth [owners/admins/mods/superusers]: Lists auth of given level, shows all auth if left blank.",
         "/cauth: Lists all users with channel auth in the current channel.",
+        "/cjoin [channel]: Puts you in the specified channel.",
         "/contributors: Lists contributors.",
         //"/league: Lists gym leaders and elite four of the PO league.",
         "/uptime: Shows time since the server was last offline.",
         "/players: Shows the number of players online.",
         "/sameTier [on/off]: Turn on/off auto-rejection of challenges from players in a different tier from you.",
-        "/seen [name]: Allows you to see the last login of a user."
+        "/seen [name]: Allows you to see the last login of a user.",
+        "/flip: Flips a coin.",
+        "/touralerts [on/off]: Turns tour alerts on or off.",
+        "/[add/remove]touralert [tier]: Adds or removes tour alerts for that tier."
     ],
     channel:
     [
@@ -1311,86 +1313,59 @@ var commands = {
     mod:
     [
         "/k [name]: Kicks someone.",
-        "/mute [name]:[reason]:[time]: Mutes someone. Time is optional and defaults to 1 day.",
-        "/unmute [name]: Unmutes someone.",
-        "/silence [minutes]:[channel]: Prevents authless users from talking in a channel for specified time. Affects all official channels if no channel is given.",
-        "/silenceoff [channel]: Removes silence from a channel. Affects all official channels if none is specified.",
+        "/[un]mute [name]:[reason]:[time]: Mutes or unmutes someone. Time is optional and defaults to 1 day.",
+        "/silence[off] [minutes]:[channel]: Prevents authless users from talking in a channel for specified time. Affects all official channels if no channel is given.",
         "/perm [on/off]: Make the current permanent channel or not (permanent channels remain listed when they have no users).",
-        "/userinfo [name]: Displays information about a user (pretty display).",
-        "/whois [name]: Displays information about a user (one line, slightly more info).",
+        "/whois [name]: Displays information about a user (pretty display).",
+        "/userinfo [name]: Displays information about a user (one line, slightly more info).",
         "/aliases [IP/name]: Shows the aliases of an IP or name.",
-        "/tempban [name]:[time]: Bans someone for 24 hours or less. Time is optional and defaults to 1 day",
-        "/tempunban [name]: Unbans a temporary banned user (standard unban doesn't work).",
+        "/temp[un]ban [name]:[time]: Bans someone for 24 hours or less or unbans a temporary banned user. Time is optional and defaults to 1 day",
         "/checkbantime [name]: Checks how long a user is banned for.",
-        "/mafiaban [name]:[reason]:[time]: Bans a player from Mafia. Time is optional and defaults to 7 days.",
-        "/mafiaunban [name]: Unbans a player from Mafia.",
+        "/mafia[un]ban [name]:[reason]:[time]: Bans or unbans a player from Mafia. Time is optional and defaults to 7 days.",
+        "/hangman[un]ban [name]:[reason]:[time]: Bans or unbans a player from Hangman.",
         "/detain [user]:[reason]:[# Mafia Games]: Sentences a player to probation for # of Mafia Games.",
         "/release [user]: Removes a player from probation in Mafia.",
-        "/detainlist [search term]: Searches the detainlist, show full list if no search term is entered.",
         "/passauth [target]: Passes your auth to your online alt.",
         "/passauths [target]: Passes your auth silently.",
-        "/banlist [search term]: Searches the banlist, shows full list if no search term is entered.",
-        "/mutelist [search term]: Searches the mutelist, shows full list if no search term is entered.",
-        "/smutelist [search term]: Searches the smutelist, shows full list if no search term is entered.",
-        "/mafiabans [search term]: Searches the mafiabanlist, shows full list if no search team is entered.",
-        "/rangebans: Lists range bans.",
-        "/ipbans : Lists ip bans.",
-        "/autosmutelist: Lists the names in the auto-smute list.",
-        "/namebans: Lists name bans.",
-        "/namewarns: Lists name warnings.",
+        "/[banlist/mutelist/smutelist/mafiabans/hangmangbans/detainslist] [search term]: Searches the banlist, mutelist, smutelist, mafiabans list, hangmanbans list ordetainslist, shows full list if no search term is entered.",
+        "/[rangebans/ipbans/autosmutelist/namebans]: Lists range bans/ip bans/auto smutes/name bans.",
         "/topchannels: To view the top channels.",
         "/onrange [range]: To view who is on a range.",
-        "/tier [name]: To view the tier(s) of a person.",
         "/battlehistory [name]: To view a person's battle history.",
         "/channelusers [channel]: Lists users on a channel."
     ],
     admin:
     [
-        "/ban [name]: Bans a user.",
-        "/unban [name]: Unbans a user.",
-        "/smute xxx: Secretly mutes a user. Can't smute auth.",
-        "/sunmute xxx: Removes secret mute from a user.",
+        "/[un]ban [name]: Bans or unbans a user.",
+        "/s[un]mute xxx: Secretly mutes or unmutes a user. Can't smute auth.",
+        "/sk: Secretly kicks a user.",
         "/memorydump: Shows the state of the memory.",
-        "/nameban regexp: Adds a regexp ban on usernames.",
-        "/nameunban full_regexp: Removes a regexp ban on usernames.",
-        "/namewarn regexp: Adds a namewarning",
-        "/nameunwarn full_regexp: Removes a namewarning",
+        "/name[un]ban regexp: Adds or removes a regexp ban on usernames.",
         "/destroychan [channel]: Destroy a channel (official channels are protected).",
         "/indigoinvite [name]: To invite somebody to channels.",
-        "/indigodeinvite: To deinvite unwanted visitors from staff channel."
     ],
     owner:
     [
         "/changeRating [player] -- [tier] -- [rating]: Changes the rating of a rating abuser.",
         "/stopBattles: Stops all new battles to allow for server restart with less problems for users.",
-        "/imp [name]: Lets you speak as someone",
-        "/impOff: Stops your impersonating.",
+        "/imp[Off] [name]: Lets you speak as someone. impoff stops your impersonating.",
         "/superuser[off] xxx: Adds or removes super users.",
-        "/viewsymbol: Shows the current symbol for super users.",
-        "/changesymbol: Changes the symbol for super users",
         "/contributor[off] xxx:what: Adds or removes contributor status (for indigo access) from someone, with reason.",
         "/clearpass [name]: Clears a user's password.",
-        "/autosmute [name]: Adds a player to the autosmute list",
-        "/removeautosmute [name]: Removes a player from the autosmute list",
+        "/[remove]autosmute [name]: Adds or removes a player to the autosmute list",
         "/periodicsay minutes:channel1,channel2,...:[message]: Sends a message to specified channels periodically.",
         "/endcalls: Ends the next periodic message.",
         "/sendAll [message]: Sends a message to everyone.",
         "/changeAuth[s] [auth] [name]: Changes the auth of a user.",
         "/showteam xxx: Displays the team of a user (to help people who have problems with event moves or invalid teams).",
-        "/rangeban [ip] [comment]: Makes a range ban.",
-        "/rangeunban: [ip]: Removes a rangeban.",
-        "/purgemutes [time]: Purges old mutes. Time is given in seconds. Defaults is 4 weeks.",
-        "/purgembans [time]: Purges old mafiabans. Time is given in seconds. Default is 1 week.",
-        "/addplugin [plugin]: Add a plugin from the web.",
-        "/removeplugin [plugin]: Removes a plugin.",
-        "/updateplugin [plugin]: Updates plugin from the web.",
+        "/range[un]ban [ip] [comment]: Makes or removes a range ban.",
+        "/purge[mutes/mbans] [time]: Purges old mutes or mafiabans. Time is given in seconds. Default is 4 weeks for mutes and 1 week for mafiabans.",
+        "/[add/remove/update]plugin [plugin]: Add, remove or update a plugin from the web.",
         "/updateScripts: Updates scripts from the web.",
-        "/capslockday [on/off]: To turn caps lock day on or off.",
-        "/indigo [on/off]: To create or destroy staff channel.",
         "/updatebansites: To update ban sites.",
         "/updatetierchecks: To update tier checks.",
         "/public: Makes the server public",
-        "/togglerainbow: [on/off]: To turn rainbow on or off.",
+        "/togglerainbow [on/off]: To turn rainbow on or off.",
         "/towner[s] [name]: makes someone a tournament owner (tours.js plugin needs to be installed for this to work)"
     ]
 };
@@ -2564,33 +2539,6 @@ userCommand: function(src, command, commandData, tar) {
         saveKey("forceSameTier", src, SESSION.users(src).sametier * 1);
         return;
     }
-    if (command == "idle") {
-        if (commandData == "on") {
-            battlebot.sendChanMessage(src, "You are now idling.");
-            saveKey("autoIdle", src, 1);
-            sys.changeAway(src, true);
-        } else if (commandData == "off") {
-            battlebot.sendChanMessage(src, "You are back and ready for battles!");
-            saveKey("autoIdle", src, 0);
-            sys.changeAway(src, false);
-        } else {
-            battlebot.sendChanMessage(src, "You are currently " + (sys.away(src) ? "idling" : "here and ready to battle") + ". Use /idle on/off to change it.");
-        }
-        return;
-    }
-    if (command == "selfkick" || command == "sk") {
-        var src_ip = sys.ip(src);
-        var players = sys.playerIds();
-        var players_length = players.length;
-        for (var i = 0; i < players_length; ++i) {
-            var current_player = players[i];
-            if ((src != current_player) && (src_ip == sys.ip(current_player))) {
-                sys.kick(current_player);
-                normalbot.sendMessage(src, "Your ghost was kicked...");
-            }
-        }
-        return;
-    }
     if (command == "topic") {
         SESSION.channels(channel).setTopic(src, commandData);
         return;
@@ -2767,37 +2715,6 @@ userCommand: function(src, command, commandData, tar) {
         querybot.sendChanMessage(src, commandData + " was last seen: "+ d.toUTCString());
         return;
     }
-    if (command == "dwreleased") {
-        var poke = sys.pokeNum(commandData);
-        if (!poke) {
-            normalbot.sendChanMessage(src, "No such pokemon!"); return;
-        }
-        var pokename = sys.pokemon(poke);
-        if (dwCheck(poke) === false){
-            normalbot.sendChanMessage(src, pokename + ": has no DW ability!");
-            return;
-        }
-        if (poke in dwpokemons) {
-            if (breedingpokemons.indexOf(poke) == -1) {
-                normalbot.sendChanMessage(src, pokename + ": Released fully!");
-            } else {
-                normalbot.sendChanMessage(src, pokename + ": Released as a Male only, can't have egg moves or previous generation moves!");
-            }
-        } else {
-            normalbot.sendChanMessage(src, pokename + ": Not released, only usable on Dream World tiers!");
-        }
-        return;
-    }
-    if (command == "wiki"){
-        var poke = sys.pokeNum(commandData);
-        if (!poke) {
-            normalbot.sendChanMessage(src, "No such pokemon!");
-            return;
-        }
-        var pokename = sys.pokemon(poke);
-        normalbot.sendChanMessage(src, pokename+"'s wikipage is here: http://wiki.pokemon-online.eu/wiki/"+pokename);
-        return;
-    }
     if (isMarked(src) && (command == "mute" || command == "unmute" || command == "aliases" || command == "mutelist")) {
     	return this.modCommand(src, command, commandData, tar);
     }
@@ -2912,21 +2829,6 @@ modCommand: function(src, command, commandData, tar) {
         } else {
             sys.sendMessage(src,"Players: Nothing interesting here!",channel);
         }
-        return;
-    }
-    if (command == "tier")
-    {
-        if (tar === undefined){
-            querybot.sendChanMessage(src,"No such user online.");
-            return;
-        }
-        var count = sys.teamCount(tar), tiers = [];
-        for (var i = 0; i < count; ++i) {
-            var ctier = sys.tier(tar, i);
-            if (tiers.indexOf(ctier) == -1)
-            tiers.push(ctier);
-        }
-        querybot.sendChanMessage(src,sys.name(tar)+" is in tier"+(tiers.length <= 1?"":"s")+": "+tiers.join(", "));
         return;
     }
     if (command == "perm") {
@@ -3242,20 +3144,6 @@ modCommand: function(src, command, commandData, tar) {
             table += '<tr>';
             for (var j = 0; j < 5 && i+j < nameBans.length; ++j) {
                 table += '<td>'+nameBans[i+j].toString()+'</td>';
-            }
-            table += '</tr>';
-        }
-        table += '</table>';
-        sys.sendHtmlMessage(src, table, channel);
-        return;
-    }
-    if (command == "namewarns") {
-        var table = '';
-        table += '<table border="1" cellpadding="5" cellspacing="0"><tr><td colspan="2"><center><strong>Namewarnings</strong></center></td></tr>';
-        for (var i = 0; i < nameWarns.length; i+=5) {
-            table += '<tr>';
-            for (var j = 0; j < 5 && i+j < nameWarns.length; ++j) {
-                table += '<td>'+nameWarns[i+j].toString()+'</td>';
             }
             table += '</tr>';
         }
@@ -3685,21 +3573,6 @@ adminCommand: function(src, command, commandData, tar) {
         normalbot.sendChanMessage(tar, "" + sys.name(src) + " made you join this channel!");
         return;
     }
-    if (command == "indigodeinvite") {
-        var count = 0;
-        var players = sys.playerIds();
-        var players_length = players.length;
-        for (var i = 0; i < players_length; ++i) {
-            var current_player = players[i];
-            if (sys.isInChannel(current_player, staffchannel) && !this.canJoinStaffChannel(current_player)) {
-                sys.kick(current_player, staffchannel);
-                SESSION.channels(channel).takeAuth(src, sys.name(current_player), "member");
-                count = 1;
-            }
-        }
-        normalbot.sendAll("" + count + " unwanted visitors were kicked...", staffchannel);
-        return;
-    }
     if (command == "destroychan") {
         var ch = commandData;
         var chid = sys.channelId(ch);
@@ -3803,6 +3676,18 @@ adminCommand: function(src, command, commandData, tar) {
         SESSION.users(sys.id(commandData)).un("smute");
         return;
     }
+    if (command == "sk") {
+        if (tar === undefined) {
+            normalbot.sendMessage(src, "No such user", channel);
+            return;
+        }
+        normalbot.sendAll("" + commandData + " was silently kicked by " + nonFlashing(sys.name(src)) + "!", staffchannel);
+        sys.kick(tar);
+        var authname = sys.name(src).toLowerCase();
+        authStats[authname] =  authStats[authname] || {};
+        authStats[authname].latestKick = [commandData, parseInt(sys.time(), 10)];
+        return;
+    }    
     if (command == "nameban") {
         if (commandData === undefined) {
             normalbot.sendChanMessage(src, "Sorry, can't name ban empty names.");
@@ -3843,43 +3728,6 @@ adminCommand: function(src, command, commandData, tar) {
             }
             sys.writeToFile("nameBans.json", JSON.stringify(serialized));
         }
-        return;
-    }
-    if (command == "namewarn") {
-        if (commandData === undefined) {
-            normalbot.sendChanMessage(src, "Sorry, can't set warning for empty names.");
-            return;
-        }
-        var regex;
-        try {
-            regex = new RegExp(commandData.toLowerCase()); // incase sensitive
-        } catch (e) {
-            normalbot.sendChanMessage(src, "Sorry, your regular expression '" +commandData + "' fails. (" + e + ")");
-        }
-        nameWarns.push(regex);
-        var serialized = {nameWarns: []};
-        for (var i = 0; i < nameWarns.length; ++i) {
-            serialized.nameWarns.push(nameWarns[i].source);
-        }
-        sys.writeToFile("nameWarns.json", JSON.stringify(serialized));
-        normalbot.sendChanMessage(src, "You set a warning for: " + regex.toString());
-        return;
-    }
-    if (command == "nameunwarn") {
-        var unwarn = false;
-        nameWarns = nameWarns.filter(function(name) {
-            if (name.toString() == commandData) {
-                var toDelete = nameWarns.indexOf(name.toString());
-                normalbot.sendChanMessage(src, "You removed a warning for: " + name.toString());
-                unwarn = true;
-                return false;
-            }
-            return true;
-        });
-        if (!unwarn)
-            normalbot.sendChanMessage(src, "No match.");
-        else
-            sys.writeToFile("nameWarns.json", JSON.stringify(nameWarns));
         return;
     }
     // hack, for allowing some subset of the owner commands for super admins
@@ -3974,23 +3822,12 @@ ownerCommand: function(src, command, commandData, tar) {
         sendChanMessage(src, "",channel);
         return;
     }
-    if (command == "capslockday") {
-        if (commandData == "off") {
-            CAPSLOCKDAYALLOW = false;
-            normalbot.sendChanMessage(src, "You turned caps lock day off!");
-        }
-        else if (commandData == "on") {
-            CAPSLOCKDAYALLOW = true;
-            normalbot.sendChanMessage(src, "You turned caps lock day on!");
-        }
-        return;
-    }
     if (command == "superuser" || command == "superusers") {
         var name = commandData;
         for (var x in marks.hash) {
             if (name.toLowerCase() == x.toLowerCase()) {
-        		normalbot.sendChanMessage(src, name + " is already a super user")
-        		return;
+        	normalbot.sendChanMessage(src, name + " is already a super user")
+        	return;
             }
         }
         if (sys.dbIp(name) === undefined) {
@@ -4369,31 +4206,6 @@ ownerCommand: function(src, command, commandData, tar) {
                     return;
                 }
             }
-    if (command == "indigo") {
-        if (commandData == "on") {
-            if (sys.existChannel("Indigo Plateau")) {
-                staffchannel = sys.channelId("Indigo Plateau");
-            } else {
-                staffchannel = sys.createChannel("Indigo Plateau");
-            }
-            SESSION.channels(staffchannel).topic = "Welcome to the Staff Channel! Discuss of all what users shouldn't hear here! Or more serious stuff...";
-            SESSION.channels(staffchannel).perm = true;
-            normalbot.sendMessage(src, "Staff channel was remade!");
-            return;
-            }
-        if (commandData == "off") {
-            SESSION.channels(staffchannel).perm = false;
-            var players = sys.playersOfChannel(staffchannel);
-            for (var x = 0; x < players.length; x++) {
-                sys.kick(players[x], staffchannel);
-                if (sys.isInChannel(players[x], 0) !== true) {
-                    sys.putInChannel(players[x], 0);
-                }
-            }
-            normalbot.sendMessage(src, "Staff channel was destroyed!");
-            return;
-        }
-    }
     if (command == "stopbattles") {
         battlesStopped = !battlesStopped;
         if (battlesStopped)  {
