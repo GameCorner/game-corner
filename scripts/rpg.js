@@ -1742,7 +1742,9 @@ function RPG(rpgchan) {
                                             target.battle.counters[e] = duration;
                                             break;
                                         case "delay":
-                                            target.battle.delay = getLevelValue(move.effect.target[e], level);
+                                            if (!target.battle.delay || target.battle.delay <= 0) {
+                                                target.battle.delay = getLevelValue(move.effect.target[e], level);
+                                            }
                                             break;
                                         case "attackElement":
                                         case "defenseElement":
@@ -1799,7 +1801,9 @@ function RPG(rpgchan) {
                                             player.battle.counters[e] = duration;
                                             break;
                                         case "delay":
-                                            player.battle.delay = getLevelValue(move.effect.user[e], level);
+                                            if (!player.battle.delay || player.battle.delay <= 0) {
+                                                player.battle.delay = getLevelValue(move.effect.user[e], level);
+                                            }
                                             break;
                                         case "attackElement":
                                         case "defenseElement":
@@ -3413,7 +3417,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-			if (player.exp >= expTable[e - 1]) {
+    		if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
