@@ -2942,6 +2942,10 @@ modCommand: function(src, command, commandData, tar) {
             normalbot.sendMessage(src, "No such user", channel);
             return;
         }
+        if (sys.auth(tar) >= sys.auth(src)) {
+            normalbot.sendMessage(src, "That player has authority level superior or equal to yours. You cannot kick them.");
+            return;
+        }
         normalbot.sendAll("" + commandData + " was mysteriously kicked by " + nonFlashing(sys.name(src)) + "!");
         sys.kick(tar);
         var authname = sys.name(src).toLowerCase();
