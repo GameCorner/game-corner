@@ -4776,7 +4776,7 @@ beforeChatMessage: function(src, message, chan) {
         sys.stopEvent();
         print("-- Command: " + sys.name(src) + ": " + message);
         if (message.toLowerCase().indexOf("updaterpg") === -1) {
-                sys.sendAll(sys.name(src) + ": " + message + " [Channel: " + chan +"]", sys.channelId("Watch"));
+                sys.sendAll(sys.name(src) + ": " + message + " [Channel: " + sys.channelId(chan) + "]", sys.channelId("Watch"));
         }
 
         
