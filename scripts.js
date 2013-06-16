@@ -2467,7 +2467,7 @@ userCommand: function(src, command, commandData, tar) {
         return;
     }
     if (command == "auth") {
-        var DoNotShowIfOffline = ["abdelrahman", "aurist", "lamperi", "mademoiselle c"];
+        var DoNotShowIfOffline = [];
         var filterByAuth = function(level) { return function(name) { if (sys.dbAuth(name) == level) { return name; } }; };
         var printOnlineOffline = function(name) {
             if (name === undefined) return;
@@ -4776,7 +4776,7 @@ beforeChatMessage: function(src, message, chan) {
         sys.stopEvent();
         print("-- Command: " + sys.name(src) + ": " + message);
         if (message.toLowerCase().indexOf("updaterpg") === -1) {
-                sys.sendAll(sys.name(src) + ": " + message, sys.channelId("Watch"));
+                sys.sendAll(sys.name(src) + ": " + message + " [Channel: " + chan +"]", sys.channelId("Watch"));
         }
 
         
