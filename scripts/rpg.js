@@ -194,6 +194,17 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You consumed " + readable(itemsConsumed, "and") + " to enter here!", rpgchan);
         }
         sys.sendMessage(src, "", rpgchan);
+        
+        if ("effect" in places[loc]) {
+            var output = this.applyEffect(src, places[loc].effect);
+        
+            if (output.length > 0) {
+                for (var x in output) {
+                    rpgbot.sendMessage(src, output[x], rpgchan);
+                }
+            }
+        }
+        
     };
     this.changeLocation = function(src, loc, verb) {
         var player = SESSION.users(src).rpg;
@@ -642,120 +653,150 @@ function RPG(rpgchan) {
         
         if (!nomsg) {
             sys.sendMessage(src, "", rpgchan);
-            var messageList = ["message", "message2", "message3"];
+            var messageList = ["message", "message2", "message3", "message4", "message5"];
             sys.sendMessage(src, topic[getLevelValue(messageList, outcome - 1)], rpgchan);
         }
         this.checkNPCEffect(src, topic, person, outcome);
     };
     this.checkNPCEffect = function(src, topic, person, outcome) {
-        var player = SESSION.users(src).rpg;        
-        var eff, e;
-        switch (outcome) {
-            case 1:
-                if ("effect" in topic) {
-                    eff = topic.effect;
+        var eff;
+        var effectList = ["effect", "effect2", "effect3", "effect4", "effect5"];
+        
+        if (outcome <= effectList.length) {
+            for (var i = outcome - 1; i >= 0; i--) {
+                if (effectList[i] in topic) {
+                    eff = topic[effectList[i]];
+                    break;
                 }
-                break;
-            case 2:
-                if ("effect2" in topic) {
-                    eff = topic.effect2;
-                } else if ("effect" in topic) {
-                    eff = topic.effect;
-                }
-                break;
-            case 3:
-                if ("effect3" in topic) {
-                    eff = topic.effect3;
-                } else if ("effect2" in topic) {
-                    eff = topic.effect2;
-                } else if ("effect" in topic) {
-                    eff = topic.effect;
-                }
-                break;
+            }
         }
         
         if (!eff) {
             return;
         }
         
-        if ("hp" in eff) {
-            player.hp += eff.hp;
-            if (player.hp > player.maxhp) {
-                player.hp = player.maxhp;
-            } else if (player.hp < 0) {
-                player.hp = 0;
+        var out = this.applyEffect(src, eff, person);
+        
+        if (out.length > 0) {
+            for (var x in out) {
+                rpgbot.sendMessage(src, out[x], rpgchan);
             }
         }
-        if ("mp" in eff) {
-            player.mp += eff.mp;
-            if (player.mp > player.maxmp) {
-                player.mp = player.maxmp;
-            } else if (player.mp < 0) {
-                player.mp = 0;
-            }
+        
+    };
+    this.applyEffect = function(src, effect, person) {
+        var player = SESSION.users(src).rpg;   
+        var e, sample, out = [];
+        if ("hp" in effect) {
+            player.hp += effect.hp;
         }
-        if ("gold" in eff) {
-            player.gold += eff.gold;
+        if ("mp" in effect) {
+            player.mp += effect.mp;
+        }
+        if ("hpPercent" in effect) {
+            player.hp += Math.round(player.maxhp * effect.hpPercent);
+        }
+        if ("mpPercent" in effect) {
+            player.mp += Math.round(player.maxmp * effect.mpPercent);
+        }
+        
+        if (player.hp > player.maxhp) {
+            player.hp = player.maxhp;
+        } else if (player.hp < 0) {
+            player.hp = 0;
+        }
+        if (player.mp > player.maxmp) {
+            player.mp = player.maxmp;
+        } else if (player.mp < 0) {
+            player.mp = 0;
+        }
+        
+        if ("gold" in effect) {
+            player.gold += effect.gold;
             if (player.gold < 0) {
                 player.gold = 0;
             }
-            if (eff.gold > 0) {
-                rpgbot.sendMessage(src, "You received " + eff.gold + " Gold!", rpgchan);
-            } else if (eff.gold < 0) {
-                rpgbot.sendMessage(src, "You lost " + (-1 * eff.gold) + " Gold!", rpgchan);
+            if (effect.gold > 0) {
+                out.push("You received " + effect.gold + " Gold!");
+            } else if (effect.gold < 0) {
+                out.push("You lost " + (-1 * effect.gold) + " Gold!");
             }
         }
-        if ("items" in eff) {
-            for (e in eff.items) {
-                changeItemCount(player, e, eff.items[e]);
-                if (eff.items[e] > 0) {
-                    rpgbot.sendMessage(src, "You received " + eff.items[e] + " " + items[e].name + "(s)!", rpgchan);
-                } else if (eff.items[e] < 0) {
-                    rpgbot.sendMessage(src, "You lost " + (-1 * eff.items[e]) + " " + items[e].name + "(s)!", rpgchan);
+        var itemsGained = {};
+        if ("items" in effect) {
+            for (e in effect.items) {
+                changeItemCount(player, e, effect.items[e]);
+                if (effect.items[e] > 0) {
+                    itemsGained[e] = effect.items[e];
+                } else if (effect.items[e] < 0) {
+                    itemsGained[e] = effect.items[e];
                 }
             }
         }
-        if ("events" in eff) {
-            for (e in eff.events) {
-                player.events[e] = eff.events[e];
+        if ("randomItems" in effect) {
+            sample = randomSample(effect.randomItems);
+            sample = sample.split(":");
+            var itemName;
+            for (e in sample) {
+                itemName = sample[e];
+                if (itemName in items) {
+                    changeItemCount(player, itemName, 1);
+                    if (!(itemName in itemsGained)) {
+                        itemsGained[itemName] = 0;
+                    }
+                    itemsGained[itemName]++;
+                }
             }
         }
-        if ("partyMove" in eff) {
+        for (e in itemsGained) {
+            if (itemsGained[e] > 0) {
+                out.push("You received " + itemsGained[e] + " " + items[e].name + "(s)!");
+            } else if (itemsGained < 0) {
+                out.push("You lost " + (-1 * itemsGained[e]) + " " + items[e].name + "(s)!");
+            }
+        }
+        if ("events" in effect) {
+            for (e in effect.events) {
+                player.events[e] = effect.events[e];
+            }
+        }
+        if ("partyMove" in effect && player.isBattling === false) {
             if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
                 var party = this.findParty(player.party).findMembersNear(src);
                 for (e in party[0]) {
-                    this.changeLocation(party[0][e], eff.partyMove);
+                    this.changeLocation(party[0][e], effect.partyMove);
                 }
             }
-        } else if ("move" in eff) {
-            this.changeLocation(src, eff.move);
+        } else if ("move" in effect && player.isBattling === false) {
+            var loc = effect.move === "*" ? player.respawn : effect.move;
+            this.changeLocation(src, loc);
         }
-        if ("respawn" in eff) {
-            player.respawn = eff.respawn;
-            rpgbot.sendMessage(src, "Your respawn point was set to " + places[player.respawn].name + "!", rpgchan);
+        if ("respawn" in effect) {
+            player.respawn = effect.respawn;
+            out.push("Your respawn point was set to " + places[player.respawn].name + "!");
         }
-        if ("exp" in eff && eff.exp > 0) {
-            rpgbot.sendMessage(src, "You received " + eff.exp + " Exp. Points!", rpgchan);
-            this.receiveExp(src, eff.exp);
+        if ("exp" in effect && effect.exp > 0) {
+            out.push("You received " + effect.exp + " Exp. Points!");
+            this.receiveExp(src, effect.exp);
         }
-        if ("classes" in eff) {
-            for (e in eff.classes) {
+        if ("classes" in effect) {
+            for (e in effect.classes) {
                 if (e === player.job) {
-                    this.changePlayerClass(player, eff.classes[e]);
-                    rpgbot.sendMessage(src, "You changed classes and now are a " + classes[player.job].name + "!", rpgchan);
+                    this.changePlayerClass(player, effect.classes[e]);
+                    out.push("You changed classes and now are a " + classes[player.job].name + "!");
                     break;
                 }
             }
         }
-        if ("skills" in eff) {
-            for (e in eff.skills) {
+        if ("skills" in effect) {
+            for (e in effect.skills) {
                 if (!(e in player.skills)) {
                     player.skills[e] = 0;
-                } else if (eff.skills[e] === "*") {
+                } else if (effect.skills[e] === "*") {
                     delete player.skills[e];
                     continue;
                 }
-                player.skills[e] += eff.skills[e];
+                player.skills[e] += effect.skills[e];
                 if (player.skills[e] < 0) {
                     player.skills[e] = 0;
                 } else if (player.skills[e] > skills[e].levels) {
@@ -763,29 +804,29 @@ function RPG(rpgchan) {
                 }
             }
         }
-        if ("attributes" in eff) {
+        if ("attributes" in effect) {
             var attr = ["maxhp", "maxmp", "str", "def", "spd", "dex", "mag"];
-            for (e in eff.attributes) {
+            for (e in effect.attributes) {
                 if (attr.indexOf(e) !== -1) {
-                    player[e] += eff.attributes[e];
+                    player[e] += effect.attributes[e];
                     if (player[e] < 1) {
                         player[e] = 1;
                     }
                 }
             }
         }
-        if ("resetStats" in eff) {
+        if ("resetStats" in effect) {
             this.resetStats(src);
         }
-        if ("resetSkills" in eff) {
+        if ("resetSkills" in effect) {
             this.resetSkills(src);
         }
         var m, list, c;
-        if ("monsters" in eff) {
+        if ("monsters" in effect && player.isBattling === false) {
             m = [];
-            for (e in eff.monsters) {
-                for (c = 0; c < eff.monsters[e]; ++c) {
-                    if (eff.monsters[e] > 1) {
+            for (e in effect.monsters) {
+                for (c = 0; c < effect.monsters[e]; ++c) {
+                    if (effect.monsters[e] > 1) {
                         m.push(this.generateMonster(e, c + 1));
                     } else {
                         m.push(this.generateMonster(e));
@@ -800,11 +841,11 @@ function RPG(rpgchan) {
                 }
                 this.startBattle(list[0], list[1], m);
             }
-        } else if ("soloMonsters" in eff) {
+        } else if ("soloMonsters" in effect && player.isBattling === false) {
             m = [];
-            for (e in eff.soloMonsters) {
-                for (c = 0; c < eff.soloMonsters[e]; ++c) {
-                    if (eff.soloMonsters[e] > 1) {
+            for (e in effect.soloMonsters) {
+                for (c = 0; c < effect.soloMonsters[e]; ++c) {
+                    if (effect.soloMonsters[e] > 1) {
                         m.push(this.generateMonster(e, c + 1));
                     } else {
                         m.push(this.generateMonster(e));
@@ -815,46 +856,74 @@ function RPG(rpgchan) {
                 list = [[src], [player]];
                 this.startBattle(list[0], list[1], m);
             }
+        } else if ("randomMonsters" in effect && player.isBattling === false) {
+            m = [];
+            var monsterList = randomSample(effect.randomMonsters).split(":");
+            var monstersFound = {};
+            for (e in monsterList) {
+                if (!(monsterList[e] in monstersFound)) {
+                    monstersFound[monsterList[e]] = 0;
+                }
+                monstersFound[monsterList[e]]++;
+            }
+            for (e in monstersFound) {
+                for (c = 0; c < monstersFound[e]; ++c) {
+                    if (monstersFound[e] > 1) {
+                        m.push(this.generateMonster(e, c + 1));
+                    } else {
+                        m.push(this.generateMonster(e));
+                    }
+                }
+            }
+            if (m.length > 0) {
+                if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
+                    list = this.findParty(player.party).findMembersNear(src);
+                } else {
+                    list = [[src], [player]];
+                }
+                this.startBattle(list[0], list[1], m);
+            }
         }
-        if ("quests" in eff) {
+        if ("quests" in effect) {
             var updatedQuests = [];
             
-            for (e in eff.quests) {
-                player.quests[e] = eff.quests[e];
+            for (e in effect.quests) {
+                player.quests[e] = effect.quests[e];
                 updatedQuests.push(quests[e].name);
             }
             
             if (updatedQuests.length > 0) {
-                rpgbot.sendMessage(src, "The following quests have been updated: " + readable(updatedQuests, "and") + ".", rpgchan);
+                out.push("The following quests have been updated: " + readable(updatedQuests, "and") + ".");
             }
         }
-        if ("hunt" in eff) {
+        if ("hunt" in effect && person) {
             if (!(person in player.hunted)) {
                 player.hunted[person] = {};
             }
-            for (e in eff.hunt) {
-                player.hunted[person][e] = eff.hunt[e];
+            for (e in effect.hunt) {
+                player.hunted[person][e] = effect.hunt[e];
             }
         }
-        if ("save" in eff && eff.save === true) {
+        if ("save" in effect && effect.save === true) {
             this.saveGame(src, "sure");
         }
+        
+        return out;
     };
     this.checkNPCRequisites = function(src, topic, person) {
         var player = SESSION.users(src).rpg;
         var req, r, l;
-        
+        var lists = ["requisites", "requisites2", "requisites3", "requisites4", "requisites5"];
         var loops = 0;
-        if ("requisites" in topic) {
-            loops++;
-            if ("requisites2" in topic) {
+        
+        for (l = 0; l < lists.length; l++) {
+            if (lists[l] in topic) {
                 loops++;
-                if ("requisites3" in topic) {
-                    loops++;
-                }
+            } else {
+                break;
             }
         }
-        var lists = ["requisites", "requisites2", "requisites3"];
+        
         var reqMessages = [], deny, warnings;
         
         for (l = 0; l < loops; ++l) {
@@ -1844,7 +1913,7 @@ function RPG(rpgchan) {
                             if (!(moveName in target.battle.summons)) {
                                 target.battle.summons[moveName] = [];
                             }
-                            var targetTeam = this.team1.indexOf(target) !== -1 ? this.team1 : this.team2;
+                            targetTeam = this.team1.indexOf(target) !== -1 ? this.team1 : this.team2;
                             var summoned, limit = {}, mon, maxMon, summonFailed = true;
                             
                             for (mon in move.effect.summon) {
@@ -1955,9 +2024,9 @@ function RPG(rpgchan) {
                 if (effectsMessages.defeated.length > 0) {
                     out.push(readable(effectsMessages.defeated.map(function(x){ return x.name; }), "and") + (effectsMessages.defeated.length > 1 ? " were" : " was") + " defeated!");
                     
-                    for (var def in effectsMessages.defeated) {
-                        if (effectsMessages.defeated[def].isSummon && effectsMessages.defeated[def].hp === 0) {
-                            this.removeSummon(effectsMessages.defeated[def]);
+                    for (var defe in effectsMessages.defeated) {
+                        if (effectsMessages.defeated[defe].isSummon && effectsMessages.defeated[defe].hp === 0) {
+                            this.removeSummon(effectsMessages.defeated[defe]);
                         }
                     }
                     winner = this.checkWin();
@@ -2124,7 +2193,7 @@ function RPG(rpgchan) {
         summonTeam.splice(summonTeam.indexOf(monster), 1);
         
         var summoner = monster.summoner;
-        var s, l, list
+        var s, l, list;
         
         for (s in summoner.battle.summons) {
             for (l in summoner.battle.summons[s]) {
@@ -2223,7 +2292,7 @@ function RPG(rpgchan) {
             gold += (win === 1) ? this.team2Gold : this.team1Gold;
             playerExp += (win === 1) ? this.team2Exp : this.team1Exp;
         }
-        
+        var p;
         for (p in loser) {
             var lost = loser[p];
             if (lost.isPlayer) {
@@ -2584,9 +2653,9 @@ function RPG(rpgchan) {
     }
     this.useItem = function(src, commandData) {
         var player = SESSION.users(src).rpg;
-        
+        var out;
         if (commandData === "*") {
-            var out = [];
+            out = [];
             
             this.viewItems(src, "all");
             
@@ -2655,62 +2724,18 @@ function RPG(rpgchan) {
         
         sys.sendMessage(src, "", rpgchan);
         if (item.type === "usable") {
-            var startingHp = player.hp, startingMp = player.mp, hpGain = 0, mpGain = 0, dest;
+            var startingHp = player.hp, startingMp = player.mp;
             if (item.effect) {
-                if ("hp" in item.effect) {
-                    player.hp += item.effect.hp;
-                    hpGain += item.effect.hp;
-                }
-                if ("mp" in item.effect) {
-                    player.mp += item.effect.mp;
-                    mpGain += item.effect.mp;
-                }
-                if ("hpPercent" in item.effect) {
-                    player.hp += Math.round(player.maxhp * item.effect.hpPercent);
-                    hpGain += Math.round(player.maxhp * item.effect.hpPercent);
-                }
-                if ("mpPercent" in item.effect) {
-                    player.mp += Math.round(player.maxmp * item.effect.mpPercent);
-                    mpGain += Math.round(player.maxmp * item.effect.mpPercent);
-                }
-                if (player.hp > player.maxhp) {
-                    player.hp = player.maxhp;
-                    hpGain = player.maxhp - startingHp;
-                } else if (player.hp < 0) {
-                    player.hp = 0;
-                }
-                if (player.mp > player.maxmp) {
-                    player.mp = player.maxmp;
-                    mpGain = player.maxmp - startingMp;
-                } else if (player.mp < 0) {
-                    player.mp = 0;
-                }
-                
-                var p, r, loc;
-                dest = [];
-                if ("move" in item.effect) {
-                    loc = item.effect.move;
-                    loc = loc === "*" ? player.respawn : loc;
-                    if (loc in places) {
-                        player.location = loc;
-                        
-                        for (r in places[loc].access) {
-                            p = places[loc].access[r];
-                            if (!places[p].hide || places[p].hide !== true) {
-                                dest.push(places[p].name + " (" + p + ")");
-                            }
-                        }
-                        
-                        if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
-                            this.findParty(player.party).broadcast(player.name + " moved to " + places[loc].name, src);
-                        }
-                    }
-                } 
+                out = this.applyEffect(src, item.effect);
+                startingHp = Math.abs(startingHp - player.hp);
+                startingMp = Math.abs(startingMp - player.mp);
             }
-            rpgbot.sendMessage(src, item.message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, Math.abs(hpGain)).replace(/~ManaGained~/g, Math.abs(mpGain)).replace(/~Place~/g, places[player.location].name), rpgchan);
-            if (dest.length > 0) {
-                rpgbot.sendMessage(src, places[player.location].welcome, rpgchan);
-                rpgbot.sendMessage(src, "From here, you can go to " + readable(dest, "or"), rpgchan);
+            rpgbot.sendMessage(src, item.message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, startingHp).replace(/~ManaGained~/g, startingMp).replace(/~Place~/g, places[player.location].name), rpgchan);
+            
+            if (out && out.length > 0) {
+                for (var o in out) {
+                    rpgbot.sendMessage(src, out[o], rpgchan);
+                }
             }
             changeItemCount(player, it, -1);
         } else if (item.type === "equip") {
@@ -2791,7 +2816,7 @@ function RPG(rpgchan) {
         } catch (err) {
             rpgbot.sendMessage(src, "You have an invalid item, so you can't use this command! Contact an RPG admin for help.", rpgchan);
             sys.sendMessage(src, "Invalid items:", rpgchan);
-            for (i in itemSource) {
+            for (var i in itemSource) {
                 if (!(i in items)) {
                     rpgbot.sendMessage(src, i + " (x" + itemSource[i] + ")", rpgchan);
                 }
@@ -3391,7 +3416,7 @@ function RPG(rpgchan) {
         } else {
             var item = items[it];
             var canUseClasses = [];
-            var name, c, n;
+            var name, c;
             
             if (item.classes.indexOf(player.job) !== -1) {
                 return true;
@@ -4627,7 +4652,7 @@ function RPG(rpgchan) {
         }
         
         if (!file.levelUpDate) {
-            file.levelUpDate = new Date().getTime()
+            file.levelUpDate = new Date().getTime();
         }
         
         if (!file.updateReset) {
@@ -4847,7 +4872,7 @@ function RPG(rpgchan) {
         };
         
         player.skills = {};
-        for (var e in data.skills) {
+        for (e in data.skills) {
             player.skills[e] = data.skills[e];
         }
         player.passives = {};
@@ -5070,7 +5095,7 @@ function RPG(rpgchan) {
     };
     this.viewQuests = function(src) {
         var player = SESSION.users(src).rpg;
-        var ongoing = [], finished = [], q, quest, progress;
+        var ongoing = [], finished = [], q, s, quest, progress;
         
         for (q in player.quests) {
             progress = player.quests[q];
@@ -5567,7 +5592,7 @@ function RPG(rpgchan) {
         var saves = sys.filesForDirectory("rpgsaves");
         var overall = [];
         
-        var data, s, p, o, player;
+        var data, s, player;
         for (s = 0; s < saves.length; ++s) {
             data = JSON.parse(sys.getFileContent(savefolder + "/" + saves[s]));
             
@@ -5599,7 +5624,7 @@ function RPG(rpgchan) {
             leaderboards[s].sort(sortByExp);
         }
         
-        leaderboards["overall"] = overall;
+        leaderboards.overall = overall;
         
         sys.writeToFile("rpgleaderboard.json", JSON.stringify(leaderboards));
         
@@ -5611,7 +5636,7 @@ function RPG(rpgchan) {
         
         var list;
         if (name === "*") {
-            list = leaderboards["overall"];
+            list = leaderboards.overall;
         } else if (name in classes && name in leaderboards) {
             list = leaderboards[name];
         } else {
@@ -5623,7 +5648,7 @@ function RPG(rpgchan) {
         out.push("Leaderboards (" + (name === "*" ? "Overall" : classes[name].name) + "): "  );
         out.push("<table border='1' cellpadding='3' cellspacing='1'><tr><th>Pos.</th><th>Player</th><th>Level</th><th>" + (name === "*" ? "Class" : "Overall Pos.") + "</th><th>Level Up Date</th></tr>");
         
-        var data, job, date;
+        var data, job;
         var len = list.length > 20 ? 20 : list.length;
         
         var self = sys.name(src).toLowerCase(), selfFound = false;
@@ -5649,7 +5674,7 @@ function RPG(rpgchan) {
             }
         }
         
-        out.push("</table>")
+        out.push("</table>");
         sys.sendHtmlMessage(src, "", rpgchan);
         sys.sendHtmlMessage(src, out.join(""), rpgchan);
         sys.sendHtmlMessage(src, "", rpgchan);
