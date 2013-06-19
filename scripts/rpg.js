@@ -438,7 +438,7 @@ function RPG(rpgchan) {
             
             goods = data[2].toLowerCase();
             
-            if (!(goods in items)) {
+            if (!(goods in items) || items[goods].noSell === true) {
                 sys.sendMessage(src, topic.nosellmsg,rpgchan);
                 return;
             }
@@ -785,7 +785,11 @@ function RPG(rpgchan) {
             m = [];
             for (e in eff.monsters) {
                 for (c = 0; c < eff.monsters[e]; ++c) {
-                    m.push(this.generateMonster(e));
+                    if (eff.monsters[e] > 1) {
+                        m.push(this.generateMonster(e, c + 1));
+                    } else {
+                        m.push(this.generateMonster(e));
+                    }
                 }
             }
             if (m.length > 0) {
@@ -800,7 +804,11 @@ function RPG(rpgchan) {
             m = [];
             for (e in eff.soloMonsters) {
                 for (c = 0; c < eff.soloMonsters[e]; ++c) {
-                    m.push(this.generateMonster(e));
+                    if (eff.soloMonsters[e] > 1) {
+                        m.push(this.generateMonster(e, c + 1));
+                    } else {
+                        m.push(this.generateMonster(e));
+                    }
                 }
             }
             if (m.length > 0) {
@@ -2564,6 +2572,12 @@ function RPG(rpgchan) {
             }
             if ("critical" in effect) {
                 result.push((effect.critical > 1 ? "+" : "") + Math.round((effect.critical-1) * 100) + "% Critical");
+            }
+            if ("hpabsorb" in effect) {
+                result.push((effect.hpabsorb > 0 ? "+" : "") + Math.round(effect.hpabsorb * 100) + "% Damage absorbed as HP");
+            }
+            if ("mpabsorb" in effect) {
+                result.push((effect.mpabsorb > 0 ? "+" : "") + Math.round(effect.mpabsorb * 100) + "% Damage absorbed as MP");
             }
         }
         return "[" + result.join(", ") + "]";
@@ -4936,7 +4950,69 @@ function RPG(rpgchan) {
         
         rpgbot.sendAll("Player " + name + " was punished and went back to level " + player.level + "!", rpgchan);
     };
-    
+    this.resetPlayer = function(src, commandData) {
+        if (["ricekirby", "thepiggy"].indexOf(sys.name(src).toLowerCase()) === -1) {
+            rpgbot.sendMessage(src, "You cannot use this command!", rpgchan);
+            return;
+        }
+        
+        var data, player, id, name, newClass;
+        data = commandData.split(":");
+        if (data.length < 1) {
+            rpgbot.sendMessage(src, "Incorrect format! Use /reset name:class.", rpgchan);
+            return;
+        }
+        
+        name = data[0].toLowerCase();
+        
+        if (data.length > 1) {
+            newClass = data[1].toLowerCase();
+            if (!(newClass in classes)) {
+                rpgbot.sendMessage(src, "No such class!", rpgchan);
+                return;
+            }
+        }
+        
+        var playerson = sys.playerIds();
+        var playerFound = false;
+        for (var p in playerson) {
+            id = playerson[p];
+            if (SESSION.users(id) && SESSION.users(id).rpg && SESSION.users(id).rpg.name && SESSION.users(id).rpg.name.toLowerCase() === name) {
+                playerFound = true;
+                break;
+            }
+        }
+        
+        var charLoaded = false;
+        if (playerFound) {
+            player = SESSION.users(id).rpg;
+            charLoaded = true;
+        } else {
+            try {
+                player = JSON.parse(sys.getFileContent(savefolder + "/" + escape(name) + ".json"));
+            } catch (e) {
+                rpgbot.sendMessage(src, "Error: " + e, rpgchan);
+                return;
+            }
+        }
+        
+        if (newClass) {
+            player.job = newClass;
+        }
+        
+        player = this.resetCharData(player);
+        
+        if (charLoaded) {
+            this.removePlayer(id, true);
+            SESSION.users(id).rpg = player;
+            SESSION.users(id).rpg.location = startup.location;
+            rpgbot.sendMessage(id, "Stats/Skills reset!", rpgchan);
+            this.saveGame(id, "sure");
+        } else {
+            sys.makeDir(savefolder);
+            sys.writeToFile(savefolder + "/" + escape(name) + ".json", JSON.stringify(player));
+        }
+    };
     this.viewStats = function(src) {
         var player = SESSION.users(src).rpg;
         
@@ -5646,6 +5722,7 @@ function RPG(rpgchan) {
             reloadchars: [this.reloadChars, "To reload everyone's character after an update."],
             updateleaderboard: [this.updateLeaderboard, "To manually update the RPG Leaderboards."],
             unbork: [this.unborkChar, "To manually fix someone's character."],
+            resetplayer: [this.resetPlayer, "To reset a player's stats and skills."],
             punish: [this.punishPlayer, "To punish a player's character."],
             updatelocal: [this.loadLocalContent, "To load RPG content from the directory."],
             updaterpg: [this.loadURLContent, "To load RPG content from the web. If you don't specify an URL, the default one will be used."],
