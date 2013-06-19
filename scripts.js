@@ -2958,7 +2958,7 @@ modCommand: function(src, command, commandData, tar) {
         script.issueBan("mute", src, tar, commandData);
         return;
     }
-    if ((sys.auth(src) > 1 || sys.name(src) == "Yui") && (command == "ipban" || command == "ipunban")) {
+    if (sys.auth(src) > 1 && (command == "ipban" || command == "ipunban")) {
     	return this.ownerCommand(src, command, commandData, tar);
     }
     if (command == "banlist") {
@@ -3859,10 +3859,10 @@ ownerCommand: function(src, command, commandData, tar) {
      	}
         marks.remove(Mark);
         if (command == "superusersoff") {
-            normalbot.sendAll("" + commandData + " was demoted to user by " + nonFlashing(sys.name(src)) + ".", staffchannel);
+            normalbot.sendAll("" + commandData + "'s super user status was removed by " + nonFlashing(sys.name(src)) + ".", staffchannel);
             return;
         }
-        normalbot.sendAll("" + commandData + " was demoted to user by " + nonFlashing(sys.name(src)) + ".");
+        normalbot.sendAll("" + commandData + "'s super user status was removed by " + nonFlashing(sys.name(src)) + ".");
         return;
     }
     if (command == "contributor") {
