@@ -1,11 +1,15 @@
 // Global variables inherited from scripts.js
 /*global rpgbot, updateModule, sys, SESSION, sendChanAll, escape, module*/
+var RPG_CHANNEL = "Game Corner";
 function RPG(rpgchan) {
     var game = this;
     var contentLoc;
     
     var charVersion = 1.1;
     var savefolder = "rpgsaves";
+    var contentfile = "rpgcontent.json"
+    var locationfile = "rpglocation.txt"
+    var leaderboardfile = "rpgleaderboard.json"
     
     var classes;
     var monsters;
@@ -3456,7 +3460,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-    		if (player.exp >= expTable[e - 1]) {
+			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
@@ -5326,7 +5330,7 @@ function RPG(rpgchan) {
     
     this.loadLocalContent = function(src) {
         try {
-            this.loadInfo(sys.getFileContent("rpgcontent.json"));
+            this.loadInfo(sys.getFileContent(contentfile));
         } catch (err) {
             rpgbot.sendMessage(src, "Error loading RPG content from cached file: " + err, rpgchan);
         }
@@ -5346,7 +5350,7 @@ function RPG(rpgchan) {
                 user: sys.name(src),
                 date: (new Date()).toUTCString()
             };
-            sys.writeToFile("rpglocation.txt", JSON.stringify(contentLoc));
+            sys.writeToFile(locationfile, JSON.stringify(contentLoc));
         } catch (err) {
             rpgbot.sendMessage(src, "Error loading RPG content from " + url + ": " + err, rpgchan);
         }
@@ -5477,7 +5481,7 @@ function RPG(rpgchan) {
                 classHelp = parsed.classHelp;
             }
                 
-            sys.writeToFile("rpgcontent.json", content);
+            sys.writeToFile(contentfile, content);
             rpgbot.sendAll("RPG Game reloaded!", rpgchan);
 		} catch (err) {
 			sys.sendAll("Error loading RPG Game data: " + err, rpgchan);
@@ -5626,7 +5630,7 @@ function RPG(rpgchan) {
         
         leaderboards.overall = overall;
         
-        sys.writeToFile("rpgleaderboard.json", JSON.stringify(leaderboards));
+        sys.writeToFile(leaderboardfile, JSON.stringify(leaderboards));
         
         sys.sendHtmlAll("", rpgchan);
         rpgbot.sendAll("RPG Leaderboards updated!", rpgchan);
@@ -5871,17 +5875,13 @@ function RPG(rpgchan) {
         }
     };
 	this.init = function() {
-		var name = "Game Corner";
-		if (sys.existChannel(name)) {
-            rpgchan = sys.channelId(name);
+		if (sys.existChannel(RPG_CHANNEL)) {
+            rpgchan = sys.channelId(RPG_CHANNEL);
         } else {
-            rpgchan = sys.createChannel(name);
+            rpgchan = sys.createChannel(RPG_CHANNEL);
         }
-        /* SESSION.global().channelManager.restoreSettings(rpgchan);
-        SESSION.channels(rpgchan).perm = true;
-        SESSION.channels(rpgchan).master = "RiceKirby"; */
         game.loadLocalContent();
-        contentLoc = JSON.parse(sys.getFileContent("rpglocation.txt"));
+        contentLoc = JSON.parse(sys.getFileContent(locationfile));
 	};
 	this.stepEvent = function() {
         try {
@@ -5952,15 +5952,11 @@ function RPG(rpgchan) {
 module.exports = function() {
     var id;
     var init = function() {
-        var name = "Game Corner";
-        if (sys.existChannel(name)) {
-            id = sys.channelId(name);
+        if (sys.existChannel(RPG_CHANNEL)) {
+            id = sys.channelId(RPG_CHANNEL);
         } else {
-            id = sys.createChannel(name);
+            id = sys.createChannel(RPG_CHANNEL);
         }
-        /* SESSION.global().channelManager.restoreSettings(id);
-        SESSION.channels(id).perm = true;
-        SESSION.channels(id).master = "RiceKirby"; */
     };
 
     var game = new RPG(id);
