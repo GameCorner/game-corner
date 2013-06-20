@@ -52,7 +52,7 @@ var Config = {
         ["", ""]
     ],
     DreamWorldTiers: ["DW OU", "DW Ubers", "Monotype", "Gen 5 1v1 Ubers", "Gen 5 1v1", "Challenge Cup", "CC 1v1", "No Preview Uber Triples", "No Preview OU Triples", "No Preview Uber Doubles", "No Preview OU Doubles", "Shanai Cup", "Monocolour"],
-    superAdmins: ["Beast", "RiceKirby", "Jin Of The Gale"],
+    superAdmins: ["RiceKirby", "Jin Of The Gale"],
     casinoAdmins: [],
     canJoinStaffChannel: [],
     disallowStaffChannel: []
