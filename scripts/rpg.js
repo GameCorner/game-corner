@@ -5520,6 +5520,33 @@ function RPG(rpgchan) {
                     contentLoc = JSON.parse(sys.getFileContent(locationfile));
                 }
                 var date = (new Date()).toUTCString();
+                
+                var updated = [];
+                if (parsed.config) { 
+                    updated.push("Config");
+                }
+                if (parsed.classes) { 
+                    updated.push("Classes");
+                }
+                if (parsed.monsters) { 
+                    updated.push("Monsters");
+                }
+                if (parsed.skills) { 
+                    updated.push("Skills");
+                }
+                if (parsed.items) { 
+                    updated.push("Items");
+                }
+                if (parsed.places) { 
+                    updated.push("Places");
+                }
+                if (parsed.quests) { 
+                    updated.push("Quests");
+                }
+                if (parsed.classHelp) { 
+                    updated.push("Class Help");
+                }
+                
                 var newLoc = {
                     config: parsed.config ? url + " [" + date + "]" : contentLoc.config,
                     classes: parsed.classes ? url + " [" + date + "]" : contentLoc.classes,
@@ -5530,6 +5557,7 @@ function RPG(rpgchan) {
                     quests: parsed.quests ? url + " [" + date + "]" : contentLoc.quests,
                     classHelp: parsed.classHelp ? url + " [" + date + "]" : contentLoc.classHelp,
                     url: url,
+                    updated: "[Updated: " + updated.join(", ") + "]",
                     user: name,
                     date: date
                 };
@@ -5562,7 +5590,7 @@ function RPG(rpgchan) {
         sys.sendMessage(src, "Class Help URL: " + contentLoc.classHelp, rpgchan);
         sys.sendMessage(src, "", rpgchan);
         sys.sendMessage(src, "Last Update Info:", rpgchan);
-        sys.sendMessage(src, "URL: " + contentLoc.url, rpgchan);
+        sys.sendMessage(src, "URL: " + contentLoc.url + " " + contentLoc.updated, rpgchan);
         sys.sendMessage(src, "Who: " + contentLoc.user, rpgchan);
         sys.sendMessage(src, "When: " + contentLoc.date, rpgchan);
         sys.sendMessage(src, "", rpgchan);
