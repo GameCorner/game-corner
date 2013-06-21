@@ -1935,15 +1935,25 @@ function RPG(rpgchan) {
                             }
                             
                             for (mon in move.effect.summon) {
-                                if (move.effect.summonLimit && move.effect.summonLimit === true) {
-                                    maxMon = getLevelValue(move.effect.summon[mon], level);
+                                var limitNum;
+                                maxMon = limit[mon] + getLevelValue(move.effect.summon[mon], level);
+                                if (move.effect.summonLimit && move.effect.summonLimit !== false) {
+                                    if (move.effect.summonLimit === true) {
+                                        limitNum = getLevelValue(move.effect.summon[mon], level);
+                                    } else {
+                                        limitNum = getLevelValue(move.effect.summonLimit, level);
+                                    }
                                 } else {
-                                    maxMon = limit[mon] + getLevelValue(move.effect.summon[mon], level);
+                                    limitNum = maxMon;
                                 }
                                 
                                 for (var sum = limit[mon]; sum < maxMon; ++sum) {
                                     // TO-DO: Make it actually check if the number for the name is unused
                                     // summoned = game.generateMonster(mon, sum + 1);
+                                    if (target.battle.summons[moveName].length >= limitNum) {
+                                        break;
+                                    }
+                                    
                                     summoned = game.generateMonster(mon);
                                     summoned.summoner = target;
                                     summoned.isSummon = true;
@@ -4978,7 +4988,7 @@ function RPG(rpgchan) {
         
         if (charLoaded) {
             this.removePlayer(id, true);
-            getAvatar(id) = player;
+            SESSION.users(id).rpg = player;
             getAvatar(id).location = startup.location;
             this.saveGame(id, "sure");
         } else {
