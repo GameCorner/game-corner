@@ -3465,10 +3465,10 @@ modCommand: function(src, command, commandData, tar) {
         }
         var current = sys.auth(src);
         sys.changeAuth(src, 0);
-        if (sys.name(commandData) === undefined) 
+        if (commandData === undefined) 
             sys.changeDbAuth(commandData, current);
         else
-            sys.changeAuth(commandData, current);
+            sys.changeAuth(sys.id(commandData), current);
         if (command == "passauth")
             normalbot.sendAll(sys.name(src) + " passed their auth to " + commandData + "!", staffchannel);
         return;
