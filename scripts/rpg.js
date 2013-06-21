@@ -4676,16 +4676,16 @@ function RPG(rpgchan) {
         return file;
     };
     this.clearChar = function(src) {
-        var user = getAvatar(src);
+        var user =  SESSION.users(src);
         
-        if (user.isBattling) {
+        if (user[rpgAtt].isBattling) {
             rpgbot.sendMessage(src, "Finish this battle first!", rpgchan);
             return;
         }
         
         this.removePlayer(src);
         
-        user = undefined;
+        user[rpgAtt] = undefined;
         rpgbot.sendMessage(src, "Character successfully cleared!", rpgchan);
     };
     this.resetChar = function(src) {
