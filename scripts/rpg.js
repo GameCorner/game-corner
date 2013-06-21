@@ -3465,7 +3465,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-    		if (player.exp >= expTable[e - 1]) {
+			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
@@ -5519,19 +5519,19 @@ function RPG(rpgchan) {
                 if (!contentLoc) {
                     contentLoc = JSON.parse(sys.getFileContent(locationfile));
                 }
-                
+                var date = (new Date()).toUTCString();
                 var newLoc = {
-                    config: parsed.config ? url : contentLoc.config,
-                    classes: parsed.classes ? url : contentLoc.classes,
-                    monsters: parsed.monsters ? url : contentLoc.monsters,
-                    skills: parsed.skills ? url : contentLoc.skills,
-                    items: parsed.items ? url : contentLoc.items,
-                    places: parsed.places ? url : contentLoc.places,
-                    quests: parsed.quests ? url : contentLoc.quests,
-                    classHelp: parsed.classHelp ? url : contentLoc.classHelp,
+                    config: parsed.config ? url + " [" + date + "]" : contentLoc.config,
+                    classes: parsed.classes ? url + " [" + date + "]" : contentLoc.classes,
+                    monsters: parsed.monsters ? url + " [" + date + "]" : contentLoc.monsters,
+                    skills: parsed.skills ? url + " [" + date + "]" : contentLoc.skills,
+                    items: parsed.items ? url + " [" + date + "]" : contentLoc.items,
+                    places: parsed.places ? url + " [" + date + "]" : contentLoc.places,
+                    quests: parsed.quests ? url + " [" + date + "]" : contentLoc.quests,
+                    classHelp: parsed.classHelp ? url + " [" + date + "]" : contentLoc.classHelp,
                     url: url,
                     user: name,
-                    date: (new Date()).toUTCString()
+                    date: date
                 };
                 contentLoc = newLoc;
                 sys.writeToFile(locationfile, JSON.stringify(contentLoc));
@@ -5551,7 +5551,7 @@ function RPG(rpgchan) {
     };
     this.viewContentFile = function(src) {
         sys.sendMessage(src, "", rpgchan);
-        sys.sendMessage(src, "Last Update Info:", rpgchan);
+        sys.sendMessage(src, "All files:", rpgchan);
         sys.sendMessage(src, "Config URL: " + contentLoc.config, rpgchan);
         sys.sendMessage(src, "Classes URL: " + contentLoc.classes, rpgchan);
         sys.sendMessage(src, "Monsters URL: " + contentLoc.monsters, rpgchan);
@@ -5560,6 +5560,9 @@ function RPG(rpgchan) {
         sys.sendMessage(src, "Places URL: " + contentLoc.places, rpgchan);
         sys.sendMessage(src, "Quests URL: " + contentLoc.quests, rpgchan);
         sys.sendMessage(src, "Class Help URL: " + contentLoc.classHelp, rpgchan);
+        sys.sendMessage(src, "", rpgchan);
+        sys.sendMessage(src, "Last Update Info:", rpgchan);
+        sys.sendMessage(src, "URL: " + contentLoc.url, rpgchan);
         sys.sendMessage(src, "Who: " + contentLoc.user, rpgchan);
         sys.sendMessage(src, "When: " + contentLoc.date, rpgchan);
         sys.sendMessage(src, "", rpgchan);
