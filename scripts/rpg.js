@@ -10,6 +10,7 @@ function RPG(rpgchan) {
     var contentfile = "rpgcontent.json"
     var locationfile = "rpglocation.txt"
     var leaderboardfile = "rpgleaderboard.json"
+    var rpgAtt = "rpg";
     
     var classes;
     var monsters;
@@ -74,8 +75,12 @@ function RPG(rpgchan) {
     var altItems = {};
     var classHelp = [];
     
+    function getAvatar(src) {
+        return SESSION.users(src)[rpgAtt];
+    }
+    
     this.walkTo = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         if (player.location === null || player.location === undefined || !(player.location in places)) {
             player.location = player.respawn;
@@ -211,7 +216,7 @@ function RPG(rpgchan) {
         
     };
     this.changeLocation = function(src, loc, verb) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         player.location = loc;
         
         var dest = [], x;
@@ -240,7 +245,7 @@ function RPG(rpgchan) {
         this.interact(src, "object", commandData);
     };
     this.interact = function(src, obj, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         if (player.hp === 0) {
             rpgbot.sendMessage(src, "You are dead! Type /revive to respawn!", rpgchan);
@@ -689,7 +694,7 @@ function RPG(rpgchan) {
         
     };
     this.applyEffect = function(src, effect, person) {
-        var player = SESSION.users(src).rpg;   
+        var player = getAvatar(src);   
         var e, sample, out = [];
         if ("hp" in effect) {
             player.hp += effect.hp;
@@ -915,7 +920,7 @@ function RPG(rpgchan) {
         return out;
     };
     this.checkNPCRequisites = function(src, topic, person) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var req, r, l;
         var lists = ["requisites", "requisites2", "requisites3", "requisites4", "requisites5"];
         var loops = 0;
@@ -1062,7 +1067,7 @@ function RPG(rpgchan) {
         return 1;
     };
     this.exploreLocation = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         if (player.isBattling === true) {
             rpgbot.sendMessage(src, "Finish this battle before exploring!", rpgchan);
@@ -1149,12 +1154,12 @@ function RPG(rpgchan) {
     };
 
     this.challengePlayer = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
-        if (SESSION.users(src).rpg.hp === 0) {
+        var player = getAvatar(src);
+        if (getAvatar(src).hp === 0) {
             rpgbot.sendMessage(src, "You are dead! Type /revive to respawn!", rpgchan);
             return;
         }
-        if (SESSION.users(src).rpg.isBattling === true) {
+        if (getAvatar(src).isBattling === true) {
             rpgbot.sendMessage(src, "You are already battling! Finish this battle before you challenge someone!", rpgchan);
             return;
         }
@@ -1180,7 +1185,7 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You can't battle yourself!", rpgchan);
             return;
         }
-        var opponent = SESSION.users(targetId).rpg;
+        var opponent = getAvatar(targetId);
         if (opponent === undefined) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
             return;
@@ -1287,7 +1292,7 @@ function RPG(rpgchan) {
         currentBattles.push(battle);
     };
     this.fleeBattle = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (player.isBattling === false) {
             rpgbot.sendMessage(src, "You are not battling!", rpgchan);
             return;
@@ -1300,7 +1305,7 @@ function RPG(rpgchan) {
         this.quitBattle(src);
     };
     this.quitBattle = function(src, skipSave) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (player.isBattling) {
             rpgbot.sendMessage(src, "You ran away from a battle!", rpgchan);
         }
@@ -1327,7 +1332,7 @@ function RPG(rpgchan) {
         }
     };
     this.reviveSelf = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (player.hp > 0) {
             rpgbot.sendMessage(src, "You are not even dead!", rpgchan);
             return;
@@ -1346,7 +1351,7 @@ function RPG(rpgchan) {
         var bat, b;
         if (commandData === "*") {
             var cancelView = false;
-            /* if (SESSION.users(src).rpg.isBattling === true) {
+            /* if (getAvatar(src).isBattling === true) {
                 rpgbot.sendMessage(src, "Finish this battle first!", rpgchan);
                 return;
             } */
@@ -1365,11 +1370,11 @@ function RPG(rpgchan) {
             return;
         } else if (commandData === "on") {
             rpgbot.sendMessage(src, "Other players can watch your battles!", rpgchan);
-            SESSION.users(src).rpg.watchableBattles = true;
+            getAvatar(src).watchableBattles = true;
             return;
         } else if (commandData === "off") {
             rpgbot.sendMessage(src, "Other players can't watch your battles!", rpgchan);
-            SESSION.users(src).rpg.watchableBattles = false;
+            getAvatar(src).watchableBattles = false;
             return;
         
         }
@@ -1378,11 +1383,11 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "No such person!", rpgchan);
             return;
         }
-        if (SESSION.users(id).rpg === undefined) {
+        if (getAvatar(id) === undefined) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
             return;
         }
-        var target = SESSION.users(id).rpg;
+        var target = getAvatar(id);
         if (target.watchableBattles === false && !isRPGAdmin(src)) {
             rpgbot.sendMessage(src, "You can't watch this person's battles!", rpgchan);
             return;
@@ -1391,7 +1396,7 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "This person is not battling!", rpgchan);
             return;
         }
-        /* if (SESSION.users(src).rpg.location !== target.location) {
+        /* if (getAvatar(src).location !== target.location) {
             rpgbot.sendMessage(src, "You must be in the same location as your target to watch their battles!", rpgchan);
             return;
         } */
@@ -2256,7 +2261,7 @@ function RPG(rpgchan) {
         
         for (v in this.viewers) {
             viewer = this.viewers[v];
-            size = SESSION.users(viewer).rpg.fontSize || 11;
+            size = getAvatar(viewer).fontSize || 11;
             if (size > 0 || bypass === true) {
                 sys.sendHtmlMessage(viewer, '<span style="font-size:' + size + 'px;">' + msg + '</span>', rpgchan);
             }
@@ -2385,7 +2390,7 @@ function RPG(rpgchan) {
         this.destroyBattle();
     };
     Battle.prototype.removePlayer = function(src) {
-        var name = SESSION.users(src).rpg.name;
+        var name = getAvatar(src).name;
         var team;
         var found = false;
         for (var s in this.team1) {
@@ -2405,7 +2410,7 @@ function RPG(rpgchan) {
             }
         }
         if (found) {
-            var player = SESSION.users(src).rpg;
+            var player = getAvatar(src);
             
             if (this.team1Focus.indexOf(player) !== -1) {
                 this.team1Focus.splice(this.team1Focus.indexOf(player), 1);
@@ -2471,7 +2476,7 @@ function RPG(rpgchan) {
         currentBattles.splice(currentBattles.indexOf(this), 1);
     };
     Battle.prototype.isInBattle = function(src) {
-        var name = SESSION.users(src).rpg.name;
+        var name = getAvatar(src).name;
         for (var s in this.team1) {
             if (this.team1[s].name === name) {
                 return true;
@@ -2656,7 +2661,7 @@ function RPG(rpgchan) {
         return "[" + result.join(", ") + "]";
     }
     this.useItem = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var out;
         if (commandData === "*") {
             out = [];
@@ -2776,7 +2781,7 @@ function RPG(rpgchan) {
         }
     };
     this.showEquipment = function(src, type) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         sys.sendMessage(src, "Equipped Items:", rpgchan);
         for (var i in player.equips) {
             if (type === "*" || type === i) {
@@ -2789,7 +2794,7 @@ function RPG(rpgchan) {
         }
     };
     this.viewItems = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var out = [];
         
         var e, i, item, id, ordered, noCategory = true;
@@ -2990,7 +2995,7 @@ function RPG(rpgchan) {
         }
     };
     this.removeEquip = function(src, item) {
-        var equips = SESSION.users(src).rpg.equips;
+        var equips = getAvatar(src).equips;
         
         for (var e in equips) {
             if (equips[e] === item) {
@@ -3000,7 +3005,7 @@ function RPG(rpgchan) {
         this.updateBonus(src);
     };
     this.requestTrade = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (commandData === "*" && tradeRequests[player.name] !== undefined) {
             rpgbot.sendMessage(src, "You cancelled your trade request!", rpgchan);
             tradeRequests[player.name] = undefined;
@@ -3028,12 +3033,12 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You can't trade with yourself!", rpgchan);
             return;
         }
-        if (SESSION.users(targetId).rpg === undefined) {
+        if (getAvatar(targetId) === undefined) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
             return;
         }
         
-        var target = SESSION.users(targetId).rpg;
+        var target = getAvatar(targetId);
         if (target.isBattling === true) {
             rpgbot.sendMessage(src, "Wait for that person to finish their battle!", rpgchan);
             return;
@@ -3195,13 +3200,13 @@ function RPG(rpgchan) {
         }
     };
     this.acceptTrade = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var targetId = sys.id(commandData);
         if (targetId === undefined) {
             rpgbot.sendMessage(src, "No such player!", rpgchan);
             return;
         }
-        var target = SESSION.users(targetId).rpg;
+        var target = getAvatar(targetId);
         if (target === undefined) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
             return;
@@ -3216,7 +3221,7 @@ function RPG(rpgchan) {
         
     };
     this.updateBonus = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         player.maxhp = player.basehp;
         player.maxmp = player.basemp;
@@ -3451,7 +3456,7 @@ function RPG(rpgchan) {
     }
     
     this.receiveExp = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         player.exp += commandData;
         
         if (player.exp > expTable[expTable.length-1]) {
@@ -3460,7 +3465,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-			if (player.exp >= expTable[e - 1]) {
+    		if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
@@ -3544,7 +3549,7 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "To increase an stat or skill, type /increase statName:amount or /increase skillName:amount.", rpgchan);
             return;
         }
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (player.hp === 0) {
             rpgbot.sendMessage(src, "Revive before using this command!", rpgchan);
             return;
@@ -3747,7 +3752,7 @@ function RPG(rpgchan) {
         }
     };
     this.setBattlePlan = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (commandData === "*") {
             rpgbot.sendMessage(src, "Your current strategy is " + randomSampleText(player.strategy, function(x) { return skills[x].name; } ) + ".", rpgchan);
             rpgbot.sendMessage(src, "To set your strategy, type /plan skill:chance*skill:chance. You can also use /plan slots to save up to 3 strategies.", rpgchan);
@@ -3852,7 +3857,7 @@ function RPG(rpgchan) {
         
     };
     this.getBattlePlan = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         switch (commandData) {
             case "*":
@@ -3872,7 +3877,7 @@ function RPG(rpgchan) {
         }
     };
     this.setPassiveSkills = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (commandData === "*") {
             rpgbot.sendMessage(src, "Your current passive skills are " + getSkillsNames(player.passives) + "!", rpgchan);
             rpgbot.sendMessage(src, "To change your current passive skills, type /passive skill1:skill2. To clear your passive skills, use '/passive clear'.", rpgchan);
@@ -3981,7 +3986,7 @@ function RPG(rpgchan) {
     }
     
     this.manageParty = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var party;
         
         if (player.party) {
@@ -4108,7 +4113,7 @@ function RPG(rpgchan) {
         return null;
     };
     this.talkToParty = function(src, commandData) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         if (!player.party) {
             rpgbot.sendMessage(src, "You are not in any party!", rpgchan);
             return;
@@ -4128,7 +4133,7 @@ function RPG(rpgchan) {
         this.invites = [];
         this.leader = src;
         
-        SESSION.users(src).rpg.party = this.name;
+        getAvatar(src).party = this.name;
         
         sys.sendMessage(src, "", rpgchan);
         rpgbot.sendMessage(src, "You created a party! Use '/party invite:name' to recruit members!", rpgchan);
@@ -4155,7 +4160,7 @@ function RPG(rpgchan) {
             }
             
             this.members.splice(this.members.indexOf(src), 1);
-            SESSION.users(src).rpg.party = null;
+            getAvatar(src).party = null;
             
             if (silent === false) {
                 this.fix();
@@ -4173,7 +4178,7 @@ function RPG(rpgchan) {
                 return;
             }
             var id = sys.id(target);
-            if (SESSION.users(id).rpg === undefined) {
+            if (getAvatar(id) === undefined) {
                 rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
                 return;
             }
@@ -4186,7 +4191,7 @@ function RPG(rpgchan) {
                 this.invites.splice(this.invites.indexOf(id), 1);
                 return;
             }
-            if (SESSION.users(id).rpg.party) {
+            if (getAvatar(id).party) {
                 rpgbot.sendMessage(src, "This person is already in another party!", rpgchan);
                 return;
             }
@@ -4208,7 +4213,7 @@ function RPG(rpgchan) {
             }
             this.invites.splice(this.invites.indexOf(src), 1);
             this.members.push(src);
-            SESSION.users(src).rpg.party = this.name;
+            getAvatar(src).party = this.name;
             this.broadcast(sys.name(src) + " has joined the party!");
             this.fix();
         } else {
@@ -4280,7 +4285,7 @@ function RPG(rpgchan) {
         sys.sendMessage(src, "", rpgchan);
         rpgbot.sendMessage(src, "Your Party (" + this.name + "): ", rpgchan);
         for (var x = 0; x < this.members.length; ++x) {
-            var player = SESSION.users(this.members[x]).rpg;
+            var player = getAvatar(this.members[x]);
             rpgbot.sendMessage(src, player.name + (x === 0 ? " (Leader)" : "") + " [" + classes[player.job].name + " Lv. " + player.level + ", at " + places[player.location].name + (player.hp === 0 ? " (Dead)" : "") + "]", rpgchan);
         }
         sys.sendMessage(src, "", rpgchan);
@@ -4299,7 +4304,7 @@ function RPG(rpgchan) {
     Party.prototype.findMembersNear = function(src) {
         this.fix();
         
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var loc = player.location;
         var battlers = [];
         var viewers = [];
@@ -4308,7 +4313,7 @@ function RPG(rpgchan) {
         var target;
         for (var p in this.members) {
             id = this.members[p];
-            target = SESSION.users(id).rpg;
+            target = getAvatar(id);
             if (target.location === loc && target.isBattling === false && target.hp > 0 && Math.abs(player.level - target.level) <= battleSetup.partyLevelDiff) {
                 battlers.push(target);
                 viewers.push(id);
@@ -4318,13 +4323,16 @@ function RPG(rpgchan) {
         return [viewers, battlers];
     };
     Party.prototype.fix = function() {
+        var id;
         for (var p = this.members.length - 1; p >= 0; --p) {
-            if (SESSION.users(this.members[p]) === undefined || SESSION.users(this.members[p]).rpg === undefined) {
+            id = this.members[p];
+            if (SESSION.users(id) === undefined || getAvatar(id) === undefined) {
                 this.members.splice(p, 1);
             }
         }
         for (p = this.invites.length - 1; p >= 0; --p) {
-            if (SESSION.users(this.invites[p]) === undefined || SESSION.users(this.invites[p]).rpg === undefined) {
+            id = this.invites[p];
+            if (SESSION.users(id) === undefined || getAvatar(id) === undefined) {
                 this.invites.splice(p, 1);
             }
         }
@@ -4344,7 +4352,7 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You need to register before starting a game!", rpgchan);
             return;
         }
-        if (user.rpg !== undefined) {
+        if (user[rpgAtt] !== undefined) {
             rpgbot.sendMessage(src, "You already have a character!", rpgchan);
             return;
         }
@@ -4354,9 +4362,9 @@ function RPG(rpgchan) {
         }
         
         var job = classes[commandData.toLowerCase()];
-        user.rpg = this.createChar(job);
+        user[rpgAtt] = this.createChar(job);
         
-        var player = user.rpg;
+        var player = user[rpgAtt];
         
         player.basehp = player.maxhp;
         player.basemp = player.maxmp;
@@ -4471,39 +4479,39 @@ function RPG(rpgchan) {
     this.saveGame = function(src, commandData) {
         var user = SESSION.users(src);
         
-        if (user.rpg === null) {
+        if (user[rpgAtt] === null) {
             rpgbot.sendMessage(src, "You have no character to save!", rpgchan);
             return;
         }
         
-        var savename = user.rpg.name.toLowerCase();
+        var savename = user[rpgAtt].name.toLowerCase();
         
         /* if (!sys.dbRegistered(savename)) {
             rpgbot.sendMessage(src, "You need to register before saving your game!", rpgchan);
             return;
         } */
         
-        if (user.rpg.isBattling) {
+        if (user[rpgAtt].isBattling) {
             rpgbot.sendMessage(src, "Finish this battle before saving your game!", rpgchan);
             return;
         }
         
         if (commandData !== undefined && commandData.toLowerCase() !== "sure") {
             var currentGame = sys.getFileContent(savefolder + "/" + escape(savename) + ".json");
-            if (currentGame !== undefined && user.rpg.exp < JSON.parse(currentGame).exp) {
+            if (currentGame !== undefined && user[rpgAtt].exp < JSON.parse(currentGame).exp) {
                 rpgbot.sendMessage(src, "Warning: You already have a saved character with more Exp. Points! If you want to overwrite it, use '/savechar sure'.", rpgchan);
                 return;
             }
         }
         
         sys.makeDir(savefolder);
-        sys.writeToFile(savefolder + "/" + escape(savename) + ".json", JSON.stringify(user.rpg));
+        sys.writeToFile(savefolder + "/" + escape(savename) + ".json", JSON.stringify(user[rpgAtt]));
         
         rpgbot.sendMessage(src, "Game saved as " + savename + "! Use /loadchar to load your progress!", rpgchan);
     };
     this.loadGame = function(src) {
         var user = SESSION.users(src);
-        if (user.rpg !== undefined) {
+        if (user[rpgAtt] !== undefined) {
             rpgbot.sendMessage(src, "You already have a character loaded!", rpgchan);
             return;
         }
@@ -4530,9 +4538,10 @@ function RPG(rpgchan) {
             return;
         }
         
-        var playerson = sys.playerIds();
+        var playerson = sys.playerIds(), id;
         for (var p in playerson) {
-            if (SESSION.users(playerson[p]) && SESSION.users(playerson[p]).rpg && SESSION.users(playerson[p]).rpg.name &&  SESSION.users(playerson[p]).rpg.name.toLowerCase() === sys.name(src).toLowerCase()) {
+            id = playerson[p];
+            if (SESSION.users(id) && getAvatar(id) && getAvatar(id).name && getAvatar(id).name.toLowerCase() === sys.name(src).toLowerCase()) {
                 rpgbot.sendMessage(src, "This character is already being used!", rpgchan);
                 return;
             }
@@ -4545,9 +4554,9 @@ function RPG(rpgchan) {
         
         gamefile = this.convertChar(gamefile);
         
-        user.rpg = gamefile;
-        user.rpg.id = src;
-        user.rpg.party = null;
+        user[rpgAtt] = gamefile;
+        user[rpgAtt].id = src;
+        user[rpgAtt].party = null;
         rpgbot.sendMessage(src, "Your character has been loaded successfully!", rpgchan);
     };
     this.convertChar = function(gamefile) {
@@ -4667,20 +4676,20 @@ function RPG(rpgchan) {
         return file;
     };
     this.clearChar = function(src) {
-        var user = SESSION.users(src);
+        var user = getAvatar(src);
         
-        if (user.rpg.isBattling) {
+        if (user.isBattling) {
             rpgbot.sendMessage(src, "Finish this battle first!", rpgchan);
             return;
         }
         
         this.removePlayer(src);
         
-        user.rpg = undefined;
+        user = undefined;
         rpgbot.sendMessage(src, "Character successfully cleared!", rpgchan);
     };
     this.resetChar = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         if (player.isBattling) {
             rpgbot.sendMessage(src, "Finish this battle first!", rpgchan);
@@ -4692,7 +4701,7 @@ function RPG(rpgchan) {
         rpgbot.sendMessage(src, "Stats/Skills reset!", rpgchan);
     };
     this.resetStats = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var data = classes[player.job];
         
         for (var e in data.stats) {
@@ -4771,7 +4780,7 @@ function RPG(rpgchan) {
         
     };
     this.resetSkills = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var data = classes[player.job];
         
         player.skills = {};
@@ -4932,7 +4941,7 @@ function RPG(rpgchan) {
         var playerFound = false;
         for (var p in playerson) {
             id = playerson[p];
-            if (SESSION.users(id) && SESSION.users(id).rpg && SESSION.users(id).rpg.name && SESSION.users(id).rpg.name.toLowerCase() === name) {
+            if (SESSION.users(id) && getAvatar(id) && getAvatar(id).name && getAvatar(id).name.toLowerCase() === name) {
                 playerFound = true;
                 break;
             }
@@ -4940,7 +4949,7 @@ function RPG(rpgchan) {
         
         var charLoaded = false;
         if (playerFound) {
-            player = SESSION.users(id).rpg;
+            player = getAvatar(id);
             charLoaded = true;
         } else {
             try {
@@ -4969,8 +4978,8 @@ function RPG(rpgchan) {
         
         if (charLoaded) {
             this.removePlayer(id, true);
-            SESSION.users(id).rpg = player;
-            SESSION.users(id).rpg.location = startup.location;
+            getAvatar(id) = player;
+            getAvatar(id).location = startup.location;
             this.saveGame(id, "sure");
         } else {
             sys.makeDir(savefolder);
@@ -5006,7 +5015,7 @@ function RPG(rpgchan) {
         var playerFound = false;
         for (var p in playerson) {
             id = playerson[p];
-            if (SESSION.users(id) && SESSION.users(id).rpg && SESSION.users(id).rpg.name && SESSION.users(id).rpg.name.toLowerCase() === name) {
+            if (SESSION.users(id) && getAvatar(id) && getAvatar(id).name && getAvatar(id).name.toLowerCase() === name) {
                 playerFound = true;
                 break;
             }
@@ -5014,7 +5023,7 @@ function RPG(rpgchan) {
         
         var charLoaded = false;
         if (playerFound) {
-            player = SESSION.users(id).rpg;
+            player = getAvatar(id);
             charLoaded = true;
         } else {
             try {
@@ -5033,8 +5042,8 @@ function RPG(rpgchan) {
         
         if (charLoaded) {
             this.removePlayer(id, true);
-            SESSION.users(id).rpg = player;
-            SESSION.users(id).rpg.location = startup.location;
+            getAvatar(id) = player;
+            getAvatar(id).location = startup.location;
             rpgbot.sendMessage(id, "Stats/Skills reset!", rpgchan);
             this.saveGame(id, "sure");
         } else {
@@ -5043,7 +5052,7 @@ function RPG(rpgchan) {
         }
     };
     this.viewStats = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         var out = [
             "",
@@ -5072,7 +5081,7 @@ function RPG(rpgchan) {
         }
     };
     this.viewSkills = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         
         var out = ["", "Active Skills:"];
         for (var s in player.skills) {
@@ -5098,7 +5107,7 @@ function RPG(rpgchan) {
         }
     };
     this.viewQuests = function(src) {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
         var ongoing = [], finished = [], q, s, quest, progress;
         
         for (q in player.quests) {
@@ -5144,20 +5153,20 @@ function RPG(rpgchan) {
             return;
         }
         if (commandData.toLowerCase() === "on") {
-            if (SESSION.users(src).rpg === undefined) {
+            if (getAvatar(src) === undefined) {
                 rpgbot.sendMessage(src, "You don't even have a character!", rpgchan);
                 return;
             }
             rpgbot.sendMessage(src, "Allowing other players to view your stats.", rpgchan);
-            SESSION.users(src).rpg.publicStats = true;
+            getAvatar(src).publicStats = true;
             return;
         } else if (commandData.toLowerCase() === "off") {
-            if (SESSION.users(src).rpg === undefined) {
+            if (getAvatar(src) === undefined) {
                 rpgbot.sendMessage(src, "You don't even have a character!", rpgchan);
                 return;
             }
             rpgbot.sendMessage(src, "Disallowing other players from viewing your stats.", rpgchan);
-            SESSION.users(src).rpg.publicStats = false;
+            getAvatar(src).publicStats = false;
             return;
         }
         
@@ -5166,11 +5175,11 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "No such person!", rpgchan);
             return;
         }
-        if (SESSION.users(id).rpg === undefined) {
+        if (getAvatar(id) === undefined) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
             return;
         }
-        var target = SESSION.users(id).rpg;
+        var target = getAvatar(id);
         if (target.publicStats !== true && !isRPGAdmin(src)) {
             rpgbot.sendMessage(src, "This person's stats are not public!", rpgchan);
             return;
@@ -5220,14 +5229,14 @@ function RPG(rpgchan) {
     };
     this.changeAppearance = function(src, commandData) {
         if (commandData === "*") {
-            SESSION.users(src).rpg.description = "";
+            getAvatar(src).description = "";
             rpgbot.sendMessage(src, "Your appearance was cleared! To write an appearance text, use '/appearance text' (please don't use it to break the server rules).", rpgchan);
         } else {
             if (commandData.length > 250) {
                 rpgbot.sendMessage(src, "You can only have 250 characters on your appearance description!", rpgchan);
                 return;
             }
-            SESSION.users(src).rpg.description = commandData;
+            getAvatar(src).description = commandData;
             rpgbot.sendMessage(src, "Your appearance was set to '" + commandData + "'.", rpgchan);
         }
     };
@@ -5236,7 +5245,7 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You must choose a valid number!", rpgchan);
             return;
         }
-        SESSION.users(src).rpg.fontSize = commandData;
+        getAvatar(src).fontSize = commandData;
         rpgbot.sendMessage(src, "Battle Font size set to " + commandData, rpgchan);
     };
     this.showCommands = function(src, commandData) {
@@ -5330,46 +5339,62 @@ function RPG(rpgchan) {
     
     this.loadLocalContent = function(src) {
         try {
-            this.loadInfo(sys.getFileContent(contentfile));
+            this.loadInfo(sys.getFileContent(contentfile), sys.name(src));
         } catch (err) {
             rpgbot.sendMessage(src, "Error loading RPG content from cached file: " + err, rpgchan);
         }
     };
     this.loadURLContent = function(src, url) {
         try {
+            var newUrl;
             if (url === "*") {
-                rpgbot.sendMessage(src, "Loading RPG content from " + contentLoc.url, rpgchan);
-                sys.webCall(contentLoc.url, this.loadInfo);
-                url = contentLoc.url;
+                newUrl = contentLoc.url;
             } else {
-                rpgbot.sendMessage(src, "Loading RPG content from " + url, rpgchan);
-                sys.webCall(url, this.loadInfo);
+                newUrl = url;
             }
-            contentLoc = {
-                url: url,
-                user: sys.name(src),
-                date: (new Date()).toUTCString()
-            };
-            sys.writeToFile(locationfile, JSON.stringify(contentLoc));
+            
+            rpgbot.sendMessage(src, "Loading RPG content from " + newUrl, rpgchan);
+            sys.webCall(newUrl, function(resp) {
+                game.loadInfo(resp, sys.name(src), newUrl);
+            });
         } catch (err) {
             rpgbot.sendMessage(src, "Error loading RPG content from " + url + ": " + err, rpgchan);
         }
     };
-    this.loadInfo = function(content) {
+    this.loadInfo = function(content, name, url) {
 		try {
             var parsed = JSON.parse(content);
-        
-            classes = parsed.classes;
-            monsters = parsed.monsters;
-            skills = parsed.skills;
-            items = parsed.items;
-            places = parsed.places;
-            quests = parsed.quests;
-            expTable = parsed.config.levels;
-            elements = parsed.config.elements || {};
             
-            if (parsed.config.battle) {
-                var battle = parsed.config.battle;
+            var result;
+            try {
+                result = JSON.parse(sys.getFileContent(contentfile));
+            } catch (e) {
+                result = {
+                    config: config,
+                    classes: classes,
+                    monsters: monsters,
+                    skills: skills,
+                    items: items,
+                    places: places,
+                    quests: quests,
+                    classHelp: classHelp
+                }
+            }
+        
+            config = parsed.config || result.config;
+            classes = parsed.classes || result.classes;
+            monsters = parsed.monsters || result.monsters;
+            skills = parsed.skills || result.skills;
+            items = parsed.items || result.items;
+            places = parsed.places || result.places;
+            quests = parsed.quests || result.quests;
+            classHelp = parsed.classHelp || result.classHelp;
+            
+            expTable = config.levels;
+            elements = config.elements || {};
+            
+            if (config.battle) {
+                var battle = config.battle;
                 if (battle.evasion) {
                     battleSetup.evasion = battle.evasion;
                 }
@@ -5396,19 +5421,19 @@ function RPG(rpgchan) {
                 }
             }
             
-            startup.classes = parsed.config.startup.classes;
-            startup.location = parsed.config.startup.location;
-            startup.gold = parsed.config.startup.gold;
-            startup.items = parsed.config.startup.items;
-            startup.stats = parsed.config.startup.stats;
-            startup.skills = parsed.config.startup.skills;
+            startup.classes = config.startup.classes;
+            startup.location = config.startup.location;
+            startup.gold = config.startup.gold;
+            startup.items = config.startup.items;
+            startup.stats = config.startup.stats;
+            startup.skills = config.startup.skills;
             
-            if (parsed.config.classSets) {
-                classSets = parsed.config.classSets;
+            if (config.classSets) {
+                classSets = config.classSets;
             }
             
-            if (parsed.config.leveling) {
-                var level = parsed.config.leveling;
+            if (config.leveling) {
+                var level = config.leveling;
                 if (level.hp) {
                     leveling.hp = level.hp;
                 }
@@ -5444,8 +5469,8 @@ function RPG(rpgchan) {
                 }
             }
             
-            if (parsed.config.equipment) {
-                equipment = parsed.config.equipment;
+            if (config.equipment) {
+                equipment = config.equipment;
             }
             
             var e, n, alt;
@@ -5477,11 +5502,41 @@ function RPG(rpgchan) {
                 }
             }
             
-            if ("classHelp" in parsed) {
-                classHelp = parsed.classHelp;
+            result = {
+                config: config,
+                classes: classes,
+                monsters: monsters,
+                skills: skills,
+                items: items,
+                places: places,
+                quests: quests,
+                classHelp: classHelp
             }
+            
+            sys.writeToFile(contentfile, JSON.stringify(result, null, 4));
+            
+            if (url) {
+                if (!contentLoc) {
+                    contentLoc = JSON.parse(sys.getFileContent(locationfile));
+                }
                 
-            sys.writeToFile(contentfile, content);
+                var newLoc = {
+                    config: parsed.config ? url : contentLoc.config,
+                    classes: parsed.classes ? url : contentLoc.classes,
+                    monsters: parsed.monsters ? url : contentLoc.monsters,
+                    skills: parsed.skills ? url : contentLoc.skills,
+                    items: parsed.items ? url : contentLoc.items,
+                    places: parsed.places ? url : contentLoc.places,
+                    quests: parsed.quests ? url : contentLoc.quests,
+                    classHelp: parsed.classHelp ? url : contentLoc.classHelp,
+                    url: url,
+                    user: name,
+                    date: (new Date()).toUTCString()
+                };
+                contentLoc = newLoc;
+                sys.writeToFile(locationfile, JSON.stringify(contentLoc));
+            }
+            
             rpgbot.sendAll("RPG Game reloaded!", rpgchan);
 		} catch (err) {
 			sys.sendAll("Error loading RPG Game data: " + err, rpgchan);
@@ -5497,7 +5552,14 @@ function RPG(rpgchan) {
     this.viewContentFile = function(src) {
         sys.sendMessage(src, "", rpgchan);
         sys.sendMessage(src, "Last Update Info:", rpgchan);
-        sys.sendMessage(src, "URL: " + contentLoc.url, rpgchan);
+        sys.sendMessage(src, "Config URL: " + contentLoc.config, rpgchan);
+        sys.sendMessage(src, "Classes URL: " + contentLoc.classes, rpgchan);
+        sys.sendMessage(src, "Monsters URL: " + contentLoc.monsters, rpgchan);
+        sys.sendMessage(src, "Skills URL: " + contentLoc.skills, rpgchan);
+        sys.sendMessage(src, "Items URL: " + contentLoc.items, rpgchan);
+        sys.sendMessage(src, "Places URL: " + contentLoc.places, rpgchan);
+        sys.sendMessage(src, "Quests URL: " + contentLoc.quests, rpgchan);
+        sys.sendMessage(src, "Class Help URL: " + contentLoc.classHelp, rpgchan);
         sys.sendMessage(src, "Who: " + contentLoc.user, rpgchan);
         sys.sendMessage(src, "When: " + contentLoc.date, rpgchan);
         sys.sendMessage(src, "", rpgchan);
@@ -5512,9 +5574,9 @@ function RPG(rpgchan) {
             var user, x, gamefile;
             for (x = 0; x < playerson.length; ++x) {
                 user = SESSION.users(playerson[x]);
-                if (user && user.rpg && user.rpg !== null && user.rpg !== undefined) {
-                    gamefile = this.convertChar(user.rpg);
-                    user.rpg = gamefile;
+                if (user && user[rpgAtt] && user[rpgAtt] !== null && user[rpgAtt] !== undefined) {
+                    gamefile = this.convertChar(user[rpgAtt]);
+                    user[rpgAtt] = gamefile;
                 }
             }
             rpgbot.sendAll("Characters updated!", rpgchan);
@@ -5535,7 +5597,7 @@ function RPG(rpgchan) {
             return;
         }
         
-        var target = SESSION.users(id).rpg;
+        var target = getAvatar(id);
         if (target === undefined) {
             rpgbot.sendMessage(src, "This person doesn't have a character!", rpgchan);
             return;
@@ -5593,7 +5655,7 @@ function RPG(rpgchan) {
     this.updateLeaderboard = function() {
         leaderboards = {};
         
-        var saves = sys.filesForDirectory("rpgsaves");
+        var saves = sys.filesForDirectory(savefolder);
         var overall = [];
         
         var data, s, player;
@@ -5792,7 +5854,7 @@ function RPG(rpgchan) {
 			return true;
 		}
 		if (command in this.commands.actions) {
-			if (SESSION.users(src).rpg === undefined) {
+			if (getAvatar(src) === undefined) {
                 rpgbot.sendMessage(src, "You need to start the game to use this command!", rpgchan);
                 return true;
             }
@@ -5800,7 +5862,7 @@ function RPG(rpgchan) {
 			return true;
 		}
         if (command in this.commands.altactions) {
-			if (SESSION.users(src).rpg === undefined) {
+			if (getAvatar(src) === undefined) {
                 rpgbot.sendMessage(src, "You need to start the game to use this command!", rpgchan);
                 return true;
             }
@@ -5808,7 +5870,7 @@ function RPG(rpgchan) {
 			return true;
 		}
         if (command in this.commands.character) {
-			if (SESSION.users(src).rpg === undefined) {
+			if (getAvatar(src) === undefined) {
                 rpgbot.sendMessage(src, "You need to start the game to use this command!", rpgchan);
                 return true;
             }
@@ -5846,7 +5908,7 @@ function RPG(rpgchan) {
         }
 	};
     this.removePlayer = function(src, skipSave)  {
-        var player = SESSION.users(src).rpg;
+        var player = getAvatar(src);
             
         this.quitBattle(src, skipSave);
         for (var p in currentParties) {
@@ -5868,7 +5930,7 @@ function RPG(rpgchan) {
         }
     };
 	this.beforeLogOut = function(src) {
-        if (SESSION.users(src).rpg !== undefined) {
+        if (getAvatar(src) !== undefined) {
             game.removePlayer(src, true);
             game.saveGame(src);
             game.clearChar(src);
@@ -5880,8 +5942,8 @@ function RPG(rpgchan) {
         } else {
             rpgchan = sys.createChannel(RPG_CHANNEL);
         }
-        game.loadLocalContent();
         contentLoc = JSON.parse(sys.getFileContent(locationfile));
+        game.loadLocalContent();
 	};
 	this.stepEvent = function() {
         try {
