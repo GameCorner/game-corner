@@ -1603,6 +1603,16 @@ function RPG(rpgchan) {
                         targetTeam = side === 1 ? shuffle(team1.concat()) : shuffle(team2.concat());
                         focusList = side === 1 ? shuffle(this.team1Focus.concat()) : shuffle(this.team2Focus.concat());
                         break;
+                    case "ally":
+                        targetTeam = side === 1 ? shuffle(team1.concat()) : shuffle(team2.concat());
+                        focusList = side === 1 ? shuffle(this.team1Focus.concat()) : shuffle(this.team2Focus.concat());
+                        if (targetTeam.indexOf(player) !== -1) {
+                            targetTeam.splice(targetTeam.indexOf(player), 1);
+                        }
+                        if (focusList.indexOf(player) !== -1) {
+                            focusList.splice(focusList.indexOf(player), 1);
+                        }
+                        break;
                     case "enemy":
                         targetTeam = side === 1 ? shuffle(team2.concat()) : shuffle(team1.concat());
                         focusList = side === 1 ? shuffle(this.team2Focus.concat()) : shuffle(this.team1Focus.concat());
