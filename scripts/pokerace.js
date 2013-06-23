@@ -76,11 +76,6 @@ function Race(racechan) {
             return;
         }
         
-        if (name in players) {
-            casinobot.sendMessage(src, "You already joined!", racechan);
-            return;
-        }
-        
         var data = commandData.split(":");
         if (data.length < 2) {
             casinobot.sendMessage(src, "Incorrect format! Type /bet [pokemon]:[bet] to play!", racechan);
@@ -103,6 +98,11 @@ function Race(racechan) {
             return;
         }
         
+        var changed = false
+        if (name in players) {
+            changed = true;
+        }
+        
         if (bet < 10) {
             casinobot.sendMessage(src, "You must bet at least 10 Coins!", racechan);
             return;
@@ -122,7 +122,11 @@ function Race(racechan) {
             bet: bet
         };
         
-        casinobot.sendAll(name + " bet " + bet + " on " + racer + "!", racechan);
+        if (changed) {
+            casinobot.sendAll(name + " changed their bet to " + bet + " on " + racer + "!", racechan);
+        } else {
+            casinobot.sendAll(name + " bet " + bet + " on " + racer + "!", racechan);
+        }
     };
     this.showContestants = function(src) {
         
@@ -386,7 +390,7 @@ function Race(racechan) {
             }
             return true;
         } else if (command === "bet") {
-            if (state !== "Blank") {
+            if (state === "Entry") {
                 if (!isInGame(name)) {
                     /* if (name in cantJoinPlayers) {
                         casinobot.sendMessage(src, "You can't join this round!", racechan);
@@ -395,7 +399,7 @@ function Race(racechan) {
                     this.joinGame(src, data);
                 }
             } else {
-                casinobot.sendMessage(src, "No game running! Use /start to start a game!", racechan);
+                casinobot.sendMessage(src, "You can't bet now! Wait for the next game to place bets!", racechan);
             }
             return true;
         } else if (command === "unjoin") {
