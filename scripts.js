@@ -1623,13 +1623,6 @@ init : function() {
     };
 
     callplugins("init");
-    var plug = SESSION.global().plugins;
-    for (var p in plug) {
-        if (plug[p].source === "wallet.js") {
-            casino = plug[p];
-            break;
-        }
-    }
 
     VarsCreated = true;
 }, /* end of init */
