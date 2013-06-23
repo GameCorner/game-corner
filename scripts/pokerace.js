@@ -98,7 +98,7 @@ function Race(racechan) {
             return;
         }
         
-        var changed = false
+        var changed = false;
         if (name in players) {
             changed = true;
         }
@@ -181,18 +181,17 @@ function Race(racechan) {
             w = sys.rand(dice[type][0], dice[type][1]);
             racers[r] += w;
             
-            if (racers[r] > goal) {
-                w = racers[r] - goal;
-                racers[r] = goal;
-            }
-            
             casinobot.sendAll(r + " advanced " + w + " spaces and is now at space " + racers[r] + "!", racechan);
         }
         sys.sendAll("", racechan);
         
-        var winners = [];
+        var winners = [], highest = goal;
         for (r in racers) {
-            if (racers[r] >= goal) {
+            if (racers[r] >= highest) {
+                if (racers[r] > highest) {
+                    highest = racers[r];
+                    winners = [];
+                }
                 winners.push(r);
             }
         }
@@ -297,15 +296,12 @@ function Race(racechan) {
         }
         return 0;
 	}
-    function cap(string) {
-        return string.charAt(0).toUpperCase() + string.slice(1);
-    }
     
     this.showCommands = function(src) {
         var out = [
             "",
             "/start: To start a new race.",
-            "/bet [pokemon]:[bet]: To place a bet and join the current race.",
+            "/bet [pokemon]:[bet]: To place or change a bet and join the current race.",
             "/unjoin: To leave a game."
         ];
         
