@@ -391,13 +391,11 @@ function Race(racechan) {
             return true;
         } else if (command === "bet") {
             if (state === "Entry") {
-                if (!isInGame(name)) {
-                    /* if (name in cantJoinPlayers) {
-                        casinobot.sendMessage(src, "You can't join this round!", racechan);
-                        return true;
-                    } */
-                    this.joinGame(src, data);
-                }
+                /* if (name in cantJoinPlayers) {
+                    casinobot.sendMessage(src, "You can't join this round!", racechan);
+                    return true;
+                } */
+                this.joinGame(src, data);
             } else {
                 casinobot.sendMessage(src, "You can't bet now! Wait for the next game to place bets!", racechan);
             }
