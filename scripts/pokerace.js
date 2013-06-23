@@ -124,6 +124,21 @@ function Race(racechan) {
         
         casinobot.sendAll(name + " bet " + bet + " on " + racer + "!", racechan);
     };
+    this.showContestants = function(src) {
+        
+        if (state === "Entry") {
+            sys.sendMessage(src, "", racechan);
+            casinobot.sendMessage(src, "A Pokemon Race is accepting bets now! Type /bet [pokemon]:[bet] to play (You have " + ticks + " seconds)! The racers are:", racechan);
+            for (var r in racers) {
+                casinobot.sendMessage(src, r + (r === favorite ? " (Favorite)" : "") +  (r === underdog ? " (Underdog)" : ""), racechan);
+            }
+            sys.sendMessage(src, "", racechan);
+        } else if (state === "Running") {
+            casinobot.sendMessage(src, "A game is running now! Wait for the next race to place bets!", racechan);
+        } else if (state === "Blank") {
+            casinobot.sendMessage(src, "No game is running! Type /start to begin a new race!", racechan);
+        }
+    };
     
     this.startRace = function() {
         state = "Running";
@@ -327,6 +342,12 @@ function Race(racechan) {
             }
         }
     };
+    this.afterChannelJoin = function(src, channel) {
+        if (channel == racechan) {
+            race.showContestants(src);
+        }
+        return false;
+    };
     this.handleCommand = function(src, message, channel) {
         var command;
 		var commandData = '*';
@@ -424,6 +445,7 @@ module.exports = function() {
         game: game,
         init: game.init,
         handleCommand: game.handleCommand,
+        afterChannelJoin: game.afterChannelJoin,
         stepEvent: game.stepEvent
     };
 }();
