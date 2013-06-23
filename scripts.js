@@ -3802,6 +3802,10 @@ ownerCommand: function(src, command, commandData, tar) {
     	normalbot.sendChanMessage(src, "The server is back on the registry now.");
     	return;
     }    
+    if (command == "flash") {
+    	sys.sendHtmlAll("<ping />", chan);
+    	return;
+    }
     if (command == "changerating") {
         var data =  commandData.split(' -- ');
         if (data.length != 3) {
