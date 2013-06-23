@@ -9,8 +9,8 @@ function Casino() {
         
         var name = sys.name(src);
         var user = SESSION.users(src);
-        var key = getKey("casino", name.toLowerCase());
-        if (key) {
+        var key = sys.getVal("Casino", name.toLowerCase());
+        if (key || key === "0") {
             user.casino = {
                 name: name,
                 coins: parseInt(key, 10)
@@ -22,8 +22,8 @@ function Casino() {
             }
         }
         
-        saveKey("casino", name.toLowerCase(), user.casino.coins);
-        casinobot.sendMessage(src, "You have " + user.casino.coins + " Coins!", chan);
+        sys.saveVal("Casino", name.toLowerCase(), user.casino.coins);
+        casinobot.sendMessage(src, "You have " + user.casino.coins + " Coin(s)!", chan);
     };
     
     this.addCoins = function(src, amount) {
@@ -37,12 +37,13 @@ function Casino() {
             user.coins = 0;
         }
         
-        saveKey("casino", user.name.toLowerCase(), user.coins);
+        sys.removeVal(user.name.toLowerCase(), "Casino");
+        sys.saveVal("Casino", user.name.toLowerCase(), user.coins);
         return user.coins;
     };
     this.viewCoins = function(src, data, chan) {
         if (this.IsInCasino(src)) {
-            casinobot.sendMessage(src, "You currently have " + SESSION.users(src).casino.coins + " Coins!", chan);
+            casinobot.sendMessage(src, "You currently have " + SESSION.users(src).casino.coins + " Coin(s)!", chan);
         } else {
             casinobot.sendMessage(src, "You are not in the casino! Type /entercasino to join!", chan);
         }
@@ -53,7 +54,7 @@ function Casino() {
     };
     
     this.init = function() {
-    	
+		
     };
     this.handleCommand = function(src, message, channel) {
         var command;
