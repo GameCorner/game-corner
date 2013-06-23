@@ -13,6 +13,8 @@ function Race(racechan) {
     var favorite;
     
     var phaseLength = 3;
+    var joinPhase = 40;
+    
     var goal = 30;
     var dice = {
         average: [1, 7],
@@ -46,7 +48,7 @@ function Race(racechan) {
         
         sys.sendAll("", racechan);
         sys.sendAll(border, racechan);
-        casinobot.sendAll(name + " started a Pokemon Race game! Type /bet [pokemon]:[bet] to play (You have 40 seconds)! The racers are:", racechan);
+        casinobot.sendAll(name + " started a Pokemon Race game! Type /bet [pokemon]:[bet] to play (You have " + joinPhase + " seconds)! The racers are:", racechan);
         for (r in racers) {
             casinobot.sendAll(r + (r === favorite ? " (Favorite)" : "") +  (r === underdog ? " (Underdog)" : ""), racechan);
         }
@@ -56,7 +58,7 @@ function Race(racechan) {
         players = {};
         
         state = "Entry";
-        ticks = 40;
+        ticks = joinPhase;
         
         /* if (sys.playersOfChannel(racechan).length < 50) {
             var time = parseInt(sys.time(), 10);
@@ -372,7 +374,7 @@ function Race(racechan) {
                     this.joinGame(src, data);
                 }
             } else {
-                casinobot.sendMessage(src, "No game running! Use /start [theme] to start a game!", racechan);
+                casinobot.sendMessage(src, "No game running! Use /start to start a game!", racechan);
             }
             return true;
         } else if (command === "unjoin") {
