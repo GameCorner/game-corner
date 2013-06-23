@@ -12,7 +12,7 @@ function Race(racechan) {
     var underdog;
     var favorite;
     
-    var phaseLength = 1;
+    var phaseLength = 3;
     var goal = 30;
     var dice = {
         average: [1, 7],
@@ -46,7 +46,7 @@ function Race(racechan) {
         
         sys.sendAll("", racechan);
         sys.sendAll(border, racechan);
-        casinobot.sendAll(name + " started a Pokemon Race game! Type /bet [pokemon]:[bet] to play (You have 30 seconds)! The racers are:", racechan);
+        casinobot.sendAll(name + " started a Pokemon Race game! Type /bet [pokemon]:[bet] to play (You have 40 seconds)! The racers are:", racechan);
         for (r in racers) {
             casinobot.sendAll(r + (r === favorite ? " (Favorite)" : "") +  (r === underdog ? " (Underdog)" : ""), racechan);
         }
@@ -56,7 +56,7 @@ function Race(racechan) {
         players = {};
         
         state = "Entry";
-        ticks = 15;
+        ticks = 40;
         
         /* if (sys.playersOfChannel(racechan).length < 50) {
             var time = parseInt(sys.time(), 10);
@@ -275,7 +275,7 @@ function Race(racechan) {
             return 1;
         }
         return 0;
-    }
+	}
     function cap(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
