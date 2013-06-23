@@ -1,6 +1,7 @@
 /*global casino, casinobot, sys, module, getKey, saveKey, sendChanAll, SESSION*/
 function Casino() {
-    var casino = this;
+    var wallet = this;
+    
     this.enterCasino = function(src, data, chan) {
         if (this.IsInCasino(src)) {
             casinobot.sendMessage(src, "You already entered the casino!", chan);
@@ -54,8 +55,18 @@ function Casino() {
     };
     
     this.init = function() {
-		
+    	setWallet();
     };
+    
+    function setWallet() {
+        var plug = SESSION.global().plugins;
+        for (var p in plug) {
+            if (plug[p].source === "wallet.js") {
+                casino = plug[p];
+                break;
+            }
+        }
+    }
     this.handleCommand = function(src, message, channel) {
         var command;
 		var commandData = '*';
@@ -68,7 +79,7 @@ function Casino() {
 		}
         
         try {
-			casino.handleWalletCommand(src, command, commandData, channel);
+			wallet.handleWalletCommand(src, command, commandData, channel);
             return true;
         } catch(e) {
             if (e !== "No valid command") {
