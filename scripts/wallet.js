@@ -2,6 +2,9 @@
 function Casino() {
     var wallet = this;
     
+    var allowance = 5;
+    var startingCoins = 1000;
+    
     this.enterCasino = function(src, data, chan) {
         if (this.IsInCasino(src)) {
             casinobot.sendMessage(src, "You already entered the casino!", chan);
@@ -19,8 +22,12 @@ function Casino() {
         } else {
             user.casino = {
                 name: name,
-                coins: 1000
+                coins: startingCoins
             };
+            /* 
+            var now = new Date();
+            now = now.getUTCDate() + "*" + now.getUTCMonth() + "*" + now.getUTCFullYear();
+            sys.saveVal("CasinoAllowance", name.toLowerCase(), now); */
         }
         
         sys.saveVal("Casino", name.toLowerCase(), user.casino.coins);
@@ -41,6 +48,28 @@ function Casino() {
         sys.removeVal(user.name.toLowerCase(), "Casino");
         sys.saveVal("Casino", user.name.toLowerCase(), user.coins);
         return user.coins;
+    };
+    this.getAllowance = function(src, data, chan) {
+        if (!this.IsInCasino(src)) {
+            casinobot.sendMessage(src, "You are not in the casino! Type /entercasino to join!", chan);
+            return;
+        }
+        
+        var name = SESSION.users(src).casino.name;
+        
+        var key = sys.getVal("CasinoAllowance", name.toLowerCase());
+        var now = new Date();
+        now = now.getUTCDate() + "*" + (now.getUTCMonth() + 1) + "*" + now.getUTCFullYear();
+        
+        if (now !== key) {
+            this.addCoins(src, allowance);
+            sys.removeVal(name.toLowerCase(), "CasinoAllowance");
+            sys.saveVal("CasinoAllowance", name.toLowerCase(), now);
+            
+            casinobot.sendMessage(src, "You received your daily allowance of " + allowance + " coins!", chan);
+        } else {
+            casinobot.sendMessage(src, "You already received your daily allowance today!", chan);
+        }
     };
     this.giveCoins = function(src, data, chan) {
         var info = data.split(":");
@@ -123,6 +152,9 @@ function Casino() {
             return true;
         } else if (command === "coins" || command === "mycoins") {
             this.viewCoins(src, data, chan);
+            return true;
+        } else if (command === "allowance") {
+            this.getAllowance(src, data, chan);
             return true;
         } else if (command === "givecoins" && sys.auth(src) >= 2) {
             this.giveCoins(src, data, chan);
