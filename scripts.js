@@ -3802,7 +3802,7 @@ ownerCommand: function(src, command, commandData, tar) {
     	return;
     }    
     if (command == "flash") {
-    	sys.sendHtmlAll("<ping />", chan);
+    	sys.sendHtmlAll("<ping />", staffchannel);
     	return;
     }
     if (command == "changerating") {
