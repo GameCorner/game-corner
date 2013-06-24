@@ -1509,8 +1509,7 @@ init : function() {
     "7. No Disrespecting: Don't give out other peoples' information. Don't use other peoples' names.",
     "8. No Minimodding: Let the auth do their job. ",
     "9. No Circumventing The Rules: Don't ban/mute evade. Don't use loopholes.",
-    "",
-    "These rules are available in other languages here: http://gamecorner.info/Thread-Server-Rules?pid=879#pid879"
+    ""
     ];
 
     if (typeof authStats == 'undefined')
