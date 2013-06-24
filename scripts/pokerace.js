@@ -27,6 +27,8 @@ function Race(racechan) {
         favorite: [1.25, 1, 1, 1, 1, 1]
     };
     
+    this.lastAdvertise = 0;
+    
     this.startGame = function(src) {
         var name = sys.name(src);
         
@@ -60,13 +62,13 @@ function Race(racechan) {
         state = "Entry";
         ticks = joinPhase;
         
-        /* if (sys.playersOfChannel(racechan).length < 50) {
+        if (sys.playersOfChannel(racechan).length < 40) {
             var time = parseInt(sys.time(), 10);
             if (time > this.lastAdvertise + 60 * 15) {
                 this.lastAdvertise = time;
                 this.advertiseToChannel(0);
             }
-        } */
+        }
     };
     this.joinGame = function(src, commandData) {
         var name = sys.name(src);
