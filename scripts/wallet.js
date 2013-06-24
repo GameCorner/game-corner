@@ -2,8 +2,9 @@
 function Casino() {
     var wallet = this;
     
-    var allowance = 5;
     var startingCoins = 1000;
+    var allowance = [5, 10, 15, 20];
+    var milestones = [0, 3, 10, 30];
     
     this.enterCasino = function(src, data, chan) {
         if (this.IsInCasino(src)) {
@@ -24,10 +25,6 @@ function Casino() {
                 name: name,
                 coins: startingCoins
             };
-            /* 
-            var now = new Date();
-            now = now.getUTCDate() + "*" + now.getUTCMonth() + "*" + now.getUTCFullYear();
-            sys.saveVal("CasinoAllowance", name.toLowerCase(), now); */
         }
         
         sys.saveVal("Casino", name.toLowerCase(), user.casino.coins);
@@ -56,17 +53,37 @@ function Casino() {
         }
         
         var name = SESSION.users(src).casino.name;
+        var today = Math.floor(new Date().getTime() / (1000 * 60 * 60 * 24));
         
         var key = sys.getVal("CasinoAllowance", name.toLowerCase());
-        var now = new Date();
-        now = now.getUTCDate() + "*" + (now.getUTCMonth() + 1) + "*" + now.getUTCFullYear();
+        var day = today, row = 0;
         
-        if (now !== key) {
-            this.addCoins(src, allowance);
-            sys.removeVal(name.toLowerCase(), "CasinoAllowance");
-            sys.saveVal("CasinoAllowance", name.toLowerCase(), now);
+        if (key && key.indexOf("*") !== -1) {
+            key = key.split("*");
+            day = parseInt(key[0], 10);
+            row = parseInt(key[1], 10);
+        }
+        
+        if (today !== day) {
+            if (today - day === 1) {
+                row += 1;
+            } else {
+                row = 0;
+            }
             
-            casinobot.sendMessage(src, "You received your daily allowance of " + allowance + " coins!", chan);
+            var received;
+            for (var r = milestones.length - 1; r >= 0; --r) {
+                if (row >= milestones[r]) {
+                    received = allowance[r];
+                    break;
+                }
+            }
+            
+            this.addCoins(src, received);
+            sys.removeVal(name.toLowerCase(), "CasinoAllowance");
+            sys.saveVal("CasinoAllowance", name.toLowerCase(), today + "*" + row);
+            
+            casinobot.sendMessage(src, "You received your daily allowance of " + received + " coins!", chan);
         } else {
             casinobot.sendMessage(src, "You already received your daily allowance today!", chan);
         }
