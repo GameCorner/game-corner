@@ -56,7 +56,7 @@ function Casino() {
         var today = Math.floor(new Date().getTime() / (1000 * 60 * 60 * 24));
         
         var key = sys.getVal("CasinoAllowance", name.toLowerCase());
-        var day = today, row = 0;
+        var day = 0, row = 0;
         
         if (key && key.indexOf("*") !== -1) {
             key = key.split("*");
