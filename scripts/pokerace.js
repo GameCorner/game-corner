@@ -166,6 +166,7 @@ function Race(racechan) {
             return;
         }
         
+        sys.sendAll("", racechan);
         this.nextPhase();
     };
     
