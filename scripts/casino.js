@@ -57,22 +57,21 @@ function Casino(casinochan) {
             }
             
             if (combination[0] === 1 && combination[1] === 1 && combination[2] === 1) {
-                reward = [500, 100, 50][bet - 1];
+                reward = [5000, 1000, 500][bet - 1];
                 pot = "Jackpot";
                 break;
             } else if (combination[0] === 3 && combination[1] === 3 && combination[2] === 3) {
-                tempReward = [250, 75, 25][bet - 1];
+                tempReward = [3000, 600, 500][bet - 1];
                 pot = "Minipot";
             } else if (combination[0] === combination[1] && combination[0] == combination[2]) {
-                tempReward = [100, 20, 10][bet - 1];
+                tempReward = [300, 150, 75][bet - 1];
             } else if (combination.indexOf(1) !== -1 && combination.indexOf(2) !== -1 && combination.indexOf(3) !== -1) {
-                tempReward = [75, 15, 7][bet - 1];
+                tempReward = [150, 30, 15][bet - 1];
             } else if (combination.indexOf(4) !== -1 && combination.indexOf(6) !== -1 && combination.indexOf(7) !== -1) {
-                tempReward = [75, 15, 7][bet - 1];
+                tempReward = [150, 30, 15][bet - 1];
             } else if (combination[0] === combination[1] || combination[0] == combination[2] ||  combination[1] == combination[2]) {
-                tempReward = [10, 7, 3][bet - 1];
+                tempReward = [50, 10, 5][bet - 1];
             }
-            
             if (tempReward > reward) {
                 reward = tempReward;
                 wincomb = combination;
@@ -165,12 +164,12 @@ function Casino(casinochan) {
                 out = ["How to play Slots:",
                     "To play slots, you choose whether to play 1, 2 or 3 coins. 1 coin watches only the middle row. It has the lowest odds, but the highest payouts. 2 coin watches all three rows. It has much better odds, but only a medium pay out. 3 coin watches all three rows and diagonal. It has the best odds, but the lowest payouts. Simply type '/slots 1', '/slots 2' or '/slots 3' to play.",
                     "Combination - Payouts (1 Coin / 2 Coins / 3 Coins): ",
-                    "❤❤❤ - 500 / 100 / 50 [Jackpot]",
-                    "★★★ - 250 / 75 / 25 [Minipot]",
-                    "3 matching symbols - 100 / 20 / 10",
-                    "★✿❤ - 75 / 15 / 7",
-                    "☼☾☁ - 75 / 15 / 7",
-                    "2 matching symbols - 10 / 7 / 3"
+                    "❤❤❤ - 5000 / 1000 / 500 [Jackpot] ",
+                    "★★★ - 3000 / 600 / 300 [Minipot] ",
+                    "3 matching symbols - 300 / 150 / 75", 
+                    "★✿❤ - 150 / 30 / 15 ",
+                    "☼☾☁ - 150 / 30 / 15 ",
+                    "2 matching symbols - 50 / 10 / 5"
                 ];
                 break;
             default:
