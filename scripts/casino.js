@@ -124,22 +124,25 @@ function Casino(casinochan) {
     };
     
     this.casinoHelp = function(src, topic, channel) {
-        var some = [
-            "",
-            "*** CASINO Commands ***",
-            "/games: To see all the games you are able to play.",
-            "/help: To learn how to play the games."
-		];
-        
-        for (var s in game.games) {
-            some.push("/" + s + ": " + game.games[s][1]);
+        if (topic === "casino") {
+            var some = [
+                "",
+                "*** CASINO Commands ***",
+                "/games: To see all the games you are able to play.",
+                "/help: To learn how to play the games."
+            ];
+            
+            for (var s in game.games) {
+                some.push("/" + s + ": " + game.games[s][1]);
+            }
+            
+            some.push("");
+            
+            some.forEach(function (msg) {
+                sendChanMessage(src, msg, casinochan);
+            });
+            return true;
         }
-        
-        some.push("");
-        
-        return some.forEach(function (msg) {
-            sendChanMessage(src, msg, casinochan);
-        });
     };
     
     this.showHelp = function(src, data) {
@@ -268,3 +271,4 @@ module.exports = function() {
         "help-string": "casino: To know of casino commands."
     };
 }();
+
