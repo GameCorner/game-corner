@@ -109,8 +109,8 @@ function Race(racechan) {
             casinobot.sendMessage(src, "You must bet at least 10 Coins!", racechan);
             return;
         }
-        if (bet > 100000) {
-            casinobot.sendMessage(src, "You cannot bet more than 100000 Coins!", racechan);
+        if (bet > 1000) {
+            casinobot.sendMessage(src, "You cannot bet more than 1000 Coins!", racechan);
             return;
         }
         
