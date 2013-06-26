@@ -32,6 +32,16 @@ var Config = {
         max_name_length: 16,
         notPlayingMsg: "±Game: The game is in progress. Please type /join to join the next mafia game."
     },
+    Games: [
+        "",
+        "*** GAME CORNER GAMES ***",
+        "RPG: Go to #Game Corner.",
+        "Slots: Type /slots at #Casino.",
+        "Poke Race: Go to #Poke Race.",
+        "Stop: Go to #Stop.",
+        "Hangman: Go to #Hangman.",
+        ""
+    ],
     League: [
         ["", ""],
         ["", ""],
@@ -2308,6 +2318,13 @@ userCommand: function(src, command, commandData, tar) {
         }
         callplugins("onHelp", src, commandData, channel);
 
+        return;
+    }
+    if (command == "games") {
+        Config.Games.forEach(function (msg) {
+            sendChanMessage(src, msg, channel);
+        });
+        
         return;
     }
     if ((command == "me" || command == "rainbow") && !SESSION.channels(channel).muteall) {
