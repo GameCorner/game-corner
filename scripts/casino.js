@@ -15,13 +15,14 @@ function Casino(casinochan) {
             return;
         }
         
-        var symbols = ["∞", "★", "✿", "❤", "☼", "✧", "☾", "☁", "☯", "☺", "☎", "☽", "✰", "☢", "♞", "♝", "△", "▲", "❦", "☮"];
+        // var symbols = ["∞", "★", "✿", "❤", "☼", "✧", "☾", "☁", "☯", "☺", "☎", "☽", "✰", "☢", "♞", "♝", "△", "▲", "❦", "☮"];
+        var symbols = ["❤", "★", "✰", "✿", "✧", "☾", "☯", "☮"];
         var s = symbols.length;
         
         // Reels
-        var reel1 = [0, 1, 15, 2, 3, 4, 5, 6, 7, 8, 10, 16, 11, 12, 13, 9, 14, 17, 18, 19];
-        var reel2 = [19, 18, 17, 14, 13, 12, 11, 16, 10, 15, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
-        var reel3 = [13, 8, 14, 15, 9, 10, 16, 0, 1, 2, 17, 18, 19, 3, 4, 5, 6, 7, 11, 12];
+        var reel1 = [7, 4, 6, 5, 3, 2, 6, 4, 3, 2, 7, 1, 6, 5, 7, 0, 7, 5, 6, 1, 7, 5, 4, 7, 2, 6, 3, 4, 2, 6, 3];
+        var reel2 = [6, 3, 5, 7, 2, 4, 7, 3, 2, 5, 6, 1, 7, 4, 6, 0, 6, 4, 7, 1, 6, 2, 7, 3, 4, 5, 6, 2, 3, 5, 7];
+        var reel3 = [2, 6, 4, 3, 6, 7, 4, 6, 5, 7, 2, 1, 5, 7, 3, 0, 2, 6, 5, 1, 4, 7, 6, 2, 7, 3, 4, 7, 6, 3, 5];
         
         // Lines to be checked for a winning combination
         var validLines = [
@@ -56,21 +57,29 @@ function Casino(casinochan) {
                 combination.push(results[line[0]][line[1]]);
             }
             
-            if (combination[0] === 1 && combination[1] === 1 && combination[2] === 1) {
-                reward = [5000, 1000, 500][bet - 1];
+            if (findPattern([0, 0, 0], combination)) {
+                reward = [5000, 1500, 1000][bet - 1];
                 pot = "Jackpot";
                 break;
-            } else if (combination[0] === 3 && combination[1] === 3 && combination[2] === 3) {
-                tempReward = [3000, 600, 500][bet - 1];
+            } else if (findPattern([1, 1, 1], combination)) {
+                tempReward = [2500, 750, 500][bet - 1];
                 pot = "Minipot";
+            } else if (findPattern([0, 0, 1], combination)) {
+                tempReward = [1900, 550, 350][bet - 1];
+            } else if (findPattern([0, 1, 1], combination)) {
+                tempReward = [1200, 300, 150][bet - 1];
+            } else if (findPattern([0, 2, 3], combination)) {
+                tempReward = [300, 100, 75][bet - 1];
+            } else if (findPattern([1, 5, 4], combination)) {
+                tempReward = [150, 50, 35][bet - 1];
+            } else if (findPattern([6, 6, 6], combination) || findPattern([7, 7, 7], combination)) {
+                tempReward = [10, 4, 2][bet - 1];
+            } else if ((combination[0] === 6 && combination[1] === 6 ) || (combination[1] === 6 && combination[2] === 6 ) || (combination[0] === 6 && combination[2] === 6 )) {
+            } else if ((combination[0] === 7 && combination[1] === 7 ) || (combination[1] === 7 && combination[2] === 7 ) || (combination[0] === 7 && combination[2] === 7 )) {
             } else if (combination[0] === combination[1] && combination[0] == combination[2]) {
-                tempReward = [300, 150, 75][bet - 1];
-            } else if (combination.indexOf(1) !== -1 && combination.indexOf(2) !== -1 && combination.indexOf(3) !== -1) {
-                tempReward = [150, 30, 15][bet - 1];
-            } else if (combination.indexOf(4) !== -1 && combination.indexOf(6) !== -1 && combination.indexOf(7) !== -1) {
-                tempReward = [150, 30, 15][bet - 1];
+                tempReward = [55, 15, 10][bet - 1];
             } else if (combination[0] === combination[1] || combination[0] == combination[2] ||  combination[1] == combination[2]) {
-                tempReward = [50, 10, 5][bet - 1];
+                tempReward = [15, 5, 4][bet - 1];
             }
             if (tempReward > reward) {
                 reward = tempReward;
@@ -81,7 +90,7 @@ function Casino(casinochan) {
         if (reward) {
             var realGain = reward - bet;
             casino.addCoins(src, realGain);
-            casinobot.sendMessage(src, "You got a " + wincomb.map(function(x){ return "[" + symbols[x] + "]"; }).join("") +  " and won " + reward + " coins!", casinochan);
+            casinobot.sendMessage(src, "You got " + wincomb.map(function(x){ return "[" + symbols[x] + "]"; }).join("") +  " and won " + reward + " coins!", casinochan);
             if (pot === "Jackpot") {
                 sys.sendAll("", 0);
                 sys.sendAll(border, 0);
@@ -100,6 +109,24 @@ function Casino(casinochan) {
         }
         sys.sendMessage(src, "", casinochan);
     };
+    
+    function findPattern(pattern, arr) {
+        var testArray = arr.concat();
+        var patternArr = pattern.concat();
+        
+        var index, p;
+        for (p = testArray.length - 1; p >= 0; --p) {
+            index = patternArr.indexOf(testArray[p]);
+            if (index !== -1) {
+                patternArr.splice(index, 1);
+                testArray.splice(p, 1);
+            } else {
+                return false;
+            }
+        }
+        
+        return testArray.length === 0 && patternArr.length === 0;
+    }
     
     this.games = {
         slots: [this.playSlots, "To play Slots."]
@@ -164,12 +191,16 @@ function Casino(casinochan) {
                 out = ["How to play Slots:",
                     "To play slots, you choose whether to play 1, 2 or 3 coins. 1 coin watches only the middle row. It has the lowest odds, but the highest payouts. 2 coin watches all three rows. It has much better odds, but only a medium pay out. 3 coin watches all three rows and diagonal. It has the best odds, but the lowest payouts. Simply type '/slots 1', '/slots 2' or '/slots 3' to play.",
                     "Combination - Payouts (1 Coin / 2 Coins / 3 Coins): ",
-                    "❤❤❤ - 5000 / 1000 / 500 [Jackpot] ",
-                    "★★★ - 3000 / 600 / 300 [Minipot] ",
-                    "3 matching symbols - 300 / 150 / 75", 
-                    "★✿❤ - 150 / 30 / 15 ",
-                    "☼☾☁ - 150 / 30 / 15 ",
-                    "2 matching symbols - 50 / 10 / 5"
+                    "❤❤❤ - 5000 / 1500 / 1000 [Jackpot] ",
+                    "★★★ - 2500 / 750 / 500 [Minipot] ",
+                    "❤❤★ - 1900 / 550 / 350 ",
+                    "❤★★ - 1200 / 300 / 150 ",
+                    "❤✰✿ - 300 / 100 / 75 ",
+                    "★☾✧ - 150 / 50 / 35 ",
+                    "3 match ☯ or ☮ - 10 / 4 / 2 ",
+                    "2 match ☯ or ☮ - 0 / 0 / 0 ",
+                    "3 matching symbols - 55 / 15 / 10 ",
+                    "2 matching symbols - 15 / 5 / 4 "
                 ];
                 break;
             default:
