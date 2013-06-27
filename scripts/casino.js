@@ -37,9 +37,9 @@ function Casino(casinochan) {
         
         // Final position for each reel
         var results = [[], [], []];
-        var first = sys.rand(0, s);
-        var second = sys.rand(0, s);
-        var third = sys.rand(0, s);
+        var first = sys.rand(0, reel1.length);
+        var second = sys.rand(0, reel2.length);
+        var third = sys.rand(0, reel3.length);
         results[0].push(reel1[first], reel2[second], reel3[third]);
         results[1].push(reel1[(first + 1) % s], reel2[(second + 1) % s], reel3[(third + 1) % s]);
         results[2].push(reel1[(first + 2) % s], reel2[(second + 2) % s], reel3[(third + 2) % s]);
