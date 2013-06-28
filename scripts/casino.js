@@ -133,7 +133,7 @@ function Casino(casinochan) {
     };
     
     this.init = function() {
-		if (sys.existChannel(CASINO_CHANNEL)) {
+    	if (sys.existChannel(CASINO_CHANNEL)) {
             casinochan = sys.channelId(CASINO_CHANNEL);
         } else {
             casinochan = sys.createChannel(CASINO_CHANNEL);
@@ -165,7 +165,7 @@ function Casino(casinochan) {
             some.push("");
             
             some.forEach(function (msg) {
-                sendChanMessage(src, msg, casinochan);
+                sendChanMessage(src, msg, channel);
             });
             return true;
         }
