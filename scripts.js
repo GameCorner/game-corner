@@ -2265,7 +2265,7 @@ afterChangeTeam : function(src)
 
 }, /* end of afterChangeTeam */
 
-userCommand: function(src, command, commandData, tar) {
+userCommand: function(src, command, commandData, tar, chan) {
     // loop indices
     var i, x;
     // temp array
@@ -2316,7 +2316,7 @@ userCommand: function(src, command, commandData, tar) {
                 sendChanMessage(src, help);
             });
         }
-        callplugins("onHelp", src, commandData, channel);
+        callplugins("onHelp", src, commandData, chan);
 
         return;
     }
@@ -4823,7 +4823,7 @@ beforeChatMessage: function(src, message, chan) {
         }
         */
 
-        if (this.userCommand(src, command, commandData, tar) != "no command") {
+        if (this.userCommand(src, command, commandData, tar, channel) != "no command") {
             return;
         }
 
