@@ -2982,11 +2982,11 @@ modCommand: function(src, command, commandData, tar) {
     if (command == "watchlist") {
     	var wc = Config.watchchannels;
         if (Config.watch === false) {
-            normalbot.sendChanMessage("None of the channels are being watched.");
+            normalbot.sendChanMessage(src, "None of the channels are being watched.");
             return;
         }
         if (wc.length === 0) {
-            normalbot.sendChanMessage("All channels are being watched.");
+            normalbot.sendChanMessage(src, "All channels are being watched.");
             return;
         }
         else {
