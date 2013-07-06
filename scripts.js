@@ -23,6 +23,8 @@ var Config = {
     stopbot: "Slaking",
     bfbot: "Deoxys",
 	musymbol: "~",
+    watch: true,
+    watchchannels: [],
     // suspectvoting.js available, but not in use
     Plugins: ["mafia.js", "amoebagame.js", "tournaments.js", "tourstats.js", "trivia.js", "tours.js", "newtourstats.js", "auto_smute.js", "battlefactory.js", "hangman.js", "casino.js", /*"poker.js", "cards.js", "rand-utils.js",*/ "casino.js", "beast.js", "rpg.js", "dice-slider.js", "blackjack.js", "stop.js", "wallet.js", "pokerace.js"],
     Mafia: {
@@ -2977,6 +2979,24 @@ modCommand: function(src, command, commandData, tar) {
     if (sys.auth(src) > 1 && (command == "ipban" || command == "ipunban")) {
     	return this.ownerCommand(src, command, commandData, tar);
     }
+    if (command == "watchlist") {
+    	var wc = Config.watchchannels;
+        if (Config.watch === false) {
+            normalbot.sendChanMessage("None of the channels are being watched.");
+            return;
+        }
+        if (wc.length === 0) {
+            normalbot.sendChanMessage("All channels are being watched.");
+            return;
+        }
+        else {
+            normalbot.sendChanMessage("Watch list:")	
+            for (var x; x < wc.length; ++x) {
+            	sys.sendChanMessage(wc[x]);
+            }
+            return;
+        }
+    }
     if (command == "banlist") {
         var list=sys.banList();
         list.sort();
@@ -3908,6 +3928,53 @@ ownerCommand: function(src, command, commandData, tar) {
         normalbot.sendChanMessage(src, commandData + " is no longer a contributor!");
         return;
     }
+    if (command == "watch") {
+    	if (commandData === "on") {
+            if (Config.watch === true)
+                normalbot.sendChanMessage(src, "Watch is already on");
+            else {
+                normalbot.sendAll("Watch was turned on by " + nonFlashing(sys.name(src)) + ".", staffchannel);
+                Config.watch = true;
+            }
+            return;
+        }
+        else if (commandData === "off") {
+            if (Config.watch === false)
+                normalbot.sendChanMessage(src, "Watch is already off");
+            else {
+            	normalbot.sendAll("Watch was turned off by " + nonFlashing(sys.name(src)) + ".", staffchannel);
+            	Config.watch = false;
+            }
+            return;
+        }
+        else  
+            normalbot.sendChanMessage(src, "/watch [on/off] is the correct way to use the command.");
+        return;    
+    }
+    if (command == "watchchan") {
+        var ch = commandData;
+        for (var x = 0; x < Config.watchchannels.length; ++x) {
+            if (Config.watchchannels[x].toLowerCase() === ch.toLowerCase()) {
+            	normalbot.sendChanMessage("That channel is already being watched.");
+            	return;
+            }
+        }   
+        Config.watchchannels.push(ch);
+        normalbot.sendAll(nonFlashing(sys.name(src)) + " added #" + ch + " to the watch list.", staffchannel); 
+        return;
+    }
+    if (command == "unwatchchan") {
+    	var ch = commandData;
+    	for (var x = 0; x < Config.watchchannels.length; ++x) {
+    	    if (Config.watchchannels[x].toLowerCase() === ch.toLowerCase()) {
+    	    	Config.watchchannels.splice(x, x+1);
+    	    	normalbot.sendAll(nonFlashing(sys.name(src)) + " removed #" + ch + " from the watch list.", staffchannel);
+    	    	return;
+    	    }
+    	}
+    	normalbot.sendChanMessage("That channel is not in the watch list. Please check the channel name you've provided.");
+    	return;
+    }
     if (command == "showteam") {
         var teams = [0,1,2,3,4,5].map(function(index) {
             return this.importable(tar, index);
@@ -4794,7 +4861,14 @@ beforeChatMessage: function(src, message, chan) {
 
         sys.stopEvent();
         print("-- Command: " + sys.name(src) + ": " + message);
-        if (message.toLowerCase().indexOf("updaterpg") === -1) {
+        if (Config.watch === true && message.toLowerCase().indexOf("updaterpg") === -1) {
+            if (Config.watchchannels.length > 0) {
+                for (var x = 0; x < Config.watchchannels.length; ++x) {
+            	    if (sys.channel(chan).toLowerCase === Config.watchchannels[x])
+            	        sys.sendAll(sys.name(src) + ": " + message + " [Channel: " + sys.channel(chan) + "]", sys.channelId("Watch"));
+                }
+            }
+            else
                 sys.sendAll(sys.name(src) + ": " + message + " [Channel: " + sys.channel(chan) + "]", sys.channelId("Watch"));
         }
 
