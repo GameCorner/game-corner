@@ -2991,7 +2991,7 @@ modCommand: function(src, command, commandData, tar) {
         }
         else {
             normalbot.sendChanMessage(src, "Watch list:")	
-            for (var x; x < wc.length; ++x) {
+            for (var x = 0; x < wc.length; ++x) {
             	sys.sendChanMessage(src, wc[x]);
             }
             return;
@@ -3955,7 +3955,7 @@ ownerCommand: function(src, command, commandData, tar) {
         var ch = commandData;
         for (var x = 0; x < Config.watchchannels.length; ++x) {
             if (Config.watchchannels[x].toLowerCase() === ch.toLowerCase()) {
-            	normalbot.sendChanMessage("That channel is already being watched.");
+            	normalbot.sendChanMessage(src, "That channel is already being watched.");
             	return;
             }
         }   
@@ -3972,7 +3972,7 @@ ownerCommand: function(src, command, commandData, tar) {
     	    	return;
     	    }
     	}
-    	normalbot.sendChanMessage("That channel is not in the watch list. Please check the channel name you've provided.");
+    	normalbot.sendChanMessage(src, "That channel is not in the watch list. Please check the channel name you've provided.");
     	return;
     }
     if (command == "showteam") {
@@ -4864,7 +4864,7 @@ beforeChatMessage: function(src, message, chan) {
         if (Config.watch === true && message.toLowerCase().indexOf("updaterpg") === -1) {
             if (Config.watchchannels.length > 0) {
                 for (var x = 0; x < Config.watchchannels.length; ++x) {
-            	    if (sys.channel(chan).toLowerCase === Config.watchchannels[x])
+            	    if (sys.channel(chan).toLowerCase() === Config.watchchannels[x].toLowerCase())
             	        sys.sendAll(sys.name(src) + ": " + message + " [Channel: " + sys.channel(chan) + "]", sys.channelId("Watch"));
                 }
             }
