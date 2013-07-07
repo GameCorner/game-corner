@@ -2992,7 +2992,7 @@ modCommand: function(src, command, commandData, tar) {
         else {
             normalbot.sendChanMessage(src, "Watch list:")	
             for (var x = 0; x < wc.length; ++x) {
-            	sys.sendChanMessage(src, wc[x]);
+            	sendChanMessage(src, wc[x]);
             }
             return;
         }
