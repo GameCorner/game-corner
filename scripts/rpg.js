@@ -94,7 +94,7 @@ function RPG(rpgchan) {
             for (var l in access) {
                 var p = places[access[l]];
                 if (!p.hide || p.hide !== true) {
-                    out.push(p.name + " (" + access[l] + "): " + p.info + " [Type: " + cap(p.type) + "]");
+                    out.push(p.name + " (" + access[l] + "): " + p.info + (p.type ? " [Type: " + cap(p.type) + "]" : ""));
                 }
             }
             for (l in out) {
@@ -696,6 +696,11 @@ function RPG(rpgchan) {
     this.applyEffect = function(src, effect, person) {
         var player = getAvatar(src);   
         var e, sample, out = [];
+        if ("messages" in effect) {
+            for (e in effect.messages) {
+                out.push(effect.messages[e]);
+            }
+        }
         if ("hp" in effect) {
             player.hp += effect.hp;
         }
@@ -978,6 +983,13 @@ function RPG(rpgchan) {
                 var att = ["hp", "mp", "str", "def", "spd", "dex", "mag"];
                 for (r in req.attributes) {
                     if (att.indexOf(r) !== -1 && player[r] < req.attributes[r]) {
+                        deny = true;
+                    }
+                }
+            }
+            if ("skills" in req) {
+                for (r in req.skills) {
+                    if (!player.skills[r] || player.skills[r] < req.skills[r]) {
                         deny = true;
                     }
                 }
@@ -1514,6 +1526,8 @@ function RPG(rpgchan) {
                 damagedNames: [],
                 evaded: [],
                 summons: [],
+                userEffect: [],
+                targetEffect: [],
                 summonFailed: false
             };
             
@@ -1570,7 +1584,7 @@ function RPG(rpgchan) {
                             if (move.effect.itemCost[n] < 0) {
                                 continue;
                             } else if(hasItem(player, n, move.effect.itemCost[n]) === false) {
-                                missingItems.push(move.effect.itemCost[n] + " " + items[n].name + "(s)");
+                                missingItems.push((move.effect.itemCost[n] || "a") + " " + items[n].name + "(s)");
                             }
                         }
                         if (missingItems.length > 0) {
@@ -1858,6 +1872,9 @@ function RPG(rpgchan) {
                                     }
                                 }
                             } 
+                            if ("message" in move.effect.target && effectsMessages.targetEffect.indexOf(target.name) === -1) {
+                                effectsMessages.targetEffect.push(target.name);
+                            }
                         }
                         if (move.effect.user && (!move.effect.userChance || Math.random() < getLevelValue(move.effect.userChance, level))) {
                             if (!player.battle.counters) {
@@ -1915,6 +1932,9 @@ function RPG(rpgchan) {
                                             break;
                                     }
                                 }
+                            }
+                            if ("message" in move.effect.user && effectsMessages.userEffect.indexOf(target.name) === -1) {
+                                effectsMessages.userEffect.push(target.name);
                             }
                         }
                         if (target.battle.casting !== null && move.effect.breakCast && Math.random() < getLevelValue(move.effect.breakCast, level)) {
@@ -2048,6 +2068,12 @@ function RPG(rpgchan) {
                 
                 if (effectsMessages.castBreak.length > 0) {
                     out.push(readable(effectsMessages.castBreak, "and") + "'s concentration was broken!");
+                }
+                if (effectsMessages.targetEffect.length > 0) {
+                    out.push(move.effect.target.message.replace(/~Target~/g, readable(effectsMessages.targetEffect, "and")).replace(/~User~/g, player.name));
+                }
+                if (effectsMessages.userEffect.length > 0) {
+                    out.push(move.effect.user.message.replace(/~Target~/g, readable(effectsMessages.userEffect, "and")).replace(/~User~/g, player.name));
                 }
                 
                 if (effectsMessages.defeated.length > 0) {
@@ -3701,46 +3727,46 @@ function RPG(rpgchan) {
             }
             var s;
             if (skills[what].requisites) {
+                var denymsg = [];
                 var req = skills[what].requisites;
                 if (req.level && player.level < req.level) {
-                    rpgbot.sendMessage(src, "You need to be at least level " + req.level + " to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need to be at least level " + req.level + " to learn this skill!");
                 }
                 if (req.maxhp && player.maxhp < req.maxhp) {
-                    rpgbot.sendMessage(src, "You need at least " + req.maxhp + " HP to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need at least " + req.maxhp + " HP to learn this skill!");
                 }
                 if (req.maxmp && player.maxmp < req.maxmp) {
-                    rpgbot.sendMessage(src, "You need at least " + req.maxmp + " Mana to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need at least " + req.maxmp + " Mana to learn this skill!");
                 }
                 if (req.str && player.str < req.str) {
-                    rpgbot.sendMessage(src, "You need at least " + req.str + " Strength to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need at least " + req.str + " Strength to learn this skill!");
                 }
                 if (req.def && player.def < req.def) {
-                    rpgbot.sendMessage(src, "You need at least " + req.def + " Defense to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need at least " + req.def + " Defense to learn this skill!");
                 }
                 if (req.spd && player.spd < req.spd) {
-                    rpgbot.sendMessage(src, "You need at least " + req.spd + " Speed to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need at least " + req.spd + " Speed to learn this skill!");
                 }
                 if (req.dex && player.dex < req.dex) {
-                    rpgbot.sendMessage(src, "You need at least " + req.dex + " Dexterity to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need at least " + req.dex + " Dexterity to learn this skill!");
                 }
                 if (req.mag && player.mag < req.mag) {
-                    rpgbot.sendMessage(src, "You need at least " + req.mag + " Magic to learn this skill!", rpgchan);
-                    return;
+                    denymsg.push("You need at least " + req.mag + " Magic to learn this skill!");
                 }
                 if (req.skill) {
                     for (s in req.skill) {
                         if (!(s in player.skills) || player.skills[s] < req.skill[s]) {
-                            rpgbot.sendMessage(src, "You need at least " + skills[s].name + " at level " + req.skill[s] + " to learn this skill!", rpgchan);
+                            denymsg.push("You need the skill " + skills[s].name + " at least at level " + req.skill[s] + " to learn this skill!");
                             return;
                         }
                     }
+                }
+				
+                if (denymsg.length > 0) {
+                    for (s in denymsg) {
+                        rpgbot.sendMessage(src, denymsg[s], rpgchan);
+                    }
+                    return;
                 }
             }
             if (!(what in player.skills)) {
@@ -3977,12 +4003,25 @@ function RPG(rpgchan) {
         if (job !== player.job) {
             player.job = job;
             
-            for (var s in classes[job].skills) {
+            for (var s in player.skills) {
+                if (!(s in classes[job].skills) && player.skills[s] === 0) {
+                    delete player.skills[s];
+                }
+            }
+            
+            for (s in classes[job].skills) {
                 if (!(s in player.skills)) {
                     player.skills[s] = classes[job].skills[s];
                 }
             }
-        
+            
+            for (e in player.equips) {
+                if (player.equips[e] !== null && canUseItem(player, player.equips[e]) === false) {
+                    player.equips[e] = null;
+                }
+            }
+            
+            this.updateBonus(player.id);
         }
     };
     function randomSampleText(obj, translator) {
@@ -4653,9 +4692,6 @@ function RPG(rpgchan) {
         for (i in classes[file.job].skills) {
             if (!(i in file.skills)) {
                 file.skills[i] = classes[file.job].skills[i];
-                if (skills[i].type === "passive" && classes[file.job].skills[i] > 0) {
-                    file.passives[i] = classes[file.job].skills[i];
-                }
             }
         }
         if (!file.publicStats) {
@@ -5104,16 +5140,17 @@ function RPG(rpgchan) {
         var player = getAvatar(src);
         
         var out = ["", "Active Skills:"];
+        var job = player.job;
         for (var s in player.skills) {
             if (skills[s].type !== "passive") {
-                out.push(skills[s].name + " (" + s + ") : [" + player.skills[s] + "/" + skills[s].levels + "] " + skills[s].info + (" (" + skills[s].cost + " Mana)"));
+                out.push(skills[s].name + " (" + s + ") : [" + player.skills[s] + "/" + skills[s].levels + "] " + skills[s].info + " (" + skills[s].cost + " Mana) " + (leveling.skillFromOtherClass === false && !(s in classes[job].skills) ? "(Skill from another class)" : ""));
             }
         }
         out.push("");
         out.push("Passive Skills:");
         for (s in player.skills) {
             if (skills[s].type === "passive") {
-                out.push(skills[s].name + " (" + s + ") : [" + player.skills[s] + "/" + skills[s].levels + "] " + skills[s].info);
+                out.push(skills[s].name + " (" + s + ") : [" + player.skills[s] + "/" + skills[s].levels + "] " + skills[s].info + " " + (leveling.skillFromOtherClass === false && !(s in classes[job].skills) ? "(Skill from another class)" : ""));
             }
         }
         
