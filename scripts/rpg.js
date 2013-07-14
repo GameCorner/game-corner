@@ -696,6 +696,9 @@ function RPG(rpgchan) {
     this.applyEffect = function(src, effect, person) {
         var player = getAvatar(src);   
         var e, sample, out = [];
+        if ("broadcast" in effect) {
+            rpgbot.sendAll(effect.broadcast.replace(/~Player~/gi, player.name), rpgchan);
+        }
         if ("messages" in effect) {
             for (e in effect.messages) {
                 out.push(effect.messages[e]);
@@ -2834,7 +2837,7 @@ function RPG(rpgchan) {
                 if (player.equips[i] !== null && !(player.equips[i] in items)) {
                     sys.sendMessage(src, equipment[i] + ": Invalid item '" + player.equips[i] + "' found! Contact an RPG Admin to fix the issue!", rpgchan);
                 } else {
-                    sys.sendMessage(src, equipment[i] + ": " + (player.equips[i] === null ? "Nothing" : items[player.equips[i]].name + " - " + items[player.equips[i]].info + " " + getEquipAttributes(player.equips[i], true)), rpgchan);
+                    sys.sendMessage(src, equipment[i] + ": " + (player.equips[i] === null ? (i === "lhand" && player.equips.rhand !== null && items[player.equips.rhand].slot === "2-hands" ? items[player.equips.rhand].name : "Nothing") : items[player.equips[i]].name + " - " + items[player.equips[i]].info + " " + getEquipAttributes(player.equips[i], true)), rpgchan);
                 }
             }
         }
@@ -3757,7 +3760,6 @@ function RPG(rpgchan) {
                     for (s in req.skill) {
                         if (!(s in player.skills) || player.skills[s] < req.skill[s]) {
                             denymsg.push("You need the skill " + skills[s].name + " at least at level " + req.skill[s] + " to learn this skill!");
-                            return;
                         }
                     }
                 }
@@ -5275,7 +5277,7 @@ function RPG(rpgchan) {
             if (target.equips[i] !== null && !(target.equips[i] in items)) {
                 out.push(equipment[i] + ": Invalid equipment '" + target.equips[i] + "' found! Contact an RPG Admin to fix the issue!");
             } else {
-                out.push(equipment[i] + ": " + (target.equips[i] === null ? "Nothing" : items[target.equips[i]].name));
+                out.push(equipment[i] + ": " + (target.equips[i] === null ? (i === "lhand" && target.equips.rhand !== null && items[target.equips.rhand].slot === "2-hands" ? items[target.equips.rhand].name : "Nothing") : items[target.equips[i]].name));
             }
         }
         out.push("");
@@ -5894,6 +5896,7 @@ function RPG(rpgchan) {
             loadchar: [this.loadGame, "To load your previously saved game."],
             view: [this.viewPlayer, "To view someone else's stats."],
             leaderboard: [this.viewLeaderboard, "To view the RPG Leaderboards."],
+            rpgleaderboard: [this.viewLeaderboard, "To view the RPG Leaderboards."]
 		},
 		op: {
 		},
