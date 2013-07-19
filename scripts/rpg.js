@@ -7,9 +7,9 @@ function RPG(rpgchan) {
     
     var charVersion = 1.1;
     var savefolder = "rpgsaves";
-    var contentfile = "rpgcontent.json"
-    var locationfile = "rpglocation.txt"
-    var leaderboardfile = "rpgleaderboard.json"
+    var contentfile = "rpgcontent.json";
+    var locationfile = "rpglocation.txt";
+    var leaderboardfile = "rpgleaderboard.json";
     var rpgAtt = "rpg";
     
     var classes;
@@ -1450,18 +1450,44 @@ function RPG(rpgchan) {
         var player;
         
         for (var p in this.team1) {
+            player = this.team1[p];
+            player.battle = {
+                counters: {
+                    bonus: {},
+                    overTime: {},
+                    effects: {}
+                },
+                bonus: {},
+                effects: {},
+                hpdamage:{},
+                mpdamage:{},
+                delay: 0,
+                attributes: {}
+            };
             if (this.team1[p].isPlayer) {
                 p1 = true;
-                player = this.team1[p];
                 this.colorNames[player.name] = '<span style="font-weight:bold; color:' + sys.getColor(player.id) + ';">' + player.name + '</span>';
             } else if (this.team1[p].forceSave === true) {
                 this.forceSave = true;
             }
         }
         for (p in this.team2) {
+            player = this.team2[p];
+            player.battle = {
+                counters: {
+                    bonus: {},
+                    overTime: {},
+                    effects: {}
+                },
+                bonus: {},
+                effects: {},
+                hpdamage:{},
+                mpdamage:{},
+                delay: 0,
+                attributes: {}
+            };
             if (this.team2[p].isPlayer) {
                 p2 = true;
-                player = this.team2[p];
                 this.colorNames[player.name] = '<span style="font-weight:bold; color:' + sys.getColor(player.id) + ';">' + player.name + '</span>';
             } else if (this.team2[p].forceSave === true) {
                 this.forceSave = true;
@@ -1480,7 +1506,26 @@ function RPG(rpgchan) {
         this.names2 = this.team2.map(getTeamNames, this);
     }
     function getFullValue(p, att) {
-        return p[att] + p.bonus.battle[att] + p.bonus.equip[att] + p.bonus.skill[att];
+        var result = p[att] + p.bonus.equip[att] + p.bonus.skill[att];
+        
+        for (var e in p.battle.bonus) {
+            if (att in p.battle.bonus[e]) {
+                result += p.battle.bonus[e][att];
+            }
+        }
+        
+        return result;
+    }
+    function getBuffedMultiplier(p, att) {
+        var result = 1 * getPassiveMultiplier(p, att) * getEquipMultiplier(p, att);
+        
+        for (var e in p.battle.bonus) {
+            if (att in p.battle.bonus[e]) {
+                result *= p.battle.bonus[e][att];
+            }
+        }
+        
+        return result;
     }
     Battle.prototype.playNextTurn = function() {
         var out = ['', '<span style="font-weight:bold;">Turn: ' + this.turn + '</span>'];
@@ -1488,25 +1533,43 @@ function RPG(rpgchan) {
         var team2 = this.team2;
         
         var priority = team1.concat(team2);
-        priority.sort(function(a, b) { return getFullValue(b, "spd") - getFullValue(a, "spd"); });
+        var pr, i;
+        for (i in priority) {
+            pr = priority[i];
+            pr.battle.attributes = {
+                str: getFullValue(pr, "str"),
+                def: getFullValue(pr, "def"),
+                spd: getFullValue(pr, "spd"),
+                dex: getFullValue(pr, "dex"),
+                mag: getFullValue(pr, "mag"),
+                accuracy: getBuffedMultiplier(pr, "accuracy"),
+                evasion: getBuffedMultiplier(pr, "evasion"),
+                critical: getBuffedMultiplier(pr, "critical"),
+                attackSpeed: getBuffedMultiplier(pr, "attackSpeed")
+            };
+        }
+        
+        priority.sort(function(a, b) { return b.battle.attributes.spd - a.battle.attributes.spd; });
         
         var totalDex = 0;
-        for (var i = 0; i < priority.length; ++i) {
-            if (priority[i].hp > 0) {
-                totalDex += getFullValue(priority[i], "dex");
+        for (i = 0; i < priority.length; ++i) {
+            pr = priority[i];
+            if (pr.hp > 0) {
+                totalDex += pr.battle.attributes.dex;
             }
         }
         var doubleAttackDex = Math.floor(totalDex / (priority.length + 1) * 2) + 1;
         var tripleAttackDex = Math.floor(totalDex * 0.75) + 1;
         var quadAttackDex = Math.floor(totalDex * 0.90) + 1;
         for (i = priority.length - 1; i >= 0; --i) {
-            var d = Math.floor(getFullValue(priority[i], "dex") * getPassiveMultiplier(priority[i], "attackSpeed")) * (priority[i].battle.attackSpeed ? priority[i].battle.attackSpeed : 1);
+            pr = priority[i];
+            var d = Math.floor(pr.battle.attributes.dex * pr.battle.attributes.attackSpeed);
             if (d >= doubleAttackDex && d >= 3) {
-                priority.push(priority[i]);
+                priority.push(pr);
                 if (d >= tripleAttackDex) {
-                    priority.push(priority[i]);
+                    priority.push(pr);
                     if (d >= quadAttackDex) {
-                        priority.push(priority[i]);
+                        priority.push(pr);
                     }
                 }
             }
@@ -1611,7 +1674,6 @@ function RPG(rpgchan) {
                     player.battle.casting = null;
                 }
                 
-                
                 switch (move.target.toLowerCase()) {
                     case "self":
                         targets.push(player);
@@ -1702,8 +1764,8 @@ function RPG(rpgchan) {
                     }
                     
                     if (move.type === "physical" || move.type === "magical") {
-                        var acc = getFullValue(player, "dex") * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * getEquipMultiplier(player, "accuracy") * getPassiveMultiplier(player, "accuracy") * (player.battle.accuracy ? player.battle.accuracy : 1);
-                        var evd = getFullValue(target, "spd") * battleSetup.evasion * getEquipMultiplier(target, "evasion") * getPassiveMultiplier(target, "evasion") * (target.battle.evasion ? target.battle.evasion : 1);
+                        var acc = player.battle.attributes.dex * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * player.battle.attributes.accuracy;
+                        var evd = target.battle.attributes.spd * battleSetup.evasion * target.battle.attributes.evasion;
                         if (acc <= 0) {
                             acc = 1;
                         }
@@ -1736,11 +1798,11 @@ function RPG(rpgchan) {
                         if (move.effect && "attributeModifier" in move.effect) {
                             for (var m in move.effect.attributeModifier) {
                                 if (["str", "def", "spd", "dex", "mag"].indexOf(m) !== -1) {
-                                    power += getFullValue(player, m) * getLevelValue(move.effect.attributeModifier[m], level);
+                                    power += player.battle.attributes[m] * getLevelValue(move.effect.attributeModifier[m], level);
                                 }
                             }
                         } else {
-                            power = move.type === "physical" ? getFullValue(player, "str") : getFullValue(player, "mag");
+                            power = move.type === "physical" ? player.battle.attributes.str : player.battle.attributes.mag;
                             if (power <= 0) {
                                 power = 1;
                             }
@@ -1761,7 +1823,7 @@ function RPG(rpgchan) {
                             }
                         }
                         
-                        var def = getFullValue(target, "def") * battleSetup.defense;
+                        var def = target.battle.attributes.def * battleSetup.defense;
                         if (move.effect && move.effect.pierce) {
                             var pierce = move.effect.pierce;
                             if (pierce === true) {
@@ -1778,15 +1840,15 @@ function RPG(rpgchan) {
                         var atkElement = "none";
                         if (move.element && move.element !== "none") {
                             atkElement = move.element;
-                        } else if (player.battle.atkElement) {
-                            atkElement = player.battle.atkElement;
+                        } else if (player.battle.attackElement) {
+                            atkElement = player.battle.attackElement;
                         } else {
                             atkElement = player.attackElement;
                         }
                         
                         var defElement = "none";
-                        if (target.battle.defElement) {
-                            defElement = target.battle.defElement;
+                        if (target.battle.defenseElement) {
+                            defElement = target.battle.defenseElement;
                         } else {
                             defElement = target.defenseElement;
                         }
@@ -1796,8 +1858,8 @@ function RPG(rpgchan) {
                             element = elements[atkElement][defElement];
                         }
                         
-                        var main = move.type === "physical" ? getFullValue(player, "str") : getFullValue(player, "mag");
-                        var invert = move.type === "physical" ? getFullValue(player, "mag") : getFullValue(player, "str");
+                        var main = move.type === "physical" ? player.battle.attributes.str : player.battle.attributes.mag;
+                        var invert = move.type === "physical" ? player.battle.attributes.mag : player.battle.attributes.str;
                         main = main <= 0 ? 1 : main;
                         invert = invert <= 0 ? 1 : invert;
                         var varRange = (invert / main > 1 ? 1 : invert / main) * 0.25;
@@ -1806,7 +1868,7 @@ function RPG(rpgchan) {
                         if (power < 0) {
                             critical = 1;
                         } else {
-                            var critChance = (invert / main) * 0.66 * getEquipMultiplier(player, "critical") * getPassiveMultiplier(player, "critical") * (player.battle.critical ? player.battle.critical : 1);
+                            var critChance = (invert / main) * 0.66 * player.battle.attributes.critical;
                             critical = (Math.random() < critChance) ? battleSetup.critical : 1;
                         }
                         variation = (critical === battleSetup.critical) ? 1 : variation;
@@ -1815,129 +1877,143 @@ function RPG(rpgchan) {
                     
                     if (move.effect) {
                         var duration = move.effect.duration ? getLevelValue(move.effect.duration, level) : 6;
-                        var e;
+                        var e, eff, bonus;
+                        var bonusAtt = ["str", "def", "spd", "dex", "mag", "accuracy", "critical", "evasion", "attackSpeed"];
                         
                         if (move.effect.target && (!move.effect.targetChance || Math.random() < getLevelValue(move.effect.targetChance, level))) {
-                            if (!target.battle.counters) {
-                                target.battle.counters = {};
-                                target.battle.counters.overTime = {};
-                                target.battle.hpdamage = {};
-                                target.battle.mpdamage = {};
-                            }
-                            for (e in move.effect.target) {
-                                if (e in target.bonus.battle) {
-                                    target.bonus.battle[e] = getLevelValue(move.effect.target[e], level);
-                                    target.battle.counters[e] = duration;
-                                } else {
-                                    switch (e) {
-                                        case "mp":
-                                            target.mp += getLevelValue(move.effect.target[e], level);
-                                            break;
-                                        case "hp":
-                                            damage -= getLevelValue(move.effect.target[e], level);
-                                            break;
-                                        case "mpPercent":
-                                            target.mp += Math.round(getLevelValue(move.effect.target[e], level) * target.maxmp);
-                                            break;
-                                        case "hpPercent":
-                                            damage -= Math.round(getLevelValue(move.effect.target[e], level) * target.maxhp);
-                                            break;
-                                        case "hpdamage":
-                                        case "mpdamage":
-                                            target.battle.counters.overTime[moveName] = duration;
-                                            target.battle[e][moveName] = getLevelValue(move.effect.target[e], level);
-                                            break;
-                                        case "accuracy":
-                                        case "evasion":
-                                        case "critical":
-                                        case "attackSpeed":
-                                            target.battle[e] = getLevelValue(move.effect.target[e], level);
-                                            target.battle.counters[e] = duration;
-                                            break;
-                                        case "delay":
-                                            if (!target.battle.delay || target.battle.delay <= 0) {
-                                                target.battle.delay = getLevelValue(move.effect.target[e], level);
-                                            }
-                                            break;
-                                        case "attackElement":
-                                        case "defenseElement":
-                                            target.battle[e] = move.effect.target[e];
-                                            target.battle.counters[e] = duration;
-                                            break;
-                                        case "focus":
-                                            focusList = this.team1.indexOf(target) !== -1 ? this.team1Focus : this.team2Focus;
-                                            if (focusList.indexOf(target) === -1) {
-                                                focusList.push(target);
-                                            }
-                                            target.battle.counters[e] = duration;
-                                            break;
-                                        
+                            eff = move.effect.target;
+                            
+                            //Apply attribute bonus for player attributes (str, def, etc) and modifiers (accuracy, critical, etc).
+                            for (e in bonusAtt) {
+                                if (bonusAtt[e] in eff) {
+                                    target.battle.bonus[moveName] = {};
+                                    
+                                    for (e in bonusAtt) {
+                                        bonus = bonusAtt[e];
+                                        if (bonus in eff) {
+                                            target.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
+                                        }
                                     }
+                                    target.battle.counters.bonus[moveName] = duration;
+                                    break;
                                 }
-                            } 
-                            if ("message" in move.effect.target && effectsMessages.targetEffect.indexOf(target.name) === -1) {
+                            }
+                            if ("mp" in eff) {
+                                target.mp += getLevelValue(eff.mp, level);
+                            }
+                            if ("hp" in eff) {
+                                damage -= getLevelValue(eff.hp, level);
+                            }
+                            if ("mpPercent" in eff) {
+                                target.mp += Math.round(getLevelValue(eff.mpPercent, level) * target.maxmp);
+                            }
+                            if ("hpPercent" in eff) {
+                                damage -= Math.round(getLevelValue(eff.hpPercent, level) * target.maxhp);
+                            }
+                            //Damage Over Time Effect
+                            if ("hpdamage" in eff) {
+                                target.battle.counters.overTime[moveName] = duration;
+                                target.battle.hpdamage[moveName] = getLevelValue(eff.hpdamage, level);
+                            }
+                            if ("mpdamage" in eff) {
+                                target.battle.counters.overTime[moveName] = duration;
+                                target.battle.mpdamage[moveName] = getLevelValue(eff.mpdamage, level);
+                            }
+                            
+                            if ("delay" in eff) {
+                                if (target.battle.delay <= 0) {
+                                    target.battle.delay = getLevelValue(eff.delay, level);
+                                }
+                            }
+                            if ("attackElement" in eff) {
+                                target.battle.attackElement = eff.attackElement;
+                                target.battle.counters.effects.attackElement = duration;
+                                target.battle.effects.attackElement = moveName;
+                            }
+                            if ("defenseElement" in eff) {
+                                target.battle.defenseElement = eff.defenseElement;
+                                target.battle.counters.effects.defenseElement = duration;
+                                target.battle.effects.defenseElement = moveName;
+                            }
+                            if ("focus" in eff) {
+                                focusList = this.team1.indexOf(target) !== -1 ? this.team1Focus : this.team2Focus;
+                                if (focusList.indexOf(target) === -1) {
+                                    focusList.push(target);
+                                }
+                                target.battle.counters.effects.focus = duration;
+                                target.battle.effects.focus = moveName;
+                            }
+                                
+                            if ("message" in eff && effectsMessages.targetEffect.indexOf(target.name) === -1) {
                                 effectsMessages.targetEffect.push(target.name);
                             }
                         }
                         if (move.effect.user && (!move.effect.userChance || Math.random() < getLevelValue(move.effect.userChance, level))) {
-                            if (!player.battle.counters) {
-                                player.battle.counters = {};
-                                player.battle.counters.overTime = {};
-                                player.battle.hpdamage = {};
-                                player.battle.mpdamage = {};
-                            }
-                            for (e in move.effect.user) {
-                                if (e in player.bonus.battle) {
-                                    player.bonus.battle[e] = getLevelValue(move.effect.user[e], level);
-                                    player.battle.counters[e] = duration;
-                                } else {
-                                    switch (e) {
-                                        case "mp":
-                                            player.mp += getLevelValue(move.effect.user[e], level);
-                                            break;
-                                        case "hp":
-                                            player.hp += getLevelValue(move.effect.user[e], level);
-                                            break;
-                                        case "mpPercent":
-                                            player.mp += Math.round(getLevelValue(move.effect.user[e], level) * player.maxmp);
-                                            break;
-                                        case "hpPercent":
-                                            player.hp += Math.round(getLevelValue(move.effect.user[e], level) * player.maxhp);
-                                            break;
-                                        case "hpdamage":
-                                        case "mpdamage":
-                                            player.battle.counters.overTime[moveName] = duration;
-                                            player.battle[e][moveName] = getLevelValue(move.effect.user[e], level);
-                                            break;
-                                        case "accuracy":
-                                        case "evasion":
-                                        case "critical":
-                                        case "attackSpeed":
-                                            player.battle[e] = getLevelValue(move.effect.user[e], level);
-                                            player.battle.counters[e] = duration;
-                                            break;
-                                        case "delay":
-                                            if (!player.battle.delay || player.battle.delay <= 0) {
-                                                player.battle.delay = getLevelValue(move.effect.user[e], level);
-                                            }
-                                            break;
-                                        case "attackElement":
-                                        case "defenseElement":
-                                            player.battle[e] = move.effect.user[e];
-                                            player.battle.counters[e] = duration;
-                                            break;
-                                        case "focus":
-                                            focusList = side === 1 ? this.team1Focus : this.team2Focus;
-                                            if (focusList.indexOf(player) === -1) {
-                                                focusList.push(player);
-                                            }
-                                            player.battle.counters[e] = duration;
-                                            break;
+                            eff = move.effect.user;
+                            
+                            //Apply attribute bonus for player attributes (str, def, etc) and modifiers (accuracy, critical, etc).
+                            for (e in bonusAtt) {
+                                if (bonusAtt[e] in eff) {
+                                    player.battle.bonus[moveName] = {};
+                                    
+                                    for (e in bonusAtt) {
+                                        bonus = bonusAtt[e];
+                                        if (bonus in eff) {
+                                            player.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
+                                        }
                                     }
+                                    player.battle.counters.bonus[moveName] = duration;
+                                    break;
                                 }
                             }
-                            if ("message" in move.effect.user && effectsMessages.userEffect.indexOf(target.name) === -1) {
-                                effectsMessages.userEffect.push(target.name);
+                            if ("mp" in eff) {
+                                player.mp += getLevelValue(eff.mp, level);
+                            }
+                            if ("hp" in eff) {
+                                player.hp += getLevelValue(eff.hp, level);
+                            }
+                            if ("mpPercent" in eff) {
+                                player.mp += Math.round(getLevelValue(eff.mpPercent, level) * player.maxmp);
+                            }
+                            if ("hpPercent" in eff) {
+                                player.hp += Math.round(getLevelValue(eff.hpPercent, level) * player.maxhp);
+                            }
+                            //Damage Over Time Effect
+                            if ("hpdamage" in eff) {
+                                player.battle.counters.overTime[moveName] = duration;
+                                player.battle.hpdamage[moveName] = getLevelValue(eff.hpdamage, level);
+                            }
+                            if ("mpdamage" in eff) {
+                                player.battle.counters.overTime[moveName] = duration;
+                                player.battle.mpdamage[moveName] = getLevelValue(eff.mpdamage, level);
+                            }
+                            
+                            if ("delay" in eff) {
+                                if (player.battle.delay <= 0) {
+                                    player.battle.delay = getLevelValue(eff.delay, level);
+                                }
+                            }
+                            if ("attackElement" in eff) {
+                                player.battle.attackElement = eff.attackElement;
+                                player.battle.counters.effects.attackElement = duration;
+                                player.battle.effects.attackElement = moveName;
+                            }
+                            if ("defenseElement" in eff) {
+                                player.battle.defenseElement = eff.defenseElement;
+                                player.battle.counters.effects.defenseElement = duration;
+                                player.battle.effects.defenseElement = moveName;
+                            }
+                            if ("focus" in eff) {
+                                focusList = this.team1.indexOf(player) !== -1 ? this.team1Focus : this.team2Focus;
+                                if (focusList.indexOf(player) === -1) {
+                                    focusList.push(player);
+                                }
+                                player.battle.counters.effects.focus = duration;
+                                player.battle.effects.focus = moveName;
+                            }
+                                
+                            if ("message" in eff && effectsMessages.targetEffect.indexOf(player.name) === -1) {
+                                effectsMessages.targetEffect.push(player.name);
                             }
                         }
                         if (target.battle.casting !== null && move.effect.breakCast && Math.random() < getLevelValue(move.effect.breakCast, level)) {
@@ -1991,6 +2067,31 @@ function RPG(rpgchan) {
                                     summoned.summoner = target;
                                     summoned.isSummon = true;
                                     targetTeam.push(summoned);
+                                    
+                                    summoned.battle = {
+                                        counters: {
+                                            bonus: {},
+                                            overTime: {},
+                                            effects: {}
+                                        },
+                                        bonus: {},
+                                        effects: {},
+                                        hpdamage:{},
+                                        mpdamage:{},
+                                        delay: 0,
+                                        attributes: {
+                                            str: getFullValue(summoned, "str"),
+                                            def: getFullValue(summoned, "def"),
+                                            spd: getFullValue(summoned, "spd"),
+                                            dex: getFullValue(summoned, "dex"),
+                                            mag: getFullValue(summoned, "mag"),
+                                            accuracy: getBuffedMultiplier(summoned, "accuracy"),
+                                            evasion: getBuffedMultiplier(summoned, "evasion"),
+                                            critical: getBuffedMultiplier(summoned, "critical"),
+                                            attackSpeed: getBuffedMultiplier(summoned, "attackSpeed")
+                                        }
+                                    };
+                                    
                                     target.battle.summons[moveName].push(summoned);
                                     effectsMessages.summons.push(summoned.name);
                                     summonFailed = false;
@@ -2080,7 +2181,7 @@ function RPG(rpgchan) {
                 }
                 
                 if (effectsMessages.defeated.length > 0) {
-                    out.push(readable(effectsMessages.defeated.map(function(x){ return x.name; }), "and") + (effectsMessages.defeated.length > 1 ? " were" : " was") + " defeated!");
+                    out.push(readable(effectsMessages.defeated.map(getName), "and") + (effectsMessages.defeated.length > 1 ? " were" : " was") + " defeated!");
                     
                     for (var defe in effectsMessages.defeated) {
                         if (effectsMessages.defeated[defe].isSummon && effectsMessages.defeated[defe].hp === 0) {
@@ -2095,9 +2196,13 @@ function RPG(rpgchan) {
             }
         }
         
+        function getName(x) {
+            return x.name;
+        }
+        
         // Turn Events here
         var battlers = team1.concat(team2);
-        var buffs, b, o, overTime;
+        var buffs, b, o, counters;
         var translations = {
             str: "Strength",
             def: "Defense",
@@ -2112,56 +2217,70 @@ function RPG(rpgchan) {
             attackSpeed: "Attack Speed"
         };
         function translateAtt(x) { return translations[x]; }
+        function translateSkill(x) { return skills[x].name; }
         for (i = 0; i < battlers.length; ++i) {
             player = battlers[i];
             buffs = [];
             var hpGain = getPassiveValue(player, "hpdamage");
             var mpGain = getPassiveValue(player, "mpdamage");
-            if (player.battle.counters) {
-                for (b in player.battle.counters) {
-                    if (b === "overTime") {
-                        overTime = player.battle.counters.overTime;
-                        for (o in overTime) {
-                            if (overTime[o] > 0) {
-                                overTime[o]--;
-                                if (o in player.battle.hpdamage && player.hp > 0) {
-                                    hpGain += player.battle.hpdamage[o];
-                                }
-                                if (o in player.battle.mpdamage && player.hp > 0) {
-                                    mpGain += player.battle.mpdamage[o];
-                                }
-                            }
+            
+            counters = player.battle.counters.overTime;
+            for (b in counters) {
+                if (counters[b] > 0) {
+                    counters[b]--;
+                    if (b in player.battle.hpdamage && player.hp > 0) {
+                        hpGain += player.battle.hpdamage[b];
+                    }
+                    if (b in player.battle.mpdamage && player.hp > 0) {
+                        mpGain += player.battle.mpdamage[b];
+                    }
+                    if (counters[b] <= 0 && buffs.indexOf(b) === -1) {
+                        buffs.push(b);
+                    }
+                }
+            }
+            counters = player.battle.counters.bonus;
+            for (b in counters) {
+                if (counters[b] > 0) {
+                    counters[b]--;
+                    if (counters[b] <= 0) {
+                        if (buffs.indexOf(b) === -1) {
+                            buffs.push(b);
                         }
-                    } else {
-                        if (player.battle.counters[b] > 0) {
-                            player.battle.counters[b]--;
-                            if (b in player.bonus.battle && player.battle.counters[b] <= 0) {
-                                player.bonus.battle[b] = 0;
-                                if (player.hp > 0) {
-                                    buffs.push(b);
-                                }
-                            } else if (b === "attackElement" && player.battle.counters[b] <= 0) {
-                                player.battle.attackElement = null;
-                                buffs.push(b);
-                            } else if (b === "defenseElement" && player.battle.counters[b] <= 0) {
-                                player.battle.defenseElement = null;
-                                buffs.push(b);
-                            } else if (b === "focus" && player.battle.counters[b] <= 0) {
-                                focusList = this.team1.indexOf(player) !== - 1 ? this.team1Focus : this.team2Focus;
-                                focusList.splice(focusList.indexOf(player), 1);
-                            } else if ((b === "accuracy" || b === "evasion" || b === "critical" || b === "attackSpeed") && player.battle.counters[b] <= 0) {
-                                player.battle[b] = 1;
-                                if (player.hp > 0) {
-                                    buffs.push(b);
-                                }
+                        delete player.battle.bonus[b];
+                    }
+                }
+            }
+            counters = player.battle.counters.effects;
+            for (b in counters) {
+                if (counters[b] > 0) {
+                    counters[b]--;
+                    if (counters[b] <= 0) {
+                        if (b === "attackElement") {
+                            player.battle.attackElement = null;
+                            if (buffs.indexOf(player.battle.effects.attackElement) === -1) {
+                                buffs.push(player.battle.effects.attackElement);
+                            }
+                        } else if (b === "defenseElement") {
+                            player.battle.defenseElement = null;
+                            if (buffs.indexOf(player.battle.effects.defenseElement) === -1) {
+                                buffs.push(player.battle.effects.defenseElement);
+                            }
+                        } else if (b === "focus") {
+                            focusList = this.team1.indexOf(player) !== - 1 ? this.team1Focus : this.team2Focus;
+                            focusList.splice(focusList.indexOf(player), 1);
+                            if (buffs.indexOf(player.battle.effects.focus) === -1) {
+                                buffs.push(player.battle.effects.focus);
                             }
                         }
                     }
                 }
-                if (buffs.length > 0) {
-                    out.push(player.name + "'s " + readable(buffs.map(translateAtt) , "and") + " " + (buffs.length > 1 ? "are" : "is") + " back to normal.");
-                }
             }
+            
+            if (buffs.length > 0 && player.hp > 0) {
+                out.push("The effects of " + readable(buffs.map(translateSkill) , "and") + " on " + player.name + " ended.");
+            }
+            
             var gained = [];
             var lost = [];
             if (mpGain !== 0 && player.hp > 0) {
@@ -4017,9 +4136,9 @@ function RPG(rpgchan) {
                 }
             }
             
-            for (e in player.equips) {
-                if (player.equips[e] !== null && canUseItem(player, player.equips[e]) === false) {
-                    player.equips[e] = null;
+            for (s in player.equips) {
+                if (player.equips[s] !== null && canUseItem(player, player.equips[s]) === false) {
+                    player.equips[s] = null;
                 }
             }
             
@@ -5100,7 +5219,7 @@ function RPG(rpgchan) {
         
         if (charLoaded) {
             this.removePlayer(id, true);
-            getAvatar(id) = player;
+            SESSION.users(id).rpg = player;
             getAvatar(id).location = startup.location;
             rpgbot.sendMessage(id, "Stats/Skills reset!", rpgchan);
             this.saveGame(id, "sure");
@@ -5437,7 +5556,7 @@ function RPG(rpgchan) {
                     places: places,
                     quests: quests,
                     classHelp: classHelp
-                }
+                };
             }
         
             config = parsed.config || result.config;
@@ -5570,7 +5689,7 @@ function RPG(rpgchan) {
                 places: places,
                 quests: quests,
                 classHelp: classHelp
-            }
+            };
             
             sys.writeToFile(contentfile, JSON.stringify(result, null, 4));
             
@@ -5854,7 +5973,7 @@ function RPG(rpgchan) {
             challenge: [this.challengePlayer, "To challenge another player to a duel."],
             revive: [this.reviveSelf, "To respawn after you die."],
             trade: [this.requestTrade, "To request a trade with another player."],
-            accept: [this.acceptTrade, "To instantly accept someone's trade offer."],
+            accept: [this.acceptTrade, "To instantly accept someone's trade offer."]
 		},
         character: {
             plan: [this.setBattlePlan, "To see or set your battle strategy."],
