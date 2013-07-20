@@ -2221,8 +2221,8 @@ function RPG(rpgchan) {
         for (i = 0; i < battlers.length; ++i) {
             player = battlers[i];
             buffs = [];
-            var hpGain = getPassiveValue(player, "hpdamage");
-            var mpGain = getPassiveValue(player, "mpdamage");
+            var hpGain = getPassiveValue(player, "hpdamage") + getEquipValue(player, "hpdamage");
+            var mpGain = getPassiveValue(player, "mpdamage") + getEquipValue(player, "mpdamage");
             
             counters = player.battle.counters.overTime;
             for (b in counters) {
@@ -2698,6 +2698,20 @@ function RPG(rpgchan) {
             }
         }
         return multiplier;
+    }
+    function getEquipValue(player, effect) {
+        var result = 0;
+        if (!player.isPlayer) {
+            return result;
+        }
+        var e, it;
+        for (e in player.equips) {
+            it = player.equips[e];
+            if (it !== null && "effect" in items[it] && effect in items[it].effect) {
+                result += items[it].effect[effect];
+            }
+        }
+        return result;
     }
     function getEquipPercentage(player, effect) {
         var percentage = 0;
