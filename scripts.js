@@ -2733,7 +2733,7 @@ userCommand: function(src, command, commandData, tar, chan) {
         querybot.sendChanMessage(src, commandData + " was last seen: "+ d.toUTCString());
         return;
     }
-    if (isMarked(src) && (command == "mute" || command == "unmute" || command == "aliases" || command == "mutelist")) {
+    if (isMarked(src) && (command == "mute" || command == "unmute" || command == "aliases" || command == "skmute" || command == "mutelist")) {
     	return this.modCommand(src, command, commandData, tar);
     }
     if (isMarked(src) && sys.auth(src) < 1 && (command == "passauth" || command == "passauths")) {
@@ -3507,12 +3507,12 @@ modCommand: function(src, command, commandData, tar) {
             normalbot.sendAll(sys.name(src) + " passed their auth to " + commandData + "!", staffchannel);
         return;
     }
-    if (command == "skmute" && (sys.auth(src) >= 1 || [/* insert mod list here when this goes to admin+ */].indexOf(sys.name(src).toLowerCase()) >= 0)) {
+    if (command == "skmute" && (sys.auth(src) >= 1 || isMarked(src) || [/* insert mod list here when this goes to admin+ */].indexOf(sys.name(src).toLowerCase()) >= 0)) {
         if (tar === undefined)
             normalbot.sendMessage(src, "use only for online target ", channel);
         else {
             normalbot.sendAll("Target: " + sys.name(tar) + ", IP: " + sys.ip(tar) + ", Auth: "+ sys.name(src), staffchannel);
-            script.issueBan("smute", src, undefined, "" + sys.name(tar) + ":skarmpiss:2h");
+            script.issueBan("smute", src, undefined, "" + sys.name(tar) + ":Troll/Spammer/Evader:1d");
         }
         return;
     }
@@ -5006,7 +5006,7 @@ beforeChatMessage: function(src, message, chan) {
 	}	
 
     // Secret mute
-    if (sys.auth(src) === 0 && SESSION.users(src).smute.active) {
+    if (sys.auth(src) === 0 && !isMarked(src) && SESSION.users(src).smute.active) {
         if (SESSION.users(src).expired("smute")) {
             SESSION.users(src).un("smute");
         } else {
