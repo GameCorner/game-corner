@@ -1518,7 +1518,7 @@ init : function() {
     "4. No Advertising: If you want to invite people somewhere, you can ask people to PM you if they are interested.",
     "5. No Trolling: Don't make chat negative. Don't spam or overuse CAPS. Don't do things to bother people or stir up a reaction.",
     "6. No Adult Content: Don't talk about sexual acts or post porn/nudity. ",
-    "7. No Disrespecting: Don't give out other peoples' information. Don't use other peoples' names.",
+    "7. No Disrespecting: Don't give out other peoples' information. Don't use other peoples' names. Don't talk about religion or politics.",
     "8. No Minimodding: Let the auth do their job. ",
     "9. No Circumventing The Rules: Don't ban/mute evade. Don't use loopholes.",
     ""
