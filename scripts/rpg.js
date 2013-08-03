@@ -1819,14 +1819,14 @@ function RPG(rpgchan) {
                         var pinch = 1;
                         if (move.effect && "pinch" in move.effect) {
                             if ("hp" in move.effect.pinch) {
-                                pinch *= player.hp/player.maxhp;
+                                pinch *= player.hp/player.maxhp * getLevelValue(move.effect.pinch.hp, level);
                             } else if ("hpReverse" in move.effect.pinch) {
-                                pinch *= 1 - player.hp/player.maxhp;
+                                pinch *= getLevelValue(move.effect.pinch.hpReverse, level) - player.hp/player.maxhp * getLevelValue(move.effect.pinch.hpReverse, level);
                             }
                             if ("mp" in move.effect.pinch) {
-                                pinch *= player.m/player.maxmp;
+                                pinch *= player.m/player.maxmp * getLevelValue(move.effect.pinch.mp, level);
                             } else if ("mpReverse" in move.effect.pinch) {
-                                pinch *= 1 - player.mp/player.m;
+                                pinch *= getLevelValue(move.effect.pinch.mpReverse, level) - player.mp/player.m * getLevelValue(move.effect.pinch.mpReverse, level);
                             }
                         }
                         power = power * getLevelValue(move.modifier, level) * pinch * battleSetup.damage;
@@ -2632,11 +2632,12 @@ function RPG(rpgchan) {
         this.destroyBattle();
     };
     Battle.prototype.removePlayer = function(src) {
-        var name = getAvatar(src).name;
+        var player = getAvatar(src);
+        var name = player.name;
         var team;
         var found = false;
         for (var s in this.team1) {
-            if (this.team1[s].name === name) {
+            if (this.team1[s] === player) {
                 this.team1.splice(s, 1);
                 team = this.team1;
                 found = true;
@@ -2644,7 +2645,7 @@ function RPG(rpgchan) {
             }
         }
         for (s in this.team2) {
-            if (this.team2[s].name === name) {
+            if (this.team2[s] === player) {
                 this.team2.splice(s, 1);
                 team = this.team2;
                 found = true;
@@ -2652,8 +2653,6 @@ function RPG(rpgchan) {
             }
         }
         if (found) {
-            var player = getAvatar(src);
-            
             if (this.team1Focus.indexOf(player) !== -1) {
                 this.team1Focus.splice(this.team1Focus.indexOf(player), 1);
             }
@@ -3727,7 +3726,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-    		if (player.exp >= expTable[e - 1]) {
+			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
@@ -4259,7 +4258,7 @@ function RPG(rpgchan) {
             player.job = job;
             
             for (var s in player.skills) {
-                if (!(s in classes[job].skills) && player.skills[s] === 0) {
+                if (!(s in classes[job].skills) && player.skills[s] === 0 && leveling.skillFromOtherClass === false) {
                     delete player.skills[s];
                 }
             }
