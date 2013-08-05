@@ -3757,7 +3757,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-			if (player.exp >= expTable[e - 1]) {
+    		if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
@@ -6284,7 +6284,7 @@ function RPG(rpgchan) {
                 data = list[s];
                 if (data.name.toLowerCase() === self) {
                     job = name === "*" ? classes[data.job].name : data.overall;
-                    out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + data.dateString + '</td></tr>');
+                    out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + data.title + '</td><td>' + data.dateString + '</td></tr>');
                     break;
                 }
             }
