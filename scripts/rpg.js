@@ -6217,6 +6217,7 @@ function RPG(rpgchan) {
             
             player = {
                 name: data.name,
+                title: (data.currentTitle !== null && data.currentTitle !== undefined ? titles[data.currentTitle].name : "N/A"),
                 level: data.level,
                 exp: data.exp, 
                 job: data.job,
@@ -6261,7 +6262,7 @@ function RPG(rpgchan) {
         
         var out = [];
         out.push("Leaderboards (" + (name === "*" ? "Overall" : classes[name].name) + "): "  );
-        out.push("<table border='1' cellpadding='3' cellspacing='1'><tr><th>Pos.</th><th>Player</th><th>Level</th><th>" + (name === "*" ? "Class" : "Overall Pos.") + "</th><th>Level Up Date</th></tr>");
+        out.push("<table border='1' cellpadding='3' cellspacing='1'><tr><th>Pos.</th><th>Player</th><th>Level</th><th>" + (name === "*" ? "Class" : "Overall Pos.") + "</th><th>Title</th><th>Level Up Date</th></tr>");
         
         var data, job;
         var len = list.length > 20 ? 20 : list.length;
@@ -6271,7 +6272,7 @@ function RPG(rpgchan) {
         for (var s = 0; s < len; ++s) {
             data = list[s];
             job = name === "*" ? classes[data.job].name : data.overall;
-            out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + data.dateString + '</td></tr>');
+            out.push('<tr><td>' + (s + 1) + '</td><td>' + data.name + '</td><td>' + data.level + '</td><td>' + job + '</td><td>' + data.title + '</td><td>' + data.dateString + '</td></tr>');
             
             if (data.name.toLowerCase() === self) {
                 selfFound = true;
