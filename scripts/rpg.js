@@ -19,6 +19,7 @@ function RPG(rpgchan) {
     var places;
     var elements;
     var quests;
+    var titles;
     var classSets = {};
     
     var tick = 0;
@@ -240,7 +241,7 @@ function RPG(rpgchan) {
         }
         
         if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
-            this.findParty(player.party).broadcast(player.name + " " + verb + " " + places[loc].name, src);
+            this.findParty(player.party).broadcast(getTitleName(src) + " " + verb + " " + places[loc].name, src);
         }
     };
     this.talkTo = function(src, commandData) {
@@ -702,7 +703,7 @@ function RPG(rpgchan) {
         var player = getAvatar(src);   
         var e, sample, out = [];
         if ("broadcast" in effect) {
-            rpgbot.sendAll(effect.broadcast.replace(/~Player~/gi, player.name), rpgchan);
+            rpgbot.sendAll(effect.broadcast.replace(/~Player~/gi, getTitleName(sr)), rpgchan);
         }
         if ("messages" in effect) {
             for (e in effect.messages) {
@@ -917,6 +918,24 @@ function RPG(rpgchan) {
             
             if (updatedQuests.length > 0) {
                 out.push("The following quests have been updated: " + readable(updatedQuests, "and") + ".");
+            }
+        }
+        if ("title" in effect) {
+            for (e in effect.title) {
+                if (effect.title[e] === true) {
+                    if (player.titles.indexOf(e) === -1) {
+                        player.titles.push(e);
+                        out.push("You received the title " + titles[e].name + ".");
+                    }
+                } else {
+                    if (player.titles.indexOf(e) !== -1) {
+                        player.titles.splice(player.titles.indexOf(e), 1);
+                        if (player.currentTitle === e) {
+                            player.currentTitle = null;
+                        }
+                        out.push("You lost the title " + titles[e].name + ".");
+                    }
+                }
             }
         }
         if ("hunt" in effect && person) {
@@ -1253,8 +1272,8 @@ function RPG(rpgchan) {
                 rpgbot.sendMessage(targetId, "Battle couldn't begin because one of the teams is not ready!", rpgchan);
                 return;
             } else {
-                var names1 = team1[1].map(getTeamNames, this);
-                var names2 = team2[1].map(getTeamNames, this);
+                var names1 = team1[1].map(getTitlePlayer, this);
+                var names2 = team2[1].map(getTitlePlayer, this);
                 
                 sys.sendAll("", rpgchan);
                 rpgbot.sendAll("A battle between " + readable(names1, "and") + " and " + readable(names2, "and") + " has begun!", rpgchan);
@@ -2513,19 +2532,24 @@ function RPG(rpgchan) {
         var winner = (win === 1) ? this.team1 : this.team2;
         var loser = (win === 1) ? this.team2 : this.team1;
         
-        var winNames = winner.map(getTeamNames, this);
-        var loseNames = loser.map(getTeamNames, this);
+        var winNames;
+        var loseNames;
         
         if (this.isPVP) {
+            winNames = winner.map(getTitlePlayer, this);
+            loseNames = loser.map(getTitlePlayer, this);
+            
             if (win === 0) {
                 rpgbot.sendAll("The battle between " + readable(winNames, "and") + " and " + readable(loseNames, "and") + " ended in a draw!", rpgchan);
             } else {
-                winNames = (win === 1) ? this.names1 : this.names2;
-                loseNames = (win === 1) ? this.names2 : this.names1;
+                // winNames = (win === 1) ? this.names1 : this.names2;
+                // loseNames = (win === 1) ? this.names2 : this.names1;
                 
                 rpgbot.sendAll(readable(winNames, "and") + " defeated " + readable(loseNames, "and") + "!", rpgchan);
             }
         } else {
+            winNames = winner.map(getTeamNames, this);
+            loseNames = loser.map(getTeamNames, this);
             if (win === 0) {
                 this.sendToViewers("The battle between " + readable(winNames, "and") + " and " + readable(loseNames, "and") + " ended in a draw!", true);
             } else {
@@ -3715,6 +3739,13 @@ function RPG(rpgchan) {
             return false;
         }
     }
+    function getTitleName(src) {
+        var player = getAvatar(src);
+        return (player.currentTitle !== null && player.currentTitle in titles ? titles[player.currentTitle].name + " " : "") + player.name;
+    }
+    function getTitlePlayer(player) {
+        return (player.currentTitle !== null && player.currentTitle in titles ? titles[player.currentTitle].name + " " : "") + player.name;
+    }
     
     this.receiveExp = function(src, commandData) {
         var player = getAvatar(src);
@@ -3738,7 +3769,7 @@ function RPG(rpgchan) {
             player.skillPoints += leveling.skills * dif;
             
             sys.sendAll("", rpgchan);
-            rpgbot.sendAll(player.name + "'s Level increased from " + player.level + " to " + e + "!", rpgchan);
+            rpgbot.sendAll(getTitleName(src) + "'s Level increased from " + player.level + " to " + e + "!", rpgchan);
             
             player.levelUpDate = new Date().getTime();
             
@@ -4513,7 +4544,7 @@ function RPG(rpgchan) {
                 return;
             }
             this.invites.push(id);
-            rpgbot.sendMessage(id, sys.name(src) + " is inviting you to a party! To join, type /party join:" + this.name, rpgchan);
+            rpgbot.sendMessage(id, getTitleName(src) + " is inviting you to a party! To join, type /party join:" + this.name, rpgchan);
             rpgbot.sendMessage(src, "You invited " + sys.name(id) + " to the party!", rpgchan);
             
         }
@@ -4527,7 +4558,7 @@ function RPG(rpgchan) {
             this.invites.splice(this.invites.indexOf(src), 1);
             this.members.push(src);
             getAvatar(src).party = this.name;
-            this.broadcast(sys.name(src) + " has joined the party!");
+            this.broadcast(getTitleName(src) + " has joined the party!");
             this.fix();
         } else {
             rpgbot.sendMessage(src, "You haven't been invited to this party!", rpgchan);
@@ -4599,7 +4630,7 @@ function RPG(rpgchan) {
         rpgbot.sendMessage(src, "Your Party (" + this.name + "): ", rpgchan);
         for (var x = 0; x < this.members.length; ++x) {
             var player = getAvatar(this.members[x]);
-            rpgbot.sendMessage(src, player.name + (x === 0 ? " (Leader)" : "") + " [" + classes[player.job].name + " Lv. " + player.level + ", at " + places[player.location].name + (player.hp === 0 ? " (Dead)" : "") + "]", rpgchan);
+            rpgbot.sendMessage(src, getTitlePlayer(player) + (x === 0 ? " (Leader)" : "") + " [" + classes[player.job].name + " Lv. " + player.level + ", at " + places[player.location].name + (player.hp === 0 ? " (Dead)" : "") + "]", rpgchan);
         }
         sys.sendMessage(src, "", rpgchan);
     };
@@ -4730,6 +4761,8 @@ function RPG(rpgchan) {
         player.hunted = {};
         
         player.quests = {};
+        player.titles = [];
+        player.currentTitle = null;
         player.updateReset = true;
         
         this.updateBonus(src);
@@ -4972,6 +5005,10 @@ function RPG(rpgchan) {
         }
         if (!file.quests) {
             file.quests = {};
+        }
+        if (!file.titles) {
+            file.titles = [];
+            file.currentTitle = null;
         }
         
         if (!file.levelUpDate) {
@@ -5495,10 +5532,10 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "This person's stats are not public!", rpgchan);
             return;
         }
-        
+        var titleName = getTitlePlayer(target);
         var out = [
             "",
-            target.name + "'s information:"
+            titleName + "'s information:"
         ];
         if (target.description !== "") {
             out.push("Description: " + target.description);
@@ -5518,13 +5555,13 @@ function RPG(rpgchan) {
             ""
         ]);
         
-        out.push(target.name + "'s skills:");
+        out.push(titleName + "'s skills:");
         for (var i in target.skills) {
             out.push(skills[i].name + " (" + i + ") : [" + target.skills[i] + "/" + skills[i].levels + "] " + skills[i].info + (skills[i].type === "passive" ? " (Passive)" : " (" + skills[i].cost + " Mana)"));
         }
         
         out.push("");
-        out.push(target.name + "'s equipment:");
+        out.push(titleName + "'s equipment:");
         for (i in target.equips) {
             if (target.equips[i] !== null && !(target.equips[i] in items)) {
                 out.push(equipment[i] + ": Invalid equipment '" + target.equips[i] + "' found! Contact an RPG Admin to fix the issue!");
@@ -5549,6 +5586,30 @@ function RPG(rpgchan) {
             }
             getAvatar(src).description = commandData;
             rpgbot.sendMessage(src, "Your appearance was set to '" + commandData + "'.", rpgchan);
+        }
+    };
+    this.changeTitle = function(src, commandData) {
+        var player = getAvatar(src);
+        if (commandData === "*") {
+            rpgbot.sendMessage(src, "Your current title is " + (player.currentTitle === null ? "not defined" : "'" + titles[player.currentTitle].name + "'") + "! You can choose the following titles (type /title [number], or disable your title with '/title clear'):", rpgchan);
+            var title;
+            for (var e = 0; e < player.titles.length; e++) {
+                title = titles[player.titles[e]];
+                rpgbot.sendMessage(src, (e + 1) + ". " + title.name + ": " + title.description, rpgchan);
+            }
+        } else {
+            if (commandData.toLowerCase() === "clear") {
+                player.currentTitle = null;
+                rpgbot.sendMessage(src, "You removed your current title!", rpgchan);
+                return;
+            }
+            var num = parseInt(commandData, 10);
+            if (isNaN(num) || num < 1 || num > player.titles.length) {
+                rpgbot.sendMessage(src, "Invalid value!", rpgchan);
+                return;
+            }
+            player.currentTitle = player.titles[num - 1];
+            rpgbot.sendMessage(src, "You changed your current title to '" + titles[player.currentTitle].name + "'.", rpgchan);
         }
     };
     this.changeFontSize = function(src, commandData) {
@@ -5688,6 +5749,7 @@ function RPG(rpgchan) {
                     items: items,
                     places: places,
                     quests: quests,
+                    titles: titles,
                     classHelp: classHelp
                 };
             }
@@ -5699,6 +5761,7 @@ function RPG(rpgchan) {
             items = parsed.items || result.items;
             places = parsed.places || result.places;
             quests = parsed.quests || result.quests;
+            titles = parsed.titles || result.titles;
             classHelp = parsed.classHelp || result.classHelp;
             
             expTable = config.levels;
@@ -5830,6 +5893,7 @@ function RPG(rpgchan) {
                 items: items,
                 places: places,
                 quests: quests,
+                titles: titles,
                 classHelp: classHelp
             };
             
@@ -5863,6 +5927,9 @@ function RPG(rpgchan) {
                 if (parsed.quests) { 
                     updated.push("Quests");
                 }
+                if (parsed.titles) { 
+                    updated.push("Titles");
+                }
                 if (parsed.classHelp) { 
                     updated.push("Class Help");
                 }
@@ -5874,6 +5941,7 @@ function RPG(rpgchan) {
                     skills: parsed.skills ? url + " [" + date + "]" : contentLoc.skills,
                     items: parsed.items ? url + " [" + date + "]" : contentLoc.items,
                     places: parsed.places ? url + " [" + date + "]" : contentLoc.places,
+                    titles: parsed.titles ? url + " [" + date + "]" : contentLoc.titles,
                     quests: parsed.quests ? url + " [" + date + "]" : contentLoc.quests,
                     classHelp: parsed.classHelp ? url + " [" + date + "]" : contentLoc.classHelp,
                     url: url,
@@ -6258,6 +6326,7 @@ function RPG(rpgchan) {
             clearchar: [this.clearChar, "To clear your character."],
             party: [this.manageParty, "To create and manage a party"],
             partytalk: [this.talkToParty, "To talk to your party."],
+            title: [this.changeTitle, "To view or change your Title."],
             appearance: [this.changeAppearance, "To change your appearance description."],
             font: [this.changeFontSize, "To change the Battle Message's size."],
             getplan: [this.getBattlePlan, "To get your raw plan text."],
