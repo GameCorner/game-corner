@@ -1087,6 +1087,14 @@ function RPG(rpgchan) {
                     }
                 }
             }
+            if ("titles" in req) {
+                for (r in req.titles) {
+                    var v = player.titles.indexOf(r) !== -1;
+                    if (req.titles[r] !== v) {
+                        deny = true;
+                    }
+                }
+            }
             
             if (deny) {
                 reqMessages.push(warnings);
@@ -3757,7 +3765,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-    		if (player.exp >= expTable[e - 1]) {
+			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
@@ -4768,6 +4776,7 @@ function RPG(rpgchan) {
         this.updateBonus(src);
         
         rpgbot.sendMessage(src, "Character successfully created!", rpgchan);
+        this.changeLocation(src, player.location, "spawned at");
     };
     this.createChar = function(data) {
         var character = {};
