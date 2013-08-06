@@ -115,6 +115,17 @@ function Casino() {
             casinobot.sendMessage(target, sys.name(src) + " took " + (-amount) + " coins from you!");
         }
     };
+    this.viewUserCoins = function(src, data, chan) {
+        if (sys.id(data) === undefined) {
+            casinobot.sendMessage(src, "No such person!", chan);
+            return;
+        }
+        if (this.IsInCasino(sys.id(data))) {
+            casinobot.sendMessage(src, sys.name(sys.id(data)) + " currently have " + SESSION.users(sys.id(data)).casino.coins + " Coin(s)!", chan);
+        } else {
+            casinobot.sendMessage(src, "That person is not in the casino!", chan);
+        }
+    };
     this.viewCoins = function(src, data, chan) {
         if (this.IsInCasino(src)) {
             casinobot.sendMessage(src, "You currently have " + SESSION.users(src).casino.coins + " Coin(s)!", chan);
@@ -176,6 +187,9 @@ function Casino() {
         } else if (command === "givecoins" && sys.auth(src) >= 2) {
             this.giveCoins(src, data, chan);
             return true;
+        } else if (command === "viewcoins" && sys.auth(src) >= 2) {
+            this.viewUserCoins(src, data, chan);
+            return true
         }
         throw("No valid command");
     };
