@@ -668,14 +668,14 @@ function RPG(rpgchan) {
         
         if (!nomsg) {
             sys.sendMessage(src, "", rpgchan);
-            var messageList = ["message", "message2", "message3", "message4", "message5"];
+            var messageList = ["message", "message2", "message3", "message4", "message5", "message6", "message7", "message8", "message9", "message10"];
             sys.sendMessage(src, topic[getLevelValue(messageList, outcome - 1)], rpgchan);
         }
         this.checkNPCEffect(src, topic, person, outcome);
     };
     this.checkNPCEffect = function(src, topic, person, outcome) {
         var eff;
-        var effectList = ["effect", "effect2", "effect3", "effect4", "effect5"];
+        var effectList = ["effect", "effect2", "effect3", "effect4", "effect5", "effect6", "effect7", "effect8", "effect9", "effect10"];
         
         if (outcome <= effectList.length) {
             for (var i = outcome - 1; i >= 0; i--) {
@@ -954,8 +954,8 @@ function RPG(rpgchan) {
     };
     this.checkNPCRequisites = function(src, topic, person) {
         var player = getAvatar(src);
-        var req, r, l;
-        var lists = ["requisites", "requisites2", "requisites3", "requisites4", "requisites5"];
+        var req, r, l, v;
+        var lists = ["requisites", "requisites2", "requisites3", "requisites4", "requisites5", "requisites6", "requisites7", "requisites8", "requisites9", "requisites10"];
         var loops = 0;
         
         for (l = 0; l < lists.length; l++) {
@@ -984,7 +984,7 @@ function RPG(rpgchan) {
             if ("events" in req) {
                 for (r in req.events) {
                     var ev = req.events[r];
-                    var v = r in player.events ? player.events[r] : false;
+                    v = r in player.events ? player.events[r] : false;
                     if (ev !== v) {
                         deny = true;
                     }
@@ -1089,7 +1089,7 @@ function RPG(rpgchan) {
             }
             if ("titles" in req) {
                 for (r in req.titles) {
-                    var v = player.titles.indexOf(r) !== -1;
+                    v = player.titles.indexOf(r) !== -1;
                     if (req.titles[r] !== v) {
                         deny = true;
                     }
@@ -1537,6 +1537,8 @@ function RPG(rpgchan) {
         
         this.names1 = this.team1.map(getTeamNames, this);
         this.names2 = this.team2.map(getTeamNames, this);
+        this.titleNames1 = this.team1.map(getTitlePlayer, this);
+        this.titleNames2 = this.team2.map(getTitlePlayer, this);
     }
     function getFullValue(p, att) {
         var result = p[att] + p.bonus.equip[att] + p.bonus.skill[att];
@@ -2024,7 +2026,6 @@ function RPG(rpgchan) {
                                 player.mp += tempDmg;
                                 userMpDmg += tempDmg;
                             }
-                            var userDmg = 0;
                             if ("hp" in eff) {
                                 tempDmg = getLevelValue(eff.hp, level);
                                 player.hp += tempDmg;
@@ -2544,20 +2545,17 @@ function RPG(rpgchan) {
         var loseNames;
         
         if (this.isPVP) {
-            winNames = winner.map(getTitlePlayer, this);
-            loseNames = loser.map(getTitlePlayer, this);
+            winNames = win === 1 ? this.titleNames1 : this.titleNames2;
+            loseNames = win === 1 ? this.titleNames2 : this.titleNames2;
             
             if (win === 0) {
                 rpgbot.sendAll("The battle between " + readable(winNames, "and") + " and " + readable(loseNames, "and") + " ended in a draw!", rpgchan);
             } else {
-                // winNames = (win === 1) ? this.names1 : this.names2;
-                // loseNames = (win === 1) ? this.names2 : this.names1;
-                
                 rpgbot.sendAll(readable(winNames, "and") + " defeated " + readable(loseNames, "and") + "!", rpgchan);
             }
         } else {
-            winNames = winner.map(getTeamNames, this);
-            loseNames = loser.map(getTeamNames, this);
+            winNames = win === 1 ? this.names1 : this.names2;
+            loseNames = win === 1 ? this.names2 : this.names1;
             if (win === 0) {
                 this.sendToViewers("The battle between " + readable(winNames, "and") + " and " + readable(loseNames, "and") + " ended in a draw!", true);
             } else {
@@ -3765,7 +3763,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-			if (player.exp >= expTable[e - 1]) {
+    		if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
@@ -4245,7 +4243,7 @@ function RPG(rpgchan) {
         player.skills[skill] = amount;
         
         this.updatePlayerSkill(src, skill, remove);
-    }
+    };
     this.updatePlayerSkill = function(src, skill, remove) {
         var player = getAvatar(src), s;
         var amount = player.skills[skill] || 0;
@@ -4775,8 +4773,10 @@ function RPG(rpgchan) {
         
         this.updateBonus(src);
         
+        sys.sendMessage(src, "", rpgchan);
         rpgbot.sendMessage(src, "Character successfully created!", rpgchan);
         this.changeLocation(src, player.location, "spawned at");
+        sys.sendMessage(src, "", rpgchan);
     };
     this.createChar = function(data) {
         var character = {};
