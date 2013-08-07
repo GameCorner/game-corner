@@ -2546,7 +2546,7 @@ function RPG(rpgchan) {
         
         if (this.isPVP) {
             winNames = win === 1 ? this.titleNames1 : this.titleNames2;
-            loseNames = win === 1 ? this.titleNames2 : this.titleNames2;
+            loseNames = win === 1 ? this.titleNames2 : this.titleNames1;
             
             if (win === 0) {
                 rpgbot.sendAll("The battle between " + readable(winNames, "and") + " and " + readable(loseNames, "and") + " ended in a draw!", rpgchan);
