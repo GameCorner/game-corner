@@ -703,7 +703,7 @@ function RPG(rpgchan) {
         var player = getAvatar(src);   
         var e, sample, out = [];
         if ("broadcast" in effect) {
-            rpgbot.sendAll(effect.broadcast.replace(/~Player~/gi, getTitleName(sr)), rpgchan);
+            rpgbot.sendAll(effect.broadcast.replace(/~Player~/gi, getTitleName(src)), rpgchan);
         }
         if ("messages" in effect) {
             for (e in effect.messages) {
@@ -3763,7 +3763,7 @@ function RPG(rpgchan) {
         
         var e;
         for (e = expTable.length; e >= 0; --e) {
-    		if (player.exp >= expTable[e - 1]) {
+			if (player.exp >= expTable[e - 1]) {
 				e = e + 1;
 				break;
 			}
