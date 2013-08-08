@@ -1862,21 +1862,22 @@ function RPG(rpgchan) {
                                 pinch *= getLevelValue(move.effect.pinch.mpReverse, level) - player.mp/player.m * getLevelValue(move.effect.pinch.mpReverse, level);
                             }
                         }
-                        power = power * getLevelValue(move.modifier, level) * pinch * battleSetup.damage;
                         
                         // Passive Skill that increases damage by consuming Gold
-                        var goldDamageSkills = getPassiveByEffect(player, "goldDamage");
+                        var goldDamageSkills = getPassiveByEffect(player, "goldDamage"), goldBonus = 0;
                         if (goldDamageSkills.length > 0) {
                             var goldUsed, goldLevel;
                             for (var g in goldDamageSkills) {
                                 goldLevel = player.passives[goldDamageSkills[g]] - 1;
                                 goldUsed = getLevelValue(skills[goldDamageSkills[g]].effect.goldDamage.cost, goldLevel);
                                 if (player.gold >= goldUsed) {
-                                    power += getLevelValue(skills[goldDamageSkills[g]].effect.goldDamage.modifier, goldLevel);
+                                    goldBonus += getLevelValue(skills[goldDamageSkills[g]].effect.goldDamage.modifier, goldLevel);
                                     player.gold -= goldUsed;
                                 }
                             }
                         }
+                        
+                        power = power * (getLevelValue(move.modifier, level) + goldBonus) * pinch * battleSetup.damage;
                         
                         var def = target.battle.attributes.def * battleSetup.defense;
                         if (move.effect && move.effect.pierce) {
