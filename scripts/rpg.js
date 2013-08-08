@@ -71,7 +71,8 @@ function RPG(rpgchan) {
         instantCast: false,
         passive: 2,
         party: 6,
-        partyLevelDiff: 99
+        partyLevelDiff: 99,
+        partyExp: 0
     };
     
     var altSkills = {};
@@ -972,6 +973,9 @@ function RPG(rpgchan) {
             req = topic[lists[l]];
             warnings = [];
             deny = false;
+            if ("chance" in req && Math.random() > req.chance) {
+                deny = true;
+            }
             if ("classes" in req && req.classes.indexOf(player.job) === -1) {
                 deny = true;
             }
@@ -2597,6 +2601,7 @@ function RPG(rpgchan) {
                     winner.splice(p, 1);
                 }
             }
+            var partyBonus = 1 + (winner.length - 1) * battleSetup.partyExp;
             
             gold = Math.floor(gold / winner.length);
             monsterExp = Math.floor(monsterExp / winner.length);
@@ -2648,8 +2653,7 @@ function RPG(rpgchan) {
                         won.gold += gainedGold;
                     }
                     
-                    var expMultiplier = getPassiveMultiplier(won, "expBonus") * leveling.battleExp;
-                    gainedExp = Math.floor((monsterExp + Math.floor(playerExp / won.level)) * expMultiplier);
+                    gainedExp = Math.floor((monsterExp + Math.floor(playerExp / won.level)) * getPassiveMultiplier(won, "expBonus") * leveling.battleExp * partyBonus);
                     if (gainedExp > 0 || gainedGold > 0) {
                         rpgbot.sendMessage(won.id, "You received " + (gainedExp > 0 ? gainedExp + " Exp. Points" : "") + (gainedExp > 0 && gainedGold > 0 ? " and " : "") + (gainedGold > 0 ? gainedGold + " Gold" : "") + "!", rpgchan);
                     }
@@ -2935,6 +2939,9 @@ function RPG(rpgchan) {
             }
             if ("critical" in effect) {
                 result.push((effect.critical > 1 ? "+" : "") + Math.round((effect.critical-1) * 100) + "% Critical");
+            }
+            if ("attackSpeed" in effect) {
+                result.push((effect.attackSpeed > 1 ? "+" : "") + Math.round((effect.attackSpeed-1) * 100) + "% Attack Speed");
             }
             if ("hpabsorb" in effect) {
                 result.push((effect.hpabsorb > 0 ? "+" : "") + Math.round(effect.hpabsorb * 100) + "% Damage absorbed as HP");
@@ -5801,6 +5808,9 @@ function RPG(rpgchan) {
                 }
                 if (battle.partyLevelDiff) {
                     battleSetup.partyLevelDiff = battle.partyLevelDiff;
+                }
+                if (battle.partyExp) {
+                    battleSetup.partyExp = battle.partyExp;
                 }
             }
             
