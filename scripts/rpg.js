@@ -210,11 +210,15 @@ function RPG(rpgchan) {
         sys.sendMessage(src, "", rpgchan);
         
         if ("effect" in places[loc]) {
-            var output = this.applyEffect(src, places[loc].effect);
-        
-            if (output.length > 0) {
-                for (var x in output) {
-                    rpgbot.sendMessage(src, output[x], rpgchan);
+            var applyEffect = this.checkNPCRequisites(src, places[loc], ["effectRequisites"], true);
+            
+            if (applyEffect > 0) {
+                var output = this.applyEffect(src, places[loc].effect);
+            
+                if (output.length > 0) {
+                    for (var x in output) {
+                        rpgbot.sendMessage(src, output[x], rpgchan);
+                    }
                 }
             }
         }
@@ -366,7 +370,7 @@ function RPG(rpgchan) {
         } 
         
         var topic = npc[option];
-        var outcome = this.checkNPCRequisites(src, topic, person);
+        var outcome = this.checkNPCRequisites(src, topic, ["requisites", "requisites2", "requisites3", "requisites4", "requisites5", "requisites6", "requisites7", "requisites8", "requisites9", "requisites10"], false, person);
         
         if (outcome === 0) {
             return;
@@ -698,7 +702,6 @@ function RPG(rpgchan) {
                 rpgbot.sendMessage(src, out[x], rpgchan);
             }
         }
-        
     };
     this.applyEffect = function(src, effect, person) {
         var player = getAvatar(src);   
@@ -953,10 +956,9 @@ function RPG(rpgchan) {
         
         return out;
     };
-    this.checkNPCRequisites = function(src, topic, person) {
+    this.checkNPCRequisites = function(src, topic, lists, silent, person) {
         var player = getAvatar(src);
         var req, r, l, v;
-        var lists = ["requisites", "requisites2", "requisites3", "requisites4", "requisites5", "requisites6", "requisites7", "requisites8", "requisites9", "requisites10"];
         var loops = 0;
         
         for (l = 0; l < lists.length; l++) {
@@ -1108,10 +1110,12 @@ function RPG(rpgchan) {
         }
         
         if (loops > 0) {
-            sys.sendMessage(src, topic.denymsg, rpgchan);
-            for (l in reqMessages) {
-                if (reqMessages[l].length > 0) {
-                    rpgbot.sendMessage(src, "You need to " + readable(reqMessages, "and"), rpgchan);
+            if (!silent) {
+                sys.sendMessage(src, topic.denymsg, rpgchan);
+                for (l in reqMessages) {
+                    if (reqMessages[l].length > 0) {
+                        rpgbot.sendMessage(src, "You need to " + readable(reqMessages, "and"), rpgchan);
+                    }
                 }
             }
             return 0;
