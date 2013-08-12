@@ -58,9 +58,8 @@ function Casino(casinochan) {
             }
             
             if (findPattern([0, 0, 0], combination)) {
-                reward = [5000, 1500, 1000][bet - 1];
+                tempReward = [5000, 1500, 1000][bet - 1];
                 pot = "Jackpot";
-                break;
             } else if (findPattern([1, 1, 1], combination)) {
                 tempReward = [2500, 750, 500][bet - 1];
                 pot = "Minipot";
@@ -84,6 +83,9 @@ function Casino(casinochan) {
             if (tempReward > reward) {
                 reward = tempReward;
                 wincomb = combination;
+                if (pot === "Jackpot") {
+                    break;
+                }
             }
         }
         
@@ -133,7 +135,7 @@ function Casino(casinochan) {
     };
     
     this.init = function() {
-    	if (sys.existChannel(CASINO_CHANNEL)) {
+		if (sys.existChannel(CASINO_CHANNEL)) {
             casinochan = sys.channelId(CASINO_CHANNEL);
         } else {
             casinochan = sys.createChannel(CASINO_CHANNEL);
