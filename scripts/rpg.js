@@ -2203,7 +2203,7 @@ function RPG(rpgchan) {
                             userDmg += tempDmg;
                         }
                         if (hasEquipEffect(player, "mpabsorb")) {
-                            tempDmg += Math.floor(damage * getEquipPercentage(player, "mpabsorb"));
+                            tempDmg = Math.floor(damage * getEquipPercentage(player, "mpabsorb"));
                             player.mp += tempDmg;
                             userMpDmg += tempDmg;
                         }
