@@ -2193,7 +2193,7 @@ function RPG(rpgchan) {
                             userDmg += tempDmg;
                         }
                         if (move.effect && move.effect.mpabsorb) {
-                            tempDmg += Math.floor(damage * getLevelValue(move.effect.mpabsorb, level));
+                            tempDmg = Math.floor(damage * getLevelValue(move.effect.mpabsorb, level));
                             player.mp += tempDmg;
                             userMpDmg += tempDmg;
                         }
