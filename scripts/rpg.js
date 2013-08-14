@@ -1953,9 +1953,9 @@ function RPG(rpgchan) {
                                         if (bonus in eff) {
                                             target.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
                                             if (["str", "def", "spd", "dex", "mag"].indexOf(bonus) !== -1) {
-                                                target.bonus.attributes[bonus] = getFullValue(target, bonus);
+                                                target.battle.attributes[bonus] = getFullValue(target, bonus);
                                             } else {
-                                                target.bonus.attributes[bonus] = getBuffedMultiplier(target, bonus);
+                                                target.battle.attributes[bonus] = getBuffedMultiplier(target, bonus);
                                             }
                                         }
                                     }
@@ -2030,9 +2030,9 @@ function RPG(rpgchan) {
                                         if (bonus in eff) {
                                             player.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
                                             if (["str", "def", "spd", "dex", "mag"].indexOf(bonus) !== -1) {
-                                                player.bonus.attributes[bonus] = getFullValue(player, bonus);
+                                                player.battle.attributes[bonus] = getFullValue(player, bonus);
                                             } else {
-                                                player.bonus.attributes[bonus] = getBuffedMultiplier(player, bonus);
+                                                player.battle.attributes[bonus] = getBuffedMultiplier(player, bonus);
                                             }
                                         }
                                     }
