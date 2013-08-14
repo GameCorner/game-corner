@@ -1156,10 +1156,10 @@ function RPG(rpgchan) {
             
             if (item in items) {
                 if (!canHoldItems(player, getItemCount(player, item) + 1)) {
-                    rpgbot.sendMessage(src, "You found a " + items[item].name + ", but you can't carry more than " + getItemLimit(player) + "!", rpgchan);
+                    rpgbot.sendMessage(src, "You found 1 " + items[item].name + ", but you can't carry more than " + getItemLimit(player) + "!", rpgchan);
                     return;
                 }
-                rpgbot.sendMessage(src, "You found a " + items[item].name + "!", rpgchan);
+                rpgbot.sendMessage(src, "You found 1 " + items[item].name + "!", rpgchan);
                 changeItemCount(player, item, 1);
                 return;
             } else {
@@ -1952,6 +1952,11 @@ function RPG(rpgchan) {
                                         bonus = bonusAtt[e];
                                         if (bonus in eff) {
                                             target.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
+                                            if (["str", "def", "spd", "dex", "mag"].indexOf(bonus) !== -1) {
+                                                target.bonus.attributes[bonus] = getFullValue(target, bonus);
+                                            } else {
+                                                target.bonus.attributes[bonus] = getBuffedMultiplier(target, bonus);
+                                            }
                                         }
                                     }
                                     target.battle.counters.bonus[moveName] = duration;
@@ -2024,6 +2029,11 @@ function RPG(rpgchan) {
                                         bonus = bonusAtt[e];
                                         if (bonus in eff) {
                                             player.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
+                                            if (["str", "def", "spd", "dex", "mag"].indexOf(bonus) !== -1) {
+                                                player.bonus.attributes[bonus] = getFullValue(player, bonus);
+                                            } else {
+                                                player.bonus.attributes[bonus] = getBuffedMultiplier(player, bonus);
+                                            }
                                         }
                                     }
                                     player.battle.counters.bonus[moveName] = duration;
@@ -2183,7 +2193,9 @@ function RPG(rpgchan) {
                             userDmg += tempDmg;
                         }
                         if (move.effect && move.effect.mpabsorb) {
-                            player.mp += Math.floor(damage * getLevelValue(move.effect.mpabsorb, level));
+                            tempDmg += Math.floor(damage * getLevelValue(move.effect.mpabsorb, level));
+                            player.mp += tempDmg;
+                            userMpDmg += tempDmg;
                         }
                         if (hasEquipEffect(player, "hpabsorb")) {
                             tempDmg = Math.floor(damage * getEquipPercentage(player, "hpabsorb"));
@@ -2191,7 +2203,9 @@ function RPG(rpgchan) {
                             userDmg += tempDmg;
                         }
                         if (hasEquipEffect(player, "mpabsorb")) {
-                            player.mp += Math.floor(damage * getEquipPercentage(player, "mpabsorb"));
+                            tempDmg += Math.floor(damage * getEquipPercentage(player, "mpabsorb"));
+                            player.mp += tempDmg;
+                            userMpDmg += tempDmg;
                         }
                     }
                     
@@ -2391,21 +2405,6 @@ function RPG(rpgchan) {
             
             var gained = [];
             var lost = [];
-            if (mpGain !== 0 && player.hp > 0) {
-                player.mp += mpGain;
-                
-                if (player.mp < 0) {
-                    player.mp = 0;
-                } else if (player.mp > player.maxmp) {
-                    player.mp = player.maxmp;
-                }
-                
-                if (mpGain > 0) {
-                    gained.push(mpGain + " Mana");
-                } else {
-                    lost.push(Math.abs(mpGain) + " Mana");
-                }
-            }
             if (hpGain !== 0 && player.hp > 0) {
                 player.hp += hpGain;
                 
@@ -2419,6 +2418,21 @@ function RPG(rpgchan) {
                     gained.push(hpGain + " HP");
                 } else {
                     lost.push(Math.abs(hpGain) + " HP");
+                }
+            }
+            if (mpGain !== 0 && player.hp > 0) {
+                player.mp += mpGain;
+                
+                if (player.mp < 0) {
+                    player.mp = 0;
+                } else if (player.mp > player.maxmp) {
+                    player.mp = player.maxmp;
+                }
+                
+                if (mpGain > 0) {
+                    gained.push(mpGain + " Mana");
+                } else {
+                    lost.push(Math.abs(mpGain) + " Mana");
                 }
             }
             
