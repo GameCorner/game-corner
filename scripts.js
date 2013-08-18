@@ -5016,7 +5016,7 @@ beforeChatMessage: function(src, message, chan) {
                     sendChanMessage(id,  sys.name(src)+": "+message);
                 }
             });
-            sendAll(sys.name(src)+": "+message, sys.channelId("Auth Hideout"));
+            //sendAll(sys.name(src)+": "+message, sys.channelId("Auth Hideout"));
             sys.stopEvent();
             this.afterChatMessage(src, message, channel);
         }
