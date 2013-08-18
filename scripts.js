@@ -1446,7 +1446,7 @@ init : function() {
     sachannel = SESSION.global().channelManager.createPermChannel("Victory Road","Welcome MAs and SAs!");
     tourchannel = SESSION.global().channelManager.createPermChannel("Tournaments", 'Useful commands are "/join" (to join a tournament), "/unjoin" (to leave a tournament), "/viewround" (to view the status of matches) and "/megausers" (for a list of users who manage tournaments). Please read the full Tournament Guidelines: http://pokemon-online.eu/forums/showthread.php?2079-Tour-Rules');
     watchchannel = SESSION.global().channelManager.createPermChannel("Watch", "Alerts displayed here");
-    watchchannel2 = ESSION.global().channelManager.createPermChannel("Auth Hideout", "Hideout for staff members.");
+    watchchannel2 = SESSION.global().channelManager.createPermChannel("Auth Hideout", "Hideout for staff members.");
     triviachan = SESSION.global().channelManager.createPermChannel("Trivia", "Play trivia here!");
     revchan = SESSION.global().channelManager.createPermChannel("TrivReview", "For Trivia Admins to review questions");
     mafiarev = SESSION.global().channelManager.createPermChannel("Mafia Review", "For Mafia Admins to review themes");
