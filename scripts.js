@@ -126,7 +126,7 @@ var updateModule = function updateModule(module_name, callback) {
    }
 };
 
-var channel, getKey, marks, contributors, mutes, mbans, smutes, detained, hbans, mafiaSuperAdmins, hangmanAdmins, hangmanSuperAdmins, trollchannel, staffchannel, casino, channelbot, normalbot, bot, mafiabot, kickbot, capsbot, checkbot, coinbot, countbot, tourneybot, battlebot, commandbot, querybot, rankingbot, hangbot, rpgbot, stopbot, bfbot, stepCounter, scriptChecks, lastMemUpdate, bannedUrls, mafiachan, mafiarev, sachannel, tourchannel, dwpokemons, lcpokemons, bannedGSCSleep, bannedGSCTrap, breedingpokemons, rangebans, proxy_ips, mafiaAdmins, rules, authStats, tempBans, nameBans, isMarked, isSuperAdmin, cmp, key, saveKey, battlesStopped, lineCount, pokeNatures, maxPlayersOnline, pastebin_api_key, pastebin_user_key, getSeconds, getTimeString, sendChanMessage, sendChanAll, sendMainTour, VarsCreated, authChangingTeam, usingBannedWords, repeatingOneself, capsName, CAPSLOCKDAYALLOW, nameWarns, poScript, revchan, triviachan, watchchannel, lcmoves, hangmanchan, ipbans, battlesFought, casinobot, casinochan, lastCleared;
+var channel, getKey, marks, contributors, mutes, mbans, smutes, detained, hbans, mafiaSuperAdmins, hangmanAdmins, hangmanSuperAdmins, trollchannel, staffchannel, casino, channelbot, normalbot, bot, mafiabot, kickbot, capsbot, checkbot, coinbot, countbot, tourneybot, battlebot, commandbot, querybot, rankingbot, hangbot, rpgbot, stopbot, bfbot, stepCounter, scriptChecks, lastMemUpdate, bannedUrls, mafiachan, mafiarev, sachannel, tourchannel, dwpokemons, lcpokemons, bannedGSCSleep, bannedGSCTrap, breedingpokemons, rangebans, proxy_ips, mafiaAdmins, rules, authStats, tempBans, nameBans, isMarked, isSuperAdmin, cmp, key, saveKey, battlesStopped, lineCount, pokeNatures, maxPlayersOnline, pastebin_api_key, pastebin_user_key, getSeconds, getTimeString, sendChanMessage, sendChanAll, sendMainTour, VarsCreated, authChangingTeam, usingBannedWords, repeatingOneself, capsName, CAPSLOCKDAYALLOW, nameWarns, poScript, revchan, triviachan, watchchannel, watchchannel2, lcmoves, hangmanchan, ipbans, battlesFought, casinobot, casinochan, lastCleared;
 
 var isMafiaAdmin = require('mafia.js').isMafiaAdmin;
 var isMafiaSuperAdmin = require('mafia.js').isMafiaSuperAdmin;
@@ -1446,6 +1446,7 @@ init : function() {
     sachannel = SESSION.global().channelManager.createPermChannel("Victory Road","Welcome MAs and SAs!");
     tourchannel = SESSION.global().channelManager.createPermChannel("Tournaments", 'Useful commands are "/join" (to join a tournament), "/unjoin" (to leave a tournament), "/viewround" (to view the status of matches) and "/megausers" (for a list of users who manage tournaments). Please read the full Tournament Guidelines: http://pokemon-online.eu/forums/showthread.php?2079-Tour-Rules');
     watchchannel = SESSION.global().channelManager.createPermChannel("Watch", "Alerts displayed here");
+    watchchannel2 = ESSION.global().channelManager.createPermChannel("Auth Hideout", "Hideout for staff members.");
     triviachan = SESSION.global().channelManager.createPermChannel("Trivia", "Play trivia here!");
     revchan = SESSION.global().channelManager.createPermChannel("TrivReview", "For Trivia Admins to review questions");
     mafiarev = SESSION.global().channelManager.createPermChannel("Mafia Review", "For Mafia Admins to review themes");
@@ -1928,7 +1929,7 @@ beforeChannelJoin : function(src, channel) {
             }
         }
     }
-    if (channel == watchchannel && sys.auth(src) < 1) {
+    if ((channel == watchchannel || channel == watchchannel2) && sys.auth(src) < 1) {
         sys.sendMessage(src, "+Guard: Sorry, the access to that place is restricted!");
         sys.stopEvent();
         return;
@@ -5013,6 +5014,7 @@ beforeChatMessage: function(src, message, chan) {
             sys.playerIds().forEach(function(id) {
                 if (sys.loggedIn(id) && SESSION.users(id).smute.active) {
                     sendChanMessage(id,  sys.name(src)+": "+message);
+                    sendAll(sys.name(src)+": "+message, watchchannel2);
                 }
             });
             sys.stopEvent();
