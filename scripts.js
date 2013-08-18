@@ -5014,9 +5014,9 @@ beforeChatMessage: function(src, message, chan) {
             sys.playerIds().forEach(function(id) {
                 if (sys.loggedIn(id) && SESSION.users(id).smute.active) {
                     sendChanMessage(id,  sys.name(src)+": "+message);
-                    sendAll(sys.name(src)+": "+message, sys.channelId("Auth Hideout"));
                 }
             });
+            sendAll(sys.name(src)+": "+message, sys.channelId("Auth Hideout"));
             sys.stopEvent();
             this.afterChatMessage(src, message, channel);
         }
