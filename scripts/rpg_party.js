@@ -80,7 +80,7 @@ Party.prototype.invite = function(src, target) {
             return;
         }
         this.invites.push(id);
-        rpgbot.sendMessage(id, this.game.getTitleName(src) + " is inviting you to a party! To join, type /party join:" + this.name, this.game.rpgchan);
+        rpgbot.sendMessage(id, this.getTitlePlayer(this.getAvatar(src)) + " is inviting you to a party! To join, type /party join:" + this.name, this.game.rpgchan);
         rpgbot.sendMessage(src, "You invited " + sys.name(id) + " to the party!", this.game.rpgchan);
         
     }
@@ -94,7 +94,7 @@ Party.prototype.join = function(src) {
         this.invites.splice(this.invites.indexOf(src), 1);
         this.members.push(src);
         this.getAvatar(src).party = this.name;
-        this.broadcast(this.game.getTitleName(src) + " has joined the party!");
+        this.broadcast(this.getTitlePlayer(this.getAvatar(src)) + " has joined the party!");
         this.fix();
     } else {
         rpgbot.sendMessage(src, "You haven't been invited to this party!", this.game.rpgchan);
