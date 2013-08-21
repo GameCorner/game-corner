@@ -976,7 +976,7 @@ Battle.prototype.playNextTurn = function() {
         }
         
         if (buffs.length > 0 && player.hp > 0) {
-            out.push("The effects of " + readable(buffs.map(translateSkill) , "and") + " on " + player.name + " ended.");
+            out.push("The effects of " + readable(buffs.map(translateSkill, this) , "and") + " on " + player.name + " ended.");
         }
         
         if (player.isSummon && player.hp === 0) {
