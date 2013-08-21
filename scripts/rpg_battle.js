@@ -1,6 +1,5 @@
 // Global variables inherited from scripts.js
 /*global rpgbot, sys, SESSION, exports*/
-var skills;
 function Battle(viewers, teamA, teamB, rpg) {
     this.game = rpg;
     this.rpgchan = rpg.rpgchan;
