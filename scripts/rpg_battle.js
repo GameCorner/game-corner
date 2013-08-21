@@ -864,7 +864,7 @@ Battle.prototype.playNextTurn = function() {
         critical: "Critical Hit rate",
         attackSpeed: "Attack Speed"
     };*/
-    function translateSkill(x) { return skills[x].name; }
+    function translateSkill(x) { return this.skills[x].name; }
     for (i = 0; i < battlers.length; ++i) {
         player = battlers[i];
         buffs = [];
