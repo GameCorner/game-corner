@@ -138,7 +138,7 @@ Battle.prototype.playNextTurn = function() {
         }
     }
     
-    var player, side, target, targets, castComplete, focusList, winner;
+    var player, side, target, targets, damage, mpDmg, castComplete, focusList, winner, eff, effectResult, reactors, reactions, reSkill, triggers, r;
     var effectsMessages;
     for (i = 0; i < priority.length; ++i) {
         winner = null;
@@ -146,6 +146,7 @@ Battle.prototype.playNextTurn = function() {
         side = team1.indexOf(player) !== -1 ? 1 : 2;
         targets = [];
         focusList = [];
+        reactors = [];
         castComplete = false;
         effectsMessages = {
             castBreak: [],
@@ -189,6 +190,68 @@ Battle.prototype.playNextTurn = function() {
             var moveName = (castComplete === true) ? player.battle.skillCasting : randomSample(player.strategy);
             var move = this.skills[moveName];
             var level;
+            
+            //Using Item instead of Skill
+            if (moveName[0] === "~") {
+                var itemName = moveName.substr(1);
+                var item = this.items[itemName];
+                
+                if (this.game.hasItem(player, itemName, 1) === false) {
+                    out.push(player.name + " tried to use a " + item.name + ", but didn't have any!");
+                    continue;
+                }
+                
+                this.game.changeItemCount(player, itemName, -1);
+                
+                var gainedLife = player.hp,
+                    gainedMana = player.mp;
+                
+                if ("battleEffect" in item) {
+                    var itemEff = item.battleEffect;
+                    var itemDuration = itemEff.duration || 6;
+                    var itemEffect = this.applyBattleEffect(player, moveName, itemEff, 1, itemDuration);
+                    
+                    player.hp += itemEffect.hpDmg;
+                    player.mp += itemEffect.mpDmg;
+                }
+                
+                if (player.hp > player.maxhp) {
+                    player.hp = player.maxhp;
+                } else if (player.hp <= 0) {
+                    player.hp = 0;
+                    effectsMessages.defeated.push(player);
+                }
+                if (player.mp > player.maxmp) {
+                    player.mp = player.maxmp;
+                } else if (player.mp < 0) {
+                    player.mp = 0;
+                }
+                
+                gainedLife = player.hp - gainedLife;
+                gainedMana = player.mp - gainedMana;
+                
+                var gainedmsg = [];
+                if (gainedLife !== 0) {
+                    gainedmsg.push("<b>" + getNumberSign(gainedLife) + "</b> HP");
+                }
+                if (gainedMana !== 0) {
+                    gainedmsg.push("<b>" + getNumberSign(gainedMana) + "</b> MP");
+                }
+                
+                var itemmsg = "battleMessage" in item ? item.battleMessage.replace(/~Player~/gi, player.name) : player.name + " used a " + item.name + "!";
+                itemmsg += gainedmsg.length > 0 ? " " + player.name + " (" + gainedmsg.join(", ") + ")" : "";
+                out.push(itemmsg);
+                
+                if (effectsMessages.defeated.length > 0) {
+                    out.push(readable(effectsMessages.defeated.map(getName), "and") + " was defeated!");
+                    winner = this.checkWin();
+                    if (winner !== null) {
+                        break;
+                    }
+                }
+                continue;
+            }
+            
             if (player.isPlayer && moveName in player.skillLevels && player.skillLevels[moveName] < player.skills[moveName]) {
                 level = player.skillLevels[moveName] - 1;
             } else {
@@ -322,302 +385,69 @@ Battle.prototype.playNextTurn = function() {
                 }
             }
             
-            var breakCast;
+            var breakCast, attackResult;
             for (var t = 0; t < targets.length; ++t) {
                 target = targets[t];
+                reactions = [];
+                triggers = {};
                 breakCast = false;
-                var damage = 0;
+                damage = 0;
+                mpDmg = 0;
                 var critical = 1;
                 if ((hitDead === "none" && target.hp === 0) || (hitDead === "only" && target.hp > 0)) {
                     continue;
                 }
                 
                 if (move.type === "physical" || move.type === "magical") {
-                    var acc = player.battle.attributes.dex * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * player.battle.attributes.accuracy;
-                    var evd = target.battle.attributes.spd * this.battleSetup.evasion * target.battle.attributes.evasion;
-                    if (acc <= 0) {
-                        acc = 1;
-                    }
-                    if (evd <= 0) {
-                        evd = 1;
-                    }
-                    var evadeCheck = 0.7 + ((acc - evd) / 100);
-                    if (evadeCheck < 0.05) {
-                        evadeCheck = 0.05;
-                    } else if (evadeCheck > 0.95) {
-                        evadeCheck = 0.95;
-                    }
-                    if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > evadeCheck) {
+                    attackResult = this.attackPlayer(player, target, move, level);
+                    
+                    if (attackResult.evaded) {
                         if (effectsMessages.evaded.indexOf(target.name) === -1) {
                             effectsMessages.evaded.push(target.name);
                         }
-                        if (move.effect && move.effect.chained && move.effect.chained === true) {
+                        if (attackResult.chained) {
                             for (var v = t + 1; v < targets.length; ++v) {
                                 if (effectsMessages.evaded.indexOf(targets[v].name) === -1) {
                                     effectsMessages.evaded.push(targets[v].name);
                                 }
                             }
                             break;
-                        } else {
-                            continue;
                         }
+                        continue;
                     }
                     
-                    var power = 0;
-                    if (move.effect && "attributeModifier" in move.effect) {
-                        for (var m in move.effect.attributeModifier) {
-                            if (["str", "def", "spd", "dex", "mag"].indexOf(m) !== -1) {
-                                power += player.battle.attributes[m] * getLevelValue(move.effect.attributeModifier[m], level);
-                            } else if (["hp", "mp", "maxhp", "maxmp"].indexOf(m) !== -1) {
-                                power += player[m] * getLevelValue(move.effect.attributeModifier[m], level);
-                            }
-                        }
-                    } else {
-                        power = move.type === "physical" ? player.battle.attributes.str : player.battle.attributes.mag;
-                        if (power <= 0) {
-                            power = 1;
-                        }
-                    }
-                    var pinch = 1;
-                    if (move.effect && "pinch" in move.effect) {
-                        if ("hp" in move.effect.pinch) {
-                            pinch *= player.hp/player.maxhp * getLevelValue(move.effect.pinch.hp, level);
-                        } else if ("hpReverse" in move.effect.pinch) {
-                            pinch *= getLevelValue(move.effect.pinch.hpReverse, level) - player.hp/player.maxhp * getLevelValue(move.effect.pinch.hpReverse, level);
-                        }
-                        if ("mp" in move.effect.pinch) {
-                            pinch *= player.m/player.maxmp * getLevelValue(move.effect.pinch.mp, level);
-                        } else if ("mpReverse" in move.effect.pinch) {
-                            pinch *= getLevelValue(move.effect.pinch.mpReverse, level) - player.mp/player.m * getLevelValue(move.effect.pinch.mpReverse, level);
-                        }
-                    }
+                    damage = attackResult.damage;
+                    critical = attackResult.critical;
                     
-                    // Passive Skill that increases damage by consuming Gold
-                    var goldDamageSkills = this.getPassiveByEffect(player, "goldDamage"), goldBonus = 0;
-                    if (goldDamageSkills.length > 0) {
-                        var goldUsed, goldLevel;
-                        for (var g in goldDamageSkills) {
-                            goldLevel = player.passives[goldDamageSkills[g]] - 1;
-                            goldUsed = getLevelValue(this.skills[goldDamageSkills[g]].effect.goldDamage.cost, goldLevel);
-                            if (player.gold >= goldUsed) {
-                                goldBonus += getLevelValue(this.skills[goldDamageSkills[g]].effect.goldDamage.modifier, goldLevel);
-                                player.gold -= goldUsed;
-                            }
-                        }
-                    }
-                    
-                    power = power * (getLevelValue(move.modifier, level) + goldBonus) * pinch * this.battleSetup.damage;
-                    
-                    var def = target.battle.attributes.def * this.battleSetup.defense;
-                    if (move.effect && move.effect.pierce) {
-                        var pierce = move.effect.pierce;
-                        if (pierce === true) {
-                            pierce = 1;
-                        } else if (pierce === false) {
-                            pierce = 0;
-                        }
-                        def *= 1 - pierce;
-                    }
-                    if (def < 1) {
-                        def = 1;
-                    }
-                    
-                    var atkElement = "none";
-                    if (move.element && move.element !== "none") {
-                        atkElement = move.element;
-                    } else if (player.battle.attackElement) {
-                        atkElement = player.battle.attackElement;
-                    } else {
-                        atkElement = player.attackElement;
-                    }
-                    
-                    var defElement = "none";
-                    if (target.battle.defenseElement) {
-                        defElement = target.battle.defenseElement;
-                    } else {
-                        defElement = target.defenseElement;
-                    }
-                    
-                    var element = 1;
-                    if (atkElement in this.elements && defElement in this.elements[atkElement] && defElement !== "name") {
-                        element = this.elements[atkElement][defElement];
-                    }
-                    
-                    var main = move.type === "physical" ? player.battle.attributes.str : player.battle.attributes.mag;
-                    var invert = move.type === "physical" ? player.battle.attributes.mag : player.battle.attributes.str;
-                    main = main <= 0 ? 1 : main;
-                    invert = invert <= 0 ? 1 : invert;
-                    var varRange = (invert / main > 1 ? 1 : invert / main) * 0.25;
-                    var variation = (0.75 + varRange) + (Math.random() * (0.25 - varRange));
-                    
-                    if (power < 0) {
-                        critical = 1;
-                    } else {
-                        var critChance = (invert / main) * 0.66 * player.battle.attributes.critical;
-                        critical = (Math.random() < critChance) ? this.battleSetup.critical : 1;
-                    }
-                    variation = (critical === this.battleSetup.critical) ? 1 : variation;
-                    damage = Math.floor((power / def) * element * variation * critical) + (getLevelValue(move.modifier, level) >= 0 ? 1 : -1);
+                    triggers.elementalDamage = attackResult.element;
+                    triggers.critical = critical === this.battleSetup.critical;
                 } 
-                var userDmg = 0, mpDmg = 0, userMpDmg = 0, tempDmg;
+                var userDmg = 0, userMpDmg = 0, tempDmg;
                 if (move.effect) {
                     var duration = move.effect.duration ? getLevelValue(move.effect.duration, level) : 6;
-                    var e, eff, bonus;
-                    var bonusAtt = ["str", "def", "spd", "dex", "mag", "accuracy", "critical", "evasion", "attackSpeed"];
                     
                     if (move.effect.target && (!move.effect.targetChance || Math.random() < getLevelValue(move.effect.targetChance, level))) {
                         eff = move.effect.target;
+                        effectResult = this.applyBattleEffect(target, moveName, eff, level, duration);
                         
-                        //Apply attribute bonus for player attributes (str, def, etc) and modifiers (accuracy, critical, etc).
-                        for (e in bonusAtt) {
-                            if (bonusAtt[e] in eff) {
-                                target.battle.bonus[moveName] = {};
-                                
-                                for (e in bonusAtt) {
-                                    bonus = bonusAtt[e];
-                                    if (bonus in eff) {
-                                        target.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
-                                        if (["str", "def", "spd", "dex", "mag"].indexOf(bonus) !== -1) {
-                                            target.battle.attributes[bonus] = getFullValue(target, bonus);
-                                        } else {
-                                            target.battle.attributes[bonus] = this.getBuffedMultiplier(target, bonus);
-                                        }
-                                    }
-                                }
-                                target.battle.counters.bonus[moveName] = duration;
-                                break;
-                            }
-                        }
-                        if ("mp" in eff) {
-                            tempDmg = getLevelValue(eff.mp, level);
-                            target.mp += tempDmg;
-                            mpDmg += tempDmg;
-                        }
-                        if ("hp" in eff) {
-                            damage -= getLevelValue(eff.hp, level);
-                        }
-                        if ("mpPercent" in eff) {
-                            tempDmg = Math.round(getLevelValue(eff.mpPercent, level) * target.maxmp);
-                            target.mp += tempDmg;
-                            mpDmg += tempDmg;
-                        }
-                        if ("hpPercent" in eff) {
-                            damage -= Math.round(getLevelValue(eff.hpPercent, level) * target.maxhp);
-                        }
-                        //Damage Over Time Effect
-                        if ("hpdamage" in eff) {
-                            target.battle.counters.overTime[moveName] = duration;
-                            target.battle.hpdamage[moveName] = getLevelValue(eff.hpdamage, level);
-                        }
-                        if ("mpdamage" in eff) {
-                            target.battle.counters.overTime[moveName] = duration;
-                            target.battle.mpdamage[moveName] = getLevelValue(eff.mpdamage, level);
-                        }
-                        
-                        if ("delay" in eff) {
-                            if (target.battle.delay <= 0) {
-                                target.battle.delay = getLevelValue(eff.delay, level);
-                            }
-                        }
-                        if ("attackElement" in eff) {
-                            target.battle.attackElement = eff.attackElement;
-                            target.battle.counters.effects.attackElement = duration;
-                            target.battle.effects.attackElement = moveName;
-                        }
-                        if ("defenseElement" in eff) {
-                            target.battle.defenseElement = eff.defenseElement;
-                            target.battle.counters.effects.defenseElement = duration;
-                            target.battle.effects.defenseElement = moveName;
-                        }
-                        if ("focus" in eff) {
-                            focusList = this.team1.indexOf(target) !== -1 ? this.team1Focus : this.team2Focus;
-                            if (focusList.indexOf(target) === -1) {
-                                focusList.push(target);
-                            }
-                            target.battle.counters.effects.focus = duration;
-                            target.battle.effects.focus = moveName;
-                        }
+                        damage -= effectResult.hpDmg;
+                        mpDmg += effectResult.mpDmg;
                             
                         if ("message" in eff && effectsMessages.targetEffect.indexOf(target.name) === -1) {
                             effectsMessages.targetEffect.push(target.name);
                         }
+                        
+                        for (r in effectResult.reaction) {
+                            triggers[r] = effectResult.reaction[r];
+                        }
                     }
                     if (move.effect.user && (!move.effect.userChance || Math.random() < getLevelValue(move.effect.userChance, level))) {
                         eff = move.effect.user;
+                        effectResult = this.applyBattleEffect(player, moveName, eff, level, duration);
                         
-                        //Apply attribute bonus for player attributes (str, def, etc) and modifiers (accuracy, critical, etc).
-                        for (e in bonusAtt) {
-                            if (bonusAtt[e] in eff) {
-                                player.battle.bonus[moveName] = {};
-                                
-                                for (e in bonusAtt) {
-                                    bonus = bonusAtt[e];
-                                    if (bonus in eff) {
-                                        player.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
-                                        if (["str", "def", "spd", "dex", "mag"].indexOf(bonus) !== -1) {
-                                            player.battle.attributes[bonus] = getFullValue(player, bonus);
-                                        } else {
-                                            player.battle.attributes[bonus] = this.getBuffedMultiplier(player, bonus);
-                                        }
-                                    }
-                                }
-                                player.battle.counters.bonus[moveName] = duration;
-                                break;
-                            }
-                        }
-                        if ("mp" in eff) {
-                            tempDmg = getLevelValue(eff.mp, level);
-                            player.mp += tempDmg;
-                            userMpDmg += tempDmg;
-                        }
-                        if ("hp" in eff) {
-                            tempDmg = getLevelValue(eff.hp, level);
-                            player.hp += tempDmg;
-                            userDmg += tempDmg;
-                        }
-                        if ("mpPercent" in eff) {
-                            tempDmg = Math.round(getLevelValue(eff.mpPercent, level) * player.maxmp);
-                            player.mp += tempDmg;
-                            userMpDmg += tempDmg;
-                        }
-                        if ("hpPercent" in eff) {
-                            tempDmg = Math.round(getLevelValue(eff.hpPercent, level) * player.maxhp);
-                            player.hp += tempDmg;
-                            userDmg += tempDmg;
-                        }
-                        //Damage Over Time Effect
-                        if ("hpdamage" in eff) {
-                            player.battle.counters.overTime[moveName] = duration;
-                            player.battle.hpdamage[moveName] = getLevelValue(eff.hpdamage, level);
-                        }
-                        if ("mpdamage" in eff) {
-                            player.battle.counters.overTime[moveName] = duration;
-                            player.battle.mpdamage[moveName] = getLevelValue(eff.mpdamage, level);
-                        }
-                        
-                        if ("delay" in eff) {
-                            if (player.battle.delay <= 0) {
-                                player.battle.delay = getLevelValue(eff.delay, level);
-                            }
-                        }
-                        if ("attackElement" in eff) {
-                            player.battle.attackElement = eff.attackElement;
-                            player.battle.counters.effects.attackElement = duration;
-                            player.battle.effects.attackElement = moveName;
-                        }
-                        if ("defenseElement" in eff) {
-                            player.battle.defenseElement = eff.defenseElement;
-                            player.battle.counters.effects.defenseElement = duration;
-                            player.battle.effects.defenseElement = moveName;
-                        }
-                        if ("focus" in eff) {
-                            focusList = this.team1.indexOf(player) !== -1 ? this.team1Focus : this.team2Focus;
-                            if (focusList.indexOf(player) === -1) {
-                                focusList.push(player);
-                            }
-                            player.battle.counters.effects.focus = duration;
-                            player.battle.effects.focus = moveName;
-                        }
+                        player.hp += effectResult.hpDmg;
+                        userDmg += effectResult.hpDmg;
+                        userMpDmg += effectResult.mpDmg;
                             
                         if ("message" in eff && effectsMessages.targetEffect.indexOf(player.name) === -1) {
                             effectsMessages.targetEffect.push(player.name);
@@ -630,6 +460,7 @@ Battle.prototype.playNextTurn = function() {
                         if (effectsMessages.castBreak.indexOf(target.name) === -1) {
                             effectsMessages.castBreak.push(target.name);
                         }
+                        triggers.breakCast = true;
                     }
                     if ("summon" in move.effect) {
                         if (!("summons" in target.battle)) {
@@ -701,6 +532,7 @@ Battle.prototype.playNextTurn = function() {
                                 
                                 target.battle.summons[moveName].push(summoned);
                                 effectsMessages.summons.push(summoned.name);
+                                triggers.summon = true;
                                 summonFailed = false;
                             }
                         }
@@ -741,6 +573,8 @@ Battle.prototype.playNextTurn = function() {
                         effectsMessages.damaged[target.name] = [];
                     }
                     effectsMessages.damaged[target.name].push("<b>" + (damage < 0 ? "+" : "") + (-damage) + (critical === this.battleSetup.critical ? "*" : "") + "</b>");
+                    triggers.damage = -damage;
+                    triggers[move.type] = -damage;
                 }
                 if (userDmg !== 0) {
                     if (!(player.name in effectsMessages.damaged)) {
@@ -753,6 +587,7 @@ Battle.prototype.playNextTurn = function() {
                         effectsMessages.damagedMp[target.name] = [];
                     }
                     effectsMessages.damagedMp[target.name].push("<b>" + (mpDmg > 0 ? "+" : "") + (mpDmg) + "</b>");
+                    triggers.mp = mpDmg;
                 }
                 if (userMpDmg !== 0) {
                     if (!(player.name in effectsMessages.damagedMp)) {
@@ -787,9 +622,70 @@ Battle.prototype.playNextTurn = function() {
                 } else if (target.mp > target.maxmp) {
                     target.mp = target.maxmp;
                 }
+            
+                if (reactors.indexOf(target) === -1 && side !== (this.team1.indexOf(target) !== -1 ? 1 : 2)) {
+                    reactions = this.getPassiveByEffect(target, "reaction");
+                    var re, reValue, reLevel, reactionFound, incorrectCondition = false, allConditions;
+                    for (r in reactions) {
+                        //Compare Triggers here
+                        reSkill = this.skills[reactions[r]].effect.reaction;
+                        reLevel = target.passives[reactions[r]] - 1;
+                        allConditions = reSkill.allConditions || false;
+                        reactionFound = allConditions;
+                        
+                        for (re in reSkill.trigger) {
+                            if (re in triggers) {
+                                if (["damage", "physical", "magical", "support", "mp", "str", "def", "spd", "dex", "mag", "delay", "hpdamage", "mpdamage"].indexOf(re) !== -1) {
+                                    reValue = getLevelValue(reSkill.trigger[re], reLevel);
+                                    if (reValue < 0 && triggers[re] <= reValue) {
+                                        reactionFound = true;
+                                    } else if (reValue > 0 && triggers[re] >= reValue) {
+                                        reactionFound = true;
+                                    } else {
+                                        reactionFound = false;
+                                    }
+                                } else if (["accuracy", "evasion", "critical", "attackSpeed"].indexOf(re) !== -1) {
+                                    reValue = getLevelValue(reSkill.trigger[re], reLevel);
+                                    if (reValue < 1 && triggers[re] <= reValue) {
+                                        reactionFound = true;
+                                    } else if (reValue > 1 && triggers[re] >= reValue) {
+                                        reactionFound = true;
+                                    } else {
+                                        reactionFound = false;
+                                    }
+                                } else if (["critical", "focus", "breakCast", "attackElement", "defenseElement", "summon"].indexOf(re) !== -1) {
+                                    if (reSkill.trigger[re] === triggers[re]) {
+                                        reactionFound = true;
+                                    } else {
+                                        reactionFound = false;
+                                    }
+                                } else if (["elementalDamage"].indexOf(re) !== -1) {
+                                    if (reSkill.trigger[re].indexOf(triggers[re]) !== -1) {
+                                        reactionFound = true;
+                                    } else {
+                                        reactionFound = false;
+                                    }
+                                }
+                            } else if (allConditions === true) {
+                                reactionFound = false;
+                                break;
+                            }
+                            
+                            if ((allConditions === true && reactionFound === false) || (allConditions === false && reactionFound === true)) {
+                                break;
+                            }
+                        }
+                        
+                        if (reactionFound) {
+                            target.battle.reaction = reactions[r];
+                            reactors.push(target);
+                            break;
+                        }
+                    }
+                }
             }
             
-            var allDmg = {}, dam, dmgmsg;
+            var allDmg = {}, dam;
             for (dam in effectsMessages.damaged) {
                 if (!(dam in allDmg)) {
                     allDmg[dam] = 1;
@@ -801,15 +697,7 @@ Battle.prototype.playNextTurn = function() {
                 }
             }
             for (dam in allDmg) {
-                dmgmsg = [];
-                if (dam in effectsMessages.damaged) {
-                    dmgmsg.push(effectsMessages.damaged[dam].map(getNumberSign).join(", ") + " HP");
-                }
-                if (dam in effectsMessages.damagedMp) {
-                    dmgmsg.push(effectsMessages.damagedMp[dam].map(getNumberSign).join(", ") + " MP");
-                }
-                
-                effectsMessages.damagedNames.push(dam + " (" + dmgmsg.join(", ") + ")");
+                effectsMessages.damagedNames.push(this.playerDamageText(dam, (dam in effectsMessages.damaged ? effectsMessages.damaged[dam] : null), (dam in effectsMessages.damagedMp ? effectsMessages.damagedMp[dam] : null)));
             }
             
             var moveMessage = (moveName === "attack" && player.isPlayer === true && player.equips.rhand && player.equips.rhand !== null && this.items[player.equips.rhand].message) ? this.items[player.equips.rhand].message : move.message;
@@ -831,6 +719,101 @@ Battle.prototype.playNextTurn = function() {
                 out.push(move.effect.user.message.replace(/~Target~/g, readable(effectsMessages.userEffect, "and")).replace(/~User~/g, player.name));
             }
             
+            var reactionName, reactionLevel, reactionDuration, reactionResult, reactionDamage, reactionEvasion, counter;
+            for (r in reactors) {
+                //Check reaction chance
+                target = reactors[r];
+                reactionName = target.battle.reaction;
+                reSkill = this.skills[reactionName];
+                reactionLevel = target.passives[reactionName];
+                reactionDuration = reSkill.effect.reaction.duration ? getLevelValue(reSkill.effect.reaction.duration, reactionLevel) : 6;
+                reactionDamage = [];
+                reactionEvasion = false;
+                
+                if (target.hp > 0 && (!("chance" in reSkill.effect.reaction) || Math.random() <= getLevelValue(reSkill.effect.reaction.chance, reactionLevel))) {
+                    //Apply reaction effect
+                    if ("target" in reSkill.effect.reaction) {
+                        eff = reSkill.effect.reaction.target;
+                        effectResult = this.applyBattleEffect(player, reactionName, eff, reactionLevel, reactionDuration);
+                        
+                        damage = effectResult.hpDmg;
+                        mpDmg = effectResult.mpDmg;
+                        
+                        if ("physical" in eff || "magical" in eff) {
+                            var type = "physical" in eff ? "physical" : "magical";
+                            counter = {
+                                name: reSkill.name,
+                                type: type,
+                                modifier: getLevelValue(eff[type], reactionLevel),
+                                element: eff.element || "none",
+                                effect: {
+                                    accuracy: eff.accuracy,
+                                    snipe: eff.snipe
+                                }
+                            };
+                            reactionResult = this.attackPlayer(target, player, counter, reactionLevel);
+                        }
+                        
+                        if (reactionResult) {
+                            if (!reactionResult.evaded) {
+                                player.hp -= reactionResult.damage;
+                                damage -= reactionResult.damage;
+                            } else {
+                                reactionEvasion = true;
+                            }
+                        }
+                        if (damage !== 0 || mpDmg !== 0) {
+                            damage = damage !== 0 ? getNumberSign(damage) : damage;
+                            mpDmg = mpDmg !== 0 ? getNumberSign(mpDmg) : mpDmg;
+                            reactionDamage.push(this.playerDamageText(player.name, damage, mpDmg, true));
+                        }
+                    }
+                    if ("user" in reSkill.effect.reaction) {
+                        eff = reSkill.effect.reaction.user;
+                        effectResult = this.applyBattleEffect(target, reactionName, eff, reactionLevel, reactionDuration);
+                        
+                        damage = effectResult.hpDmg;
+                        mpDmg = effectResult.mpDmg;
+                        
+                        if (damage !== 0 || mpDmg !== 0) {
+                            damage = damage !== 0 ? getNumberSign(damage) : damage;
+                            mpDmg = mpDmg !== 0 ? getNumberSign(mpDmg) : mpDmg;
+                            reactionDamage.push(this.playerDamageText(target.name, damage, mpDmg, true));
+                        }
+                    }
+                    
+                    out.push(reSkill.effect.reaction.message.replace(/~Target~/g, player.name).replace(/~User~/g, target.name) + " " + (reactionDamage.length > 0 ? reactionDamage.join(", ") + "!" : "") + (reactionEvasion === true ? " " + player.name + " evaded!" : "") );
+                    
+                    if (player.hp <= 0) {
+                        player.hp = 0;
+                        if (effectsMessages.defeated.indexOf(player) === -1) {
+                            effectsMessages.defeated.push(player);
+                        }
+                    } else if (player.hp > player.maxhp) {
+                        player.hp = player.maxhp;
+                    }
+                    if (player.mp < 0) {
+                        player.mp = 0;
+                    } else if (player.mp > player.maxmp) {
+                        player.mp = player.maxmp;
+                    }
+                    if (target.hp <= 0) {
+                        target.hp = 0;
+                        if (effectsMessages.defeated.indexOf(target) === -1) {
+                            effectsMessages.defeated.push(target);
+                        }
+                    } else if (target.hp > target.maxhp) {
+                        target.hp = target.maxhp;
+                    }
+                    if (target.mp < 0) {
+                        target.mp = 0;
+                    } else if (target.mp > target.maxmp) {
+                        target.mp = target.maxmp;
+                    }
+                }
+                target.battle.reaction = null;
+            }
+            
             if (effectsMessages.defeated.length > 0) {
                 out.push(readable(effectsMessages.defeated.map(getName), "and") + (effectsMessages.defeated.length > 1 ? " were" : " was") + " defeated!");
                 
@@ -850,20 +833,7 @@ Battle.prototype.playNextTurn = function() {
     // Turn Events here
     var battlers = team1.concat(team2);
     var buffs, b, counters;
-    /*var translations = {
-        str: "Strength",
-        def: "Defense",
-        spd: "Speed",
-        dex: "Dexterity",
-        mag: "Magic",
-        attackElement: "Weapon's element",
-        defenseElement: "Armor's element",
-        accuracy: "Accuracy",
-        evasion: "Evasion",
-        critical: "Critical Hit rate",
-        attackSpeed: "Attack Speed"
-    };*/
-    function translateSkill(x) { return this.skills[x].name; }
+    
     for (i = 0; i < battlers.length; ++i) {
         player = battlers[i];
         buffs = [];
@@ -976,7 +946,7 @@ Battle.prototype.playNextTurn = function() {
         }
         
         if (buffs.length > 0 && player.hp > 0) {
-            out.push("The effects of " + readable(buffs.map(translateSkill, this) , "and") + " on " + player.name + " ended.");
+            out.push("The effects of " + readable(buffs.map(this.skillOrItem, this) , "and") + " on " + player.name + " ended.");
         }
         
         if (player.isSummon && player.hp === 0) {
@@ -991,6 +961,260 @@ Battle.prototype.playNextTurn = function() {
         this.finishBattle(winner);
     }
     this.turn++;
+};
+Battle.prototype.attackPlayer = function(player, target, move, level) {
+    var result = {
+        damage: 0,
+        reaction: {},
+        critical: 1,
+        evaded: false,
+        chained: false,
+        element: "none"
+    };
+    var acc = player.battle.attributes.dex * ((move.effect && move.effect.accuracy) ? getLevelValue(move.effect.accuracy, level) : 1) * player.battle.attributes.accuracy;
+    var evd = target.battle.attributes.spd * this.battleSetup.evasion * target.battle.attributes.evasion;
+    if (acc <= 0) {
+        acc = 1;
+    }
+    if (evd <= 0) {
+        evd = 1;
+    }
+    var evadeCheck = 0.7 + ((acc - evd) / 100);
+    if (evadeCheck < 0.05) {
+        evadeCheck = 0.05;
+    } else if (evadeCheck > 0.95) {
+        evadeCheck = 0.95;
+    }
+    if (!(move.effect && move.effect.snipe && move.effect.snipe === true) && Math.random() > evadeCheck) {
+        result.evaded = true;
+        if (move.effect && move.effect.chained && move.effect.chained === true) {
+            result.chained = true;
+        }
+        return result;
+    }
+    
+    var power = 0;
+    if (move.effect && "attributeModifier" in move.effect) {
+        for (var m in move.effect.attributeModifier) {
+            if (["str", "def", "spd", "dex", "mag"].indexOf(m) !== -1) {
+                power += player.battle.attributes[m] * getLevelValue(move.effect.attributeModifier[m], level);
+            } else if (["hp", "mp", "maxhp", "maxmp"].indexOf(m) !== -1) {
+                power += player[m] * getLevelValue(move.effect.attributeModifier[m], level);
+            }
+        }
+    } else {
+        power = move.type === "physical" ? player.battle.attributes.str : player.battle.attributes.mag;
+        if (power <= 0) {
+            power = 1;
+        }
+    }
+    var pinch = 1;
+    if (move.effect && "pinch" in move.effect) {
+        if ("hp" in move.effect.pinch) {
+            pinch *= player.hp/player.maxhp * getLevelValue(move.effect.pinch.hp, level);
+        } else if ("hpReverse" in move.effect.pinch) {
+            pinch *= getLevelValue(move.effect.pinch.hpReverse, level) - player.hp/player.maxhp * getLevelValue(move.effect.pinch.hpReverse, level);
+        }
+        if ("mp" in move.effect.pinch) {
+            pinch *= player.m/player.maxmp * getLevelValue(move.effect.pinch.mp, level);
+        } else if ("mpReverse" in move.effect.pinch) {
+            pinch *= getLevelValue(move.effect.pinch.mpReverse, level) - player.mp/player.m * getLevelValue(move.effect.pinch.mpReverse, level);
+        }
+    }
+    
+    // Passive Skill that increases damage by consuming Gold
+    var goldDamageSkills = this.getPassiveByEffect(player, "goldDamage"), goldBonus = 0;
+    if (goldDamageSkills.length > 0) {
+        var goldUsed, goldLevel;
+        for (var g in goldDamageSkills) {
+            goldLevel = player.passives[goldDamageSkills[g]] - 1;
+            goldUsed = getLevelValue(this.skills[goldDamageSkills[g]].effect.goldDamage.cost, goldLevel);
+            if (player.gold >= goldUsed) {
+                goldBonus += getLevelValue(this.skills[goldDamageSkills[g]].effect.goldDamage.modifier, goldLevel);
+                player.gold -= goldUsed;
+            }
+        }
+    }
+    
+    power = power * (getLevelValue(move.modifier, level) + goldBonus) * pinch * this.battleSetup.damage;
+    
+    var def = target.battle.attributes.def * this.battleSetup.defense;
+    if (move.effect && move.effect.pierce) {
+        var pierce = move.effect.pierce;
+        if (pierce === true) {
+            pierce = 1;
+        } else if (pierce === false) {
+            pierce = 0;
+        }
+        def *= 1 - pierce;
+    }
+    if (def < 1) {
+        def = 1;
+    }
+    
+    var atkElement = "none";
+    if (move.element && move.element !== "none") {
+        atkElement = move.element;
+    } else if (player.battle.attackElement) {
+        atkElement = player.battle.attackElement;
+    } else {
+        atkElement = player.attackElement;
+    }
+    result.element = atkElement;
+    
+    var defElement = "none";
+    if (target.battle.defenseElement) {
+        defElement = target.battle.defenseElement;
+    } else {
+        defElement = target.defenseElement;
+    }
+    
+    var element = 1;
+    if (atkElement in this.elements && defElement in this.elements[atkElement] && defElement !== "name") {
+        element = this.elements[atkElement][defElement];
+    }
+    
+    var main = move.type === "physical" ? player.battle.attributes.str : player.battle.attributes.mag;
+    var invert = move.type === "physical" ? player.battle.attributes.mag : player.battle.attributes.str;
+    main = main <= 0 ? 1 : main;
+    invert = invert <= 0 ? 1 : invert;
+    var varRange = (invert / main > 1 ? 1 : invert / main) * 0.25;
+    var variation = (0.75 + varRange) + (Math.random() * (0.25 - varRange));
+    
+    var critical;
+    if (power < 0) {
+        critical = 1;
+    } else {
+        var critChance = (invert / main) * 0.66 * player.battle.attributes.critical;
+        critical = (Math.random() < critChance) ? this.battleSetup.critical : 1;
+    }
+    variation = (critical === this.battleSetup.critical) ? 1 : variation;
+    result.critical = critical;
+    result.damage = Math.floor((power / def) * element * variation * critical) + (getLevelValue(move.modifier, level) >= 0 ? 1 : -1);
+    
+    return result;
+};
+Battle.prototype.applyBattleEffect = function(target, moveName, eff, level, duration) {
+    var bonusAtt = ["str", "def", "spd", "dex", "mag", "accuracy", "critical", "evasion", "attackSpeed"],
+        e,
+        bonus,
+        tempDmg,
+        result = {
+            hpDmg: 0,
+            mpDmg: 0,
+            reaction: {}
+        };
+    
+    //Apply attribute bonus for player attributes (str, def, etc) and modifiers (accuracy, critical, etc).
+    for (e in bonusAtt) {
+        if (bonusAtt[e] in eff) {
+            target.battle.bonus[moveName] = {};
+            
+            for (e in bonusAtt) {
+                bonus = bonusAtt[e];
+                if (bonus in eff) {
+                    target.battle.bonus[moveName][bonus] = getLevelValue(eff[bonus], level);
+                    result.reaction[bonus] = getLevelValue(eff[bonus], level);
+                    if (["str", "def", "spd", "dex", "mag"].indexOf(bonus) !== -1) {
+                        target.battle.attributes[bonus] = getFullValue(target, bonus);
+                    } else {
+                        target.battle.attributes[bonus] = this.getBuffedMultiplier(target, bonus);
+                    }
+                }
+            }
+            target.battle.counters.bonus[moveName] = duration;
+            break;
+        }
+    }
+    if ("mp" in eff) {
+        tempDmg = getLevelValue(eff.mp, level);
+        target.mp += tempDmg;
+        result.mpDmg += tempDmg;
+    }
+    if ("hp" in eff) {
+        result.hpDmg += getLevelValue(eff.hp, level);
+    }
+    if ("mpPercent" in eff) {
+        tempDmg = Math.round(getLevelValue(eff.mpPercent, level) * target.maxmp);
+        target.mp += tempDmg;
+        result.mpDmg += tempDmg;
+    }
+    if ("hpPercent" in eff) {
+        result.hpDmg += Math.round(getLevelValue(eff.hpPercent, level) * target.maxhp);
+    }
+    //Damage Over Time Effect
+    if ("hpdamage" in eff) {
+        target.battle.counters.overTime[moveName] = duration;
+        target.battle.hpdamage[moveName] = getLevelValue(eff.hpdamage, level);
+        result.reaction.hpdamage = getLevelValue(eff.hpdamage, level);
+    }
+    if ("mpdamage" in eff) {
+        target.battle.counters.overTime[moveName] = duration;
+        target.battle.mpdamage[moveName] = getLevelValue(eff.mpdamage, level);
+        result.reaction.mpdamage = getLevelValue(eff.mpdamage, level);
+    }
+    
+    if ("delay" in eff) {
+        if (target.battle.delay <= 0) {
+            target.battle.delay = getLevelValue(eff.delay, level);
+            result.reaction.delay = getLevelValue(eff.delay, level);
+        }
+    }
+    if ("attackElement" in eff) {
+        target.battle.attackElement = eff.attackElement;
+        target.battle.counters.effects.attackElement = duration;
+        target.battle.effects.attackElement = moveName;
+        result.reaction.attackElement = true;
+    }
+    if ("defenseElement" in eff) {
+        target.battle.defenseElement = eff.defenseElement;
+        target.battle.counters.effects.defenseElement = duration;
+        target.battle.effects.defenseElement = moveName;
+        result.reaction.defenseElement = true;
+    }
+    if ("focus" in eff) {
+        var focusList = this.team1.indexOf(target) !== -1 ? this.team1Focus : this.team2Focus;
+        if (focusList.indexOf(target) === -1) {
+            focusList.push(target);
+        }
+        target.battle.counters.effects.focus = duration;
+        target.battle.effects.focus = moveName;
+        result.reaction.focus = true;
+    }
+    
+    return result;
+};
+Battle.prototype.playerDamageText = function(name, damage, mpDamage, bold) {
+    var hpDmg, mpDmg, result = [];
+    if (damage) {
+        if (Array.isArray(damage)) {
+            hpDmg = damage.join(", ") + " HP";
+        } else {
+            if (bold) {
+                hpDmg = "<b>" + damage + "</b> HP";
+            } else {
+                hpDmg = damage + " HP";
+            }
+        }
+        result.push(hpDmg);
+    }
+    if (mpDamage) {
+        if (Array.isArray(mpDamage)) {
+            mpDmg = mpDamage.join(", ") + " MP";
+        } else {
+            if (bold) {
+                mpDmg = "<b>" + mpDamage + "</b> MP";
+            } else {
+                mpDmg = mpDamage + " MP";
+            }
+        }
+        result.push(mpDmg);
+    }
+    if (result.length > 0) {
+        return name + " (" + result.join(", ") + ")";
+    } else {
+        return null;
+    }
 };
 Battle.prototype.lifeBar = function(team) {
     var out = [];
@@ -1304,6 +1528,9 @@ Battle.prototype.getAvatar = function(src) {
 Battle.prototype.getTitlePlayer = function(player) {
     return (player.currentTitle !== null && player.currentTitle in this.titles ? this.titles[player.currentTitle].name + " " : "") + player.name;
 };
+Battle.prototype.skillOrItem = function(obj) {
+    return obj[0] === "~" ? this.items[obj.substr(1)].name : this.skills[obj].name;
+};
 
 Battle.prototype.getBuffedMultiplier = function(p, att) {
     var result = 1 * this.getPassiveMultiplier(p, att) * this.getEquipMultiplier(p, att);
@@ -1406,6 +1633,8 @@ function getLevelValue(att, level) {
     if (Array.isArray(att)) {
         if (level < att.length) {
             return att[level];
+        } else if (level < 0) {
+            return att[0];
         } else {
             return att[att.length - 1];
         }
