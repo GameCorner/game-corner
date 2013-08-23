@@ -2687,7 +2687,7 @@ function RPG(rpgchan) {
     this.setBattlePlan = function(src, commandData) {
         var player = getAvatar(src);
         if (commandData === "*") {
-            rpgbot.sendMessage(src, "Your current strategy is " + randomSampleText(player.strategy, function(x) { return skills[x].name; } ) + ".", rpgchan);
+            rpgbot.sendMessage(src, "Your current strategy is " + randomSampleText(player.strategy, this.skillOrItem) + ".", rpgchan);
             rpgbot.sendMessage(src, "To set your strategy, type /plan skill:chance*skill:chance. You can also use /plan slots to save up to 3 strategies.", rpgchan);
             return;
         }
@@ -2698,9 +2698,9 @@ function RPG(rpgchan) {
         
         if (broken[0] === "slots") {
             sys.sendMessage(src, "", rpgchan);
-            rpgbot.sendMessage(src, "Your saved strategy 1 is " + randomSampleText(player.plans[0], function(x) { return skills[x].name; } ) + ".", rpgchan);
-            rpgbot.sendMessage(src, "Your saved strategy 2 is " + randomSampleText(player.plans[1], function(x) { return skills[x].name; } ) + ".", rpgchan);
-            rpgbot.sendMessage(src, "Your saved strategy 3 is " + randomSampleText(player.plans[2], function(x) { return skills[x].name; } ) + ".", rpgchan);
+            rpgbot.sendMessage(src, "Your saved strategy 1 is " + randomSampleText(player.plans[0], this.skillOrItem) + ".", rpgchan);
+            rpgbot.sendMessage(src, "Your saved strategy 2 is " + randomSampleText(player.plans[1], this.skillOrItem) + ".", rpgchan);
+            rpgbot.sendMessage(src, "Your saved strategy 3 is " + randomSampleText(player.plans[2], this.skillOrItem) + ".", rpgchan);
             rpgbot.sendMessage(src, "To save a strategy, use /plan set [slot] [strategy]. To load a saved strategy, use /plan load [slot].", rpgchan);
             sys.sendMessage(src, "", rpgchan);
             return;
@@ -2730,7 +2730,7 @@ function RPG(rpgchan) {
         if (action === "load") {
             if (player.plans[target-1]) {
                 player.strategy = player.plans[target-1];
-                rpgbot.sendMessage(src, "Loaded strategy " + randomSampleText(player.strategy, function(x) { return skills[x].name; } ) + ".", rpgchan);
+                rpgbot.sendMessage(src, "Loaded strategy " + randomSampleText(player.strategy, this.skillOrItem) + ".", rpgchan);
             } else {
                 rpgbot.sendMessage(src, "No plan set here!", rpgchan);
             }
@@ -2749,27 +2749,59 @@ function RPG(rpgchan) {
             }
             var move = skill[0].toLowerCase();
             var chance = parseFloat(skill[1]);
+            var item, itemName;
             
-            if (!(move in skills)) {
-                if(move in altSkills) {
-                    move = altSkills[move];
-                } else {
-                    rpgbot.sendMessage(src, "The skill '" + move + "' doesn't exist!", rpgchan);
+            if (move[0] === "~") {
+                itemName = move.substr(1);
+                if (!(itemName in items)) {
+                    if(itemName in altItems) {
+                        itemName = altItems[itemName];
+                    } else {
+                        rpgbot.sendMessage(src, "The item '" + itemName + "' doesn't exist!", rpgchan);
+                        return;
+                    }
+                }
+                item = items[itemName];
+                if (item.type !== "usable" || item.inBattle !== true) {
+                    rpgbot.sendMessage(src, "The item '" + itemName + "' cannot be used during battles!", rpgchan);
+                    return;
+                }
+                if ("level" in item && player.level < item.level) {
+                    rpgbot.sendMessage(src, "You need to be at least level " + item.level + " to use the item " + itemName + "!", rpgchan);
+                    return;
+                }
+                /* Troublesome, since classes can change after setting the plan 
+                if (this.canUseItem(player, itemName) === false) {
+                    rpgbot.sendMessage(src, "You can't use the item " + itemName + " as " + classes[player.job].name + "!", rpgchan);
+                    return;
+                } 
+                */
+            } else {
+                if (!(move in skills)) {
+                    if(move in altSkills) {
+                        move = altSkills[move];
+                    } else {
+                        rpgbot.sendMessage(src, "The skill '" + move + "' doesn't exist!", rpgchan);
+                        return;
+                    }
+                }
+                if (!(move in player.skills) || player.skills[move] === 0) {
+                    rpgbot.sendMessage(src, "You haven't learned the skill '" + move + "'!", rpgchan);
+                    return;
+                }
+                
+                if (skills[move].type === "passive") {
+                    rpgbot.sendMessage(src, "You can't set passive skills on your plan!", rpgchan);
                     return;
                 }
             }
-            if (!(move in player.skills) || player.skills[move] === 0) {
-                rpgbot.sendMessage(src, "You haven't learned the skill '" + move + "'!", rpgchan);
-                return;
-            }
-            
-            if (skills[move].type === "passive") {
-                rpgbot.sendMessage(src, "You can't set passive skills on your plan!", rpgchan);
-                return;
-            }
             
             if (typeof chance !== "number" || isNaN(chance) === true) {
-                rpgbot.sendMessage(src, "Set a chance for the skill '" + move + "'!", rpgchan);
+                if (itemName !== undefined) {
+                    rpgbot.sendMessage(src, "Set a chance for the item '" + itemName + "'!", rpgchan);
+                } else {
+                    rpgbot.sendMessage(src, "Set a chance for the skill '" + move + "'!", rpgchan);
+                }
                 return;
             }
             obj[move] = chance;
@@ -2778,17 +2810,19 @@ function RPG(rpgchan) {
         if (action === "set") {
             if (target === 1 || target === 2 || target === 3) {
                 player.plans[target-1] = obj;
-                rpgbot.sendMessage(src, "Saved strategy " + randomSampleText(obj, function(x) { return skills[x].name; } ) + " to slot " + target + "!", rpgchan);
+                rpgbot.sendMessage(src, "Saved strategy " + randomSampleText(obj, this.skillOrItem) + " to slot " + target + "!", rpgchan);
             } else {
                 rpgbot.sendMessage(src, "No such slot for strategies!", rpgchan);
             }
             return;
         } else {
             player.strategy = obj;
-            rpgbot.sendMessage(src, "Your strategy was set to " + randomSampleText(obj, function(x) { return skills[x].name; } ) + "!", rpgchan);
+            rpgbot.sendMessage(src, "Your strategy was set to " + randomSampleText(obj, this.skillOrItem) + "!", rpgchan);
         }
-        
     };
+    this.skillOrItem = function(obj) {
+        return obj[0] === "~" ? "~" + items[obj.substr(1)].name : skills[obj].name;
+    }
     this.getBattlePlan = function(src, commandData) {
         var player = getAvatar(src);
         
