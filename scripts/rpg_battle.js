@@ -734,10 +734,8 @@ Battle.prototype.playNextTurn = function() {
                     //Apply reaction effect
                     if ("target" in reSkill.effect.reaction) {
                         eff = reSkill.effect.reaction.target;
-                        effectResult = this.applyBattleEffect(player, reactionName, eff, reactionLevel, reactionDuration);
-                        
-                        damage = effectResult.hpDmg;
-                        mpDmg = effectResult.mpDmg;
+                        damage = 0;
+                        mpDmg = 0;
                         
                         if ("physical" in eff || "magical" in eff) {
                             var type = "physical" in eff ? "physical" : "magical";
@@ -747,7 +745,7 @@ Battle.prototype.playNextTurn = function() {
                                 modifier: getLevelValue(eff[type], reactionLevel),
                                 element: eff.element || "none",
                                 effect: {
-                                    accuracy: eff.accuracy,
+                                    accuracy: eff.attackAccuracy,
                                     snipe: eff.snipe
                                 }
                             };
@@ -762,13 +760,21 @@ Battle.prototype.playNextTurn = function() {
                                 reactionEvasion = true;
                             }
                         }
-                        if (damage !== 0 || mpDmg !== 0) {
-                            damage = damage !== 0 ? getNumberSign(damage) : damage;
-                            mpDmg = mpDmg !== 0 ? getNumberSign(mpDmg) : mpDmg;
-                            reactionDamage.push(this.playerDamageText(player.name, damage, mpDmg, true));
+                        
+                        if (reactionEvasion !== true) {
+                            effectResult = this.applyBattleEffect(player, reactionName, eff, reactionLevel, reactionDuration);
+                            
+                            damage += effectResult.hpDmg;
+                            mpDmg += effectResult.mpDmg;
+                            
+                            if (damage !== 0 || mpDmg !== 0) {
+                                damage = damage !== 0 ? getNumberSign(damage) : damage;
+                                mpDmg = mpDmg !== 0 ? getNumberSign(mpDmg) : mpDmg;
+                                reactionDamage.push(this.playerDamageText(player.name, damage, mpDmg, true));
+                            }
                         }
                     }
-                    if ("user" in reSkill.effect.reaction) {
+                    if ("user" in reSkill.effect.reaction && reactionEvasion !== true) {
                         eff = reSkill.effect.reaction.user;
                         effectResult = this.applyBattleEffect(target, reactionName, eff, reactionLevel, reactionDuration);
                         
