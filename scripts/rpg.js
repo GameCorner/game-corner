@@ -4751,6 +4751,72 @@ function RPG(rpgchan) {
                         rpgbot.sendMessage(src, sys.name(id) + " is currently at " + target.location, rpgchan);
                 }
                 break;
+            case "event":
+            case "events":
+                switch (action) {
+                    case "change":
+                    case "edit":
+                        if (obj) {
+                            if (val && (val.toLowerCase() === "true" || val.toLowerCase() === "false")) {
+                                val = val.toLowerCase() === "true" ? true : false;
+                                target.events[obj] = val;
+                                rpgbot.sendMessage(src, "Successfully changed " + target.name + "'s '" + obj + "' event to " + val+ ".", rpgchan);
+                            } else {
+                                rpgbot.sendMessage(src, "Invalid value. Events can only be set to 'true' or 'false'.", rpgchan);
+                            } 
+                        } else {
+                            rpgbot.sendMessage(src, "Choose an event!", rpgchan);
+                        }
+                        break;
+                    default:
+                        sys.sendMessage(src, sys.name(id) + "'s events:", rpgchan);
+                        for (r in target.events) {
+                            sys.sendMessage(src, r + ": " + target.events[r], rpgchan);
+                        }
+                }
+                break;
+            case "title":
+            case "titles":
+                switch (action) {
+                    case "add":
+                        if (obj) {
+                            if (!(obj in titles)) {
+                                rpgbot.sendMessage(src, "Invalid title!", rpgchan);
+                                return;
+                            }
+                            if (target.titles.indexOf(obj) !== -1) {
+                                rpgbot.sendMessage(src, "Player " + target.name + " already have this title!", rpgchan);
+                                return;
+                            }
+                            
+                            target.titles.push(obj);
+                            rpgbot.sendMessage(src, "Successfully added title " + obj + " to player " + target.name + "!", rpgchan);
+                        } else {
+                            rpgbot.sendMessage(src, "Choose a title!", rpgchan);
+                        }
+                        break;
+                    case "remove":
+                        if (obj) {
+                            if (target.titles.indexOf(obj) !== -1) {
+                                target.titles.splice(target.titles.indexOf(obj), 1);
+                                if (target.currentTitle === obj) {
+                                    target.currentTitle = null;
+                                }
+                                rpgbot.sendMessage(src, "Successfully removed title " + obj + " from player " + target.name + "!", rpgchan);
+                            } else {
+                                rpgbot.sendMessage(src, target.name + " doesn't have this title!", rpgchan);
+                            }
+                        } else {
+                            rpgbot.sendMessage(src, "Choose a title!", rpgchan);
+                        }
+                        break;
+                    default:
+                        sys.sendMessage(src, sys.name(id) + "'s titles:", rpgchan);
+                        for (r in target.titles) {
+                            sys.sendMessage(src, target.titles[r] + (target.titles[r] in titles ? " (" + titles[target.titles[r]].name + ")" : " (undefined)"), rpgchan);
+                        }
+                }
+                break;
             case "exp":
                 rpgbot.sendMessage(src, sys.name(id) + " currently has " + target.exp + " Exp. Points.", rpgchan);
                 break;
@@ -4908,6 +4974,8 @@ function RPG(rpgchan) {
             skill: [this.viewSkills, "Same as /skills."],
             setskills: [this.setSkillLevel, "Same as /setskill."],
             items: [this.useItem, "Same as /item."],
+            passives: [this.setPassiveSkills, "Same as /passive."],
+            titles: [this.changeTitle, "Same as /title."],
             e: [this.exploreLocation, "Same as /explore."],
             w: [this.walkTo, "Same as /walk."],
             t: [this.talkTo, "Same as /talk."],
