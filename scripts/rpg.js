@@ -2762,7 +2762,7 @@ function RPG(rpgchan) {
                     }
                 }
                 item = items[itemName];
-                if (item.type !== "usable" || item.inBattle !== true) {
+                if (item.battleItem !== true) {
                     rpgbot.sendMessage(src, "The item '" + itemName + "' cannot be used during battles!", rpgchan);
                     return;
                 }
