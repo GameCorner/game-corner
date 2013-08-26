@@ -238,7 +238,7 @@ Battle.prototype.playNextTurn = function() {
                     gainedmsg.push("<b>" + getNumberSign(gainedMana) + "</b> MP");
                 }
                 
-                var itemmsg = "battleMessage" in item ? item.battleMessage.replace(/~Player~/gi, player.name) : player.name + " used a " + item.name + "!";
+                var itemmsg = "battleMessage" in item ? item.battleMessage.replace(/~User~/gi, player.name) : player.name + " used a " + item.name + "!";
                 itemmsg += gainedmsg.length > 0 ? " " + player.name + " (" + gainedmsg.join(", ") + ")" : "";
                 out.push(itemmsg);
                 
@@ -420,7 +420,7 @@ Battle.prototype.playNextTurn = function() {
                     critical = attackResult.critical;
                     
                     triggers.elementalDamage = attackResult.element;
-                    triggers.critical = critical === this.battleSetup.critical;
+                    triggers.criticalHit = critical === this.battleSetup.critical;
                 } 
                 var userDmg = 0, userMpDmg = 0, tempDmg;
                 if (move.effect) {
@@ -653,7 +653,7 @@ Battle.prototype.playNextTurn = function() {
                                     } else {
                                         reactionFound = false;
                                     }
-                                } else if (["critical", "focus", "breakCast", "attackElement", "defenseElement", "summon"].indexOf(re) !== -1) {
+                                } else if (["criticalHit", "focus", "breakCast", "attackElement", "defenseElement", "summon"].indexOf(re) !== -1) {
                                     if (reSkill.trigger[re] === triggers[re]) {
                                         reactionFound = true;
                                     } else {
@@ -1044,7 +1044,7 @@ Battle.prototype.attackPlayer = function(player, target, move, level) {
     
     power = power * (getLevelValue(move.modifier, level) + goldBonus) * pinch * this.battleSetup.damage;
     
-    var def = target.battle.attributes.def * this.battleSetup.defense;
+    var def = (target.battle.attributes.def * (1 - this.battleSetup.secondaryDefense) + target.battle.attributes[move.type === "physical" ? "str" : "mag"] * this.battleSetup.secondaryDefense) * this.battleSetup.defense;
     if (move.effect && move.effect.pierce) {
         var pierce = move.effect.pierce;
         if (pierce === true) {
