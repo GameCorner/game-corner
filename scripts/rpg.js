@@ -73,11 +73,14 @@ function RPG(rpgchan) {
         defense: 1,
         damage: 1,
         critical: 1.5,
+        secondaryDefense: 0,
         instantCast: false,
         passive: 2,
         party: 6,
         partyLevelDiff: 99,
-        partyExp: 0
+        partyExp: 0,
+        itemMode: "free",
+        planMode: "free"
     };
     
     var altSkills = {};
@@ -795,6 +798,11 @@ function RPG(rpgchan) {
                 player.events[e] = effect.events[e];
             }
         }
+        if ("timers" in effect) {
+            for (e in effect.timers) {
+                player.timers[e] = new Date().getTime() + effect.timers[e] * 1000;
+            }
+        }
         if ("partyMove" in effect && player.isBattling === false) {
             if (player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
                 var party = this.findParty(player.party).findMembersNear(src);
@@ -986,6 +994,26 @@ function RPG(rpgchan) {
             if ("chance" in req && Math.random() > req.chance) {
                 deny = true;
             }
+            if ("timers" in req) {
+                var t, timing;
+                for (r in req.timers) {
+                    if (r in player.timers) {
+                        t = new Date().getTime();
+                        if (req.timers[r] === false && player.timers[r] < t) {
+                            timing = getTimeString((t - player.timers[r]) / 1000)
+                            warnings.push("be " + (timing == "" ? "0 seconds" : timing) + " faster");
+                            deny = true;
+                        } else if (req.timers[r] === true && player.timers[r] >= t) {
+                            timing = getTimeString((player.timers[r] - t) / 1000)
+                            warnings.push("wait for more " + (timing == "" ? "0 seconds" : timing));
+                            deny = true;
+                        }
+                    } 
+                    /* else if (req.timers[r] === false) {
+                        deny = true;
+                    } */
+                }
+            }
             if ("classes" in req && req.classes.indexOf(player.job) === -1) {
                 deny = true;
             }
@@ -1122,7 +1150,7 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, topic.denymsg, rpgchan);
                 for (l in reqMessages) {
                     if (reqMessages[l].length > 0) {
-                        rpgbot.sendMessage(src, "You need to " + readable(reqMessages, "and"), rpgchan);
+                        rpgbot.sendMessage(src, "You need to " + readable(reqMessages, "and") + ".", rpgchan);
                     }
                 }
             }
@@ -1637,7 +1665,10 @@ function RPG(rpgchan) {
         
         var item = items[it];
         
-        if (player.isBattling === true && "inBattle" in item && item.inBattle === false) {
+        if (battleSetup.itemMode === "restricted" && player.isBattling === true) {
+            rpgbot.sendMessage(src, "You can't use items while battling!", rpgchan);
+            return;
+        } else if (player.isBattling === true && "inBattle" in item && item.inBattle === false) {
             rpgbot.sendMessage(src, "You can't use this item while battling!", rpgchan);
             return;
         }
@@ -2728,12 +2759,21 @@ function RPG(rpgchan) {
         }
         
         if (action === "load") {
+            if (battleSetup.planMode === "restricted" && player.isBattling === true) {
+                rpgbot.sendMessage(src, "You cannot change plans while battling!", rpgchan);
+                return;
+            }
             if (player.plans[target-1]) {
                 player.strategy = player.plans[target-1];
                 rpgbot.sendMessage(src, "Loaded strategy " + randomSampleText(player.strategy, this.skillOrItem) + ".", rpgchan);
             } else {
                 rpgbot.sendMessage(src, "No plan set here!", rpgchan);
             }
+            return;
+        }
+        
+        if (battleSetup.planMode !== "free" && player.isBattling === true) {
+            rpgbot.sendMessage(src, (battleSetup.planMode === "setOnly" ? "You cannot change plans while battling (You still can load saved plans)!" : "You cannot change plans while battling!"), rpgchan);
             return;
         }
         
@@ -3295,6 +3335,7 @@ function RPG(rpgchan) {
         player.events = {};
         player.defeated = {};
         player.hunted = {};
+        player.timers = {};
         
         player.quests = {};
         player.titles = [];
@@ -3523,6 +3564,9 @@ function RPG(rpgchan) {
         }
         if (!file.quests) {
             file.quests = {};
+        }
+        if (!file.timers) {
+            file.timers = {};
         }
         if (!file.titles) {
             file.titles = [];
@@ -4347,6 +4391,18 @@ function RPG(rpgchan) {
                 }
                 if (battle.partyExp) {
                     battleSetup.partyExp = battle.partyExp;
+                }
+                if (battle.partyExp) {
+                    battleSetup.partyExp = battle.partyExp;
+                }
+                if (battle.itemMode) {
+                    battleSetup.itemMode = battle.itemMode;
+                }
+                if (battle.planMode) {
+                    battleSetup.planMode = battle.planMode;
+                }
+                if (battle.secondaryDefense) {
+                    battleSetup.secondaryDefense = battle.secondaryDefense;
                 }
             }
             
