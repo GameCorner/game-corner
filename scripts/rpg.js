@@ -1153,7 +1153,7 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, topic.denymsg, rpgchan);
                 for (l in reqMessages) {
                     if (reqMessages[l].length > 0) {
-                        rpgbot.sendMessage(src, "You need to " + readable(reqMessages, "and") + ".", rpgchan);
+                        rpgbot.sendMessage(src, "You need to " + readable(reqMessages[l], "and") + ".", rpgchan);
                     }
                 }
             }
