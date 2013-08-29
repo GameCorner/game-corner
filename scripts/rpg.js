@@ -224,16 +224,19 @@ function RPG(rpgchan) {
             var applyEffect = this.checkNPCRequisites(src, places[loc], ["effectRequisites"], true);
             
             if (applyEffect > 0) {
+                var startingHp = player.hp, startingMp = player.mp;
                 var output = this.applyEffect(src, places[loc].effect);
+                
+                startingHp = Math.abs(startingHp - player.hp);
+                startingMp = Math.abs(startingMp - player.mp);
             
                 if (output.length > 0) {
                     for (var x in output) {
-                        rpgbot.sendMessage(src, output[x], rpgchan);
+                        sys.sendMessage(src, output[x].replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, startingHp).replace(/~ManaGained~/g, startingMp), rpgchan);
                     }
                 }
             }
         }
-        
     };
     this.changeLocation = function(src, loc, verb) {
         var player = getAvatar(src);
@@ -710,7 +713,7 @@ function RPG(rpgchan) {
         
         if (out.length > 0) {
             for (var x in out) {
-                rpgbot.sendMessage(src, out[x], rpgchan);
+                sys.sendMessage(src, out[x], rpgchan);
             }
         }
     };
@@ -718,11 +721,11 @@ function RPG(rpgchan) {
         var player = getAvatar(src);   
         var e, sample, out = [];
         if ("broadcast" in effect) {
-            rpgbot.sendAll(effect.broadcast.replace(/~Player~/gi, getTitleName(src)), rpgchan);
+            sys.sendAll(effect.broadcast.replace(/~Bot~/gi, "±" + rpgbot.name).replace(/~Player~/gi, getTitleName(src)), rpgchan);
         }
         if ("messages" in effect) {
             for (e in effect.messages) {
-                out.push(effect.messages[e]);
+                out.push(effect.messages[e].replace(/~Bot~/gi, "±" + rpgbot.name));
             }
         }
         if ("hp" in effect) {
@@ -755,9 +758,9 @@ function RPG(rpgchan) {
                 player.gold = 0;
             }
             if (effect.gold > 0) {
-                out.push("You received " + effect.gold + " Gold!");
+                out.push(rpgbot.formatMsg("You received " + effect.gold + " Gold!"));
             } else if (effect.gold < 0) {
-                out.push("You lost " + (-1 * effect.gold) + " Gold!");
+                out.push(rpgbot.formatMsg("You lost " + (-1 * effect.gold) + " Gold!"));
             }
         }
         var itemsGained = {};
@@ -788,9 +791,9 @@ function RPG(rpgchan) {
         }
         for (e in itemsGained) {
             if (itemsGained[e] > 0) {
-                out.push("You received " + itemsGained[e] + " " + items[e].name + "(s)!");
+                out.push(rpgbot.formatMsg("You received " + itemsGained[e] + " " + items[e].name + "(s)!"));
             } else if (itemsGained < 0) {
-                out.push("You lost " + (-1 * itemsGained[e]) + " " + items[e].name + "(s)!");
+                out.push(rpgbot.formatMsg("You lost " + (-1 * itemsGained[e]) + " " + items[e].name + "(s)!"));
             }
         }
         if ("events" in effect) {
@@ -816,18 +819,18 @@ function RPG(rpgchan) {
         }
         if ("respawn" in effect) {
             player.respawn = effect.respawn;
-            out.push("Your respawn point was set to " + places[player.respawn].name + "!");
+            out.push(rpgbot.formatMsg("Your respawn point was set to " + places[player.respawn].name + "!"));
         }
         if ("exp" in effect && effect.exp > 0) {
             var finalExp = Math.floor(effect.exp * leveling.eventExp);
-            out.push("You received " + finalExp + " Exp. Points!");
+            out.push(rpgbot.formatMsg("You received " + finalExp + " Exp. Points!"));
             this.receiveExp(src, finalExp);
         }
         if ("classes" in effect) {
             for (e in effect.classes) {
                 if (e === player.job) {
                     this.changePlayerClass(player, effect.classes[e]);
-                    out.push("You changed classes and now are a " + classes[player.job].name + "!");
+                    out.push(rpgbot.formatMsg("You changed classes and now are a " + classes[player.job].name + "!"));
                     break;
                 }
             }
@@ -937,7 +940,7 @@ function RPG(rpgchan) {
             }
             
             if (updatedQuests.length > 0) {
-                out.push("The following quests have been updated: " + readable(updatedQuests, "and") + ".");
+                out.push(rpgbot.formatMsg("The following quests have been updated: " + readable(updatedQuests, "and") + "."));
             }
         }
         if ("title" in effect) {
@@ -945,7 +948,7 @@ function RPG(rpgchan) {
                 if (effect.title[e] === true) {
                     if (player.titles.indexOf(e) === -1) {
                         player.titles.push(e);
-                        out.push("You received the title " + titles[e].name + ".");
+                        out.push(rpgbot.formatMsg("You received the title " + titles[e].name + "."));
                     }
                 } else {
                     if (player.titles.indexOf(e) !== -1) {
@@ -953,7 +956,7 @@ function RPG(rpgchan) {
                         if (player.currentTitle === e) {
                             player.currentTitle = null;
                         }
-                        out.push("You lost the title " + titles[e].name + ".");
+                        out.push(rpgbot.formatMsg("You lost the title " + titles[e].name + "."));
                     }
                 }
             }
@@ -1214,11 +1217,15 @@ function RPG(rpgchan) {
             var applyEffect = this.checkNPCRequisites(src, place.contentEffect[effect], ["requisites"], false);
             
             if (applyEffect > 0) {
+                var startingHp = player.hp, startingMp = player.mp;
                 var output = this.applyEffect(src, place.contentEffect[effect].effect);
-            
+                
+                startingHp = Math.abs(startingHp - player.hp);
+                startingMp = Math.abs(startingMp - player.mp);
+                
                 if (output.length > 0) {
                     for (var x in output) {
-                        rpgbot.sendMessage(src, output[x], rpgchan);
+                        sys.sendMessage(src, output[x].replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, startingHp).replace(/~ManaGained~/g, startingMp), rpgchan);
                     }
                 }
             }
@@ -1730,7 +1737,7 @@ function RPG(rpgchan) {
             
             if (out && out.length > 0) {
                 for (var o in out) {
-                    rpgbot.sendMessage(src, out[o], rpgchan);
+                    sys.sendMessage(src, out[o], rpgchan);
                 }
             }
             this.changeItemCount(player, it, -1);
