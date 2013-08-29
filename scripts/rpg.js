@@ -1174,12 +1174,13 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You were in an unknown location! Moving you to the " + places[player.location].name + "!", rpgchan);
             return;
         }
-        if (!("content" in places[player.location]) || Object.keys(places[player.location].content).length < 1) {
+        var place = places[player.location];
+        if (!("content" in place) || Object.keys(place.content).length < 1) {
             rpgbot.sendMessage(src, "Nothing to explore here!", rpgchan);
             return;
         }
         
-        var content = randomSample(places[player.location].content);
+        var content = randomSample(place.content);
         
         if (content[0] === "*") {
             var item = content.substring(1);
@@ -1201,6 +1202,25 @@ function RPG(rpgchan) {
             } else {
                 rpgbot.sendMessage(src, "Nothing found!", rpgchan);
                 return;
+            }
+        } else if (content[0] === "~"){
+            var effect = content.substring(1);
+            
+            if (!("contentEffect" in place) || !(effect in place.contentEffect)) {
+                rpgbot.sendMessage(src, "Nothing found!", rpgchan);
+                return;
+            }
+        
+            var applyEffect = this.checkNPCRequisites(src, place.contentEffect[effect], ["requisites"], false);
+            
+            if (applyEffect > 0) {
+                var output = this.applyEffect(src, place.contentEffect[effect].effect);
+            
+                if (output.length > 0) {
+                    for (var x in output) {
+                        rpgbot.sendMessage(src, output[x], rpgchan);
+                    }
+                }
             }
         } else {
             var mob = content.split(":");
@@ -1231,7 +1251,7 @@ function RPG(rpgchan) {
             }
             
             var list;
-            if (places[player.location].noParty !== true && player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
+            if (place.noParty !== true && player.party && this.findParty(player.party) && this.findParty(player.party).isMember(src)) {
                 list = this.findParty(player.party).findMembersNear(src);
             } else {
                 list = [[src], [player]];
