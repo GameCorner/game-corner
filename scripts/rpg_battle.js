@@ -45,7 +45,8 @@ function Battle(viewers, teamA, teamB, rpg) {
             hpdamage:{},
             mpdamage:{},
             delay: 0,
-            attributes: {}
+            attributes: {},
+            summons: {}
         };
         if (this.team1[p].isPlayer) {
             p1 = true;
@@ -67,7 +68,8 @@ function Battle(viewers, teamA, teamB, rpg) {
             hpdamage:{},
             mpdamage:{},
             delay: 0,
-            attributes: {}
+            attributes: {},
+            summons: {}
         };
         if (this.team2[p].isPlayer) {
             p2 = true;
@@ -463,83 +465,11 @@ Battle.prototype.playNextTurn = function() {
                         triggers.breakCast = true;
                     }
                     if ("summon" in move.effect) {
-                        if (!("summons" in target.battle)) {
-                            target.battle.summons = {};
-                        }
-                        if (!(moveName in target.battle.summons)) {
-                            target.battle.summons[moveName] = [];
-                        }
-                        targetTeam = this.team1.indexOf(target) !== -1 ? this.team1 : this.team2;
-                        var summoned, limit = {}, mon, maxMon, summonFailed = true;
+                        var summonResult = this.summonMonster(target, moveName, level);
                         
-                        for (mon in move.effect.summon) {
-                            limit[mon] = 0;
-                        }
-                        
-                        for (mon in target.battle.summons[moveName]) {
-                            maxMon = target.battle.summons[moveName][mon].id;
-                            limit[maxMon] += 1;
-                        }
-                        
-                        for (mon in move.effect.summon) {
-                            var limitNum;
-                            maxMon = limit[mon] + getLevelValue(move.effect.summon[mon], level);
-                            if (move.effect.summonLimit && move.effect.summonLimit !== false) {
-                                if (move.effect.summonLimit === true) {
-                                    limitNum = getLevelValue(move.effect.summon[mon], level);
-                                } else {
-                                    limitNum = getLevelValue(move.effect.summonLimit, level);
-                                }
-                            } else {
-                                limitNum = maxMon;
-                            }
-                            
-                            for (var sum = limit[mon]; sum < maxMon; ++sum) {
-                                // TO-DO: Make it actually check if the number for the name is unused
-                                // summoned = game.generateMonster(mon, sum + 1);
-                                if (target.battle.summons[moveName].length >= limitNum) {
-                                    break;
-                                }
-                                
-                                summoned = this.game.generateMonster(mon);
-                                summoned.summoner = target;
-                                summoned.isSummon = true;
-                                targetTeam.push(summoned);
-                                
-                                summoned.battle = {
-                                    counters: {
-                                        bonus: {},
-                                        overTime: {},
-                                        effects: {}
-                                    },
-                                    bonus: {},
-                                    effects: {},
-                                    hpdamage:{},
-                                    mpdamage:{},
-                                    delay: 0,
-                                    attributes: {
-                                        str: getFullValue(summoned, "str"),
-                                        def: getFullValue(summoned, "def"),
-                                        spd: getFullValue(summoned, "spd"),
-                                        dex: getFullValue(summoned, "dex"),
-                                        mag: getFullValue(summoned, "mag"),
-                                        accuracy: this.getBuffedMultiplier(summoned, "accuracy"),
-                                        evasion: this.getBuffedMultiplier(summoned, "evasion"),
-                                        critical: this.getBuffedMultiplier(summoned, "critical"),
-                                        attackSpeed: this.getBuffedMultiplier(summoned, "attackSpeed")
-                                    }
-                                };
-                                
-                                target.battle.summons[moveName].push(summoned);
-                                effectsMessages.summons.push(summoned.name);
-                                triggers.summon = true;
-                                summonFailed = false;
-                            }
-                        }
-                        
-                        if (summonFailed) {
-                            effectsMessages.summonFailed = true;
-                        }
+                        effectsMessages.summonFailed = summonResult.summonFailed;
+                        effectsMessages.summons = summonResult.summons;
+                        triggers.summon = !summonResult.summonFailed;
                     }
                 }
                 
@@ -625,7 +555,7 @@ Battle.prototype.playNextTurn = function() {
             
                 if (reactors.indexOf(target) === -1 && side !== (this.team1.indexOf(target) !== -1 ? 1 : 2)) {
                     reactions = this.getPassiveByEffect(target, "reaction");
-                    var re, reValue, reLevel, reactionFound, incorrectCondition = false, allConditions;
+                    var re, reValue, reLevel, reactionFound, allConditions;
                     for (r in reactions) {
                         //Compare Triggers here
                         reSkill = this.skills[reactions[r]].effect.reaction;
@@ -1189,6 +1119,96 @@ Battle.prototype.applyBattleEffect = function(target, moveName, eff, level, dura
     }
     
     return result;
+};
+Battle.prototype.summonMonster = function(player, moveName, level) {
+    var result = {
+        summonFailed: true,
+        summons: []
+    };
+    var move = this.skills[moveName];
+    var targetTeam = this.team1.indexOf(player) !== -1 ? this.team1 : this.team2;
+    var summoned, previous = {}, necessary = {}, usedIds = {}, mon, max, id;
+    
+    if (!(moveName in player.battle.summons)) {
+        player.battle.summons[moveName] = [];
+    } 
+    for (mon in player.battle.summons[moveName]) {
+        id = player.battle.summons[moveName][mon].id;
+        if (!(id in previous)) {
+            previous[id] = 0;
+            usedIds[id] = [];
+        }
+        previous[id] += 1;
+        usedIds[id].push(player.battle.summons[moveName][mon].summonId);
+    }
+    
+    for (mon in move.effect.summon) {
+        necessary[mon] = getLevelValue(move.effect.summon[mon], level);
+        
+        if (move.effect.summonLimit && move.effect.summonLimit !== false) {
+            if (mon in previous) {
+                if (move.effect.summonLimit === true) {
+                    necessary[mon] -= previous[mon];
+                } else {
+                    max = getLevelValue(move.effect.summonLimit, level);
+                    if (previous[mon] + necessary[mon] > max) {
+                        necessary[mon] = max - previous[mon];
+                    }
+                }
+            }
+        }
+    }
+    
+    for (mon in move.effect.summon) {
+        for (max = necessary[mon]; max > 0; --max) {
+            id = 1;
+            if (mon in usedIds) {
+                while (usedIds[mon].indexOf(id) !== -1) {
+                    id++;
+                }
+            } else {
+                usedIds[mon] = [];
+            }
+            
+            usedIds[mon].push(id);
+            summoned = this.game.generateMonster(mon, id);
+            summoned.summoner = player;
+            summoned.isSummon = true;
+            summoned.summonId = id;
+            targetTeam.push(summoned);
+            
+            summoned.battle = {
+                counters: {
+                    bonus: {},
+                    overTime: {},
+                    effects: {}
+                },
+                bonus: {},
+                effects: {},
+                hpdamage:{},
+                mpdamage:{},
+                delay: 0,
+                attributes: {
+                    str: getFullValue(summoned, "str"),
+                    def: getFullValue(summoned, "def"),
+                    spd: getFullValue(summoned, "spd"),
+                    dex: getFullValue(summoned, "dex"),
+                    mag: getFullValue(summoned, "mag"),
+                    accuracy: this.getBuffedMultiplier(summoned, "accuracy"),
+                    evasion: this.getBuffedMultiplier(summoned, "evasion"),
+                    critical: this.getBuffedMultiplier(summoned, "critical"),
+                    attackSpeed: this.getBuffedMultiplier(summoned, "attackSpeed")
+                }
+            };
+            
+            player.battle.summons[moveName].push(summoned);
+            result.summons.push(summoned.name);
+            result.summonFailed = false;
+        }
+    }
+    
+    return result;
+    
 };
 Battle.prototype.playerDamageText = function(name, damage, mpDamage, bold) {
     var hpDmg, mpDmg, result = [];
