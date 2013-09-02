@@ -181,7 +181,7 @@ Party.prototype.isLeader = function(src) {
         return false;
     }
 };
-Party.prototype.findMembersNear = function(src) {
+Party.prototype.findMembersNear = function(src, noLevelDiff) {
     this.fix();
     
     var player = this.getAvatar(src);
@@ -194,7 +194,7 @@ Party.prototype.findMembersNear = function(src) {
     for (var p in this.members) {
         id = this.members[p];
         target = this.getAvatar(id);
-        if (target.location === loc && target.isBattling === false && target.hp > 0 && Math.abs(player.level - target.level) <= this.game.battleSetup.partyLevelDiff) {
+        if (target.location === loc && target.isBattling === false && target.hp > 0 && (noLevelDiff === true || Math.abs(player.level - target.level) <= this.game.battleSetup.partyLevelDiff)) {
             battlers.push(target);
             viewers.push(id);
         }
