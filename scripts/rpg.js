@@ -834,6 +834,15 @@ function RPG(rpgchan) {
             player.respawn = effect.respawn;
             out[src].push(rpgbot.formatMsg("Your respawn point was set to " + places[player.respawn].name + "!"));
         }
+        if ("setLevel" in effect) {
+            if (player.level !== effect.setLevel) {
+                var levelDiff, oldLevel = player.level;
+                this.setToLevel(player, effect.setLevel);
+                levelDiff = player.level - oldLevel;
+                out[src].push(rpgbot.formatMsg("Your level changed to " + player.level + "!"));
+                // rpgbot.sendAll(getTitleName(src) + "'s Level " + (levelDiff >= 0 ? "increased" : "dropped") + " from " + oldLevel + " to " + player.level + "!", rpgchan);
+            }
+        }
         if ("exp" in effect && effect.exp > 0) {
             finalExp = Math.floor(effect.exp * leveling.eventExp);
             out[src].push(rpgbot.formatMsg("You received " + finalExp + " Exp. Points!"));
@@ -4124,15 +4133,7 @@ function RPG(rpgchan) {
             }
         }
         
-        player.level -= levels;
-        if (player.level < 1) {
-            player.level = 1;
-        }
-        if (player.level === 1) {
-            player.exp = 0;
-        } else {
-            player.exp = expTable[player.level - 2];
-        }
+        this.setToLevel(player, player.level - levels);
         
         if (newClass) {
             player.job = newClass;
@@ -4213,6 +4214,19 @@ function RPG(rpgchan) {
         } else {
             sys.makeDir(savefolder);
             sys.writeToFile(savefolder + "/" + escape(name) + ".json", JSON.stringify(player));
+        }
+    };
+    this.setToLevel = function(player, level) {
+        player.level = level;
+        if (player.level < 1) {
+            player.level = 1;
+        } else if (player.level > expTable.length + 1) {
+            player.level = expTable.length + 1;
+        }
+        if (player.level === 1) {
+            player.exp = 0;
+        } else {
+            player.exp = expTable[player.level - 2];
         }
     };
     this.viewStats = function(src) {
