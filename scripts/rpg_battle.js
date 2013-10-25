@@ -3,6 +3,7 @@
 function Battle(viewers, teamA, teamB, rpg) {
     this.game = rpg;
     this.rpgchan = rpg.rpgchan;
+    this.classes = rpg.classes;
     this.skills = rpg.skills;
     this.items = rpg.items;
     this.places = rpg.places;
@@ -140,7 +141,7 @@ Battle.prototype.playNextTurn = function() {
         }
     }
     
-    var player, side, target, targets, damage, mpDmg, castComplete, focusList, winner, eff, effectResult, reactors, reactions, reSkill, triggers, r;
+    var player, side, target, targets, damage, mpDmg, castComplete, focusList, winner, eff, effectResult, reactors, reactions, reSkill, triggers, r, type, autoCast, autoCastLevel, instantAutoCast, isAutoCast;
     var effectsMessages;
     for (i = 0; i < priority.length; ++i) {
         winner = null;
@@ -150,6 +151,7 @@ Battle.prototype.playNextTurn = function() {
         focusList = [];
         reactors = [];
         castComplete = false;
+        isAutoCast = false;
         effectsMessages = {
             castBreak: [],
             defeated: [],
@@ -189,9 +191,19 @@ Battle.prototype.playNextTurn = function() {
         }
         
         if (player.hp > 0) {
-            var moveName = (castComplete === true) ? player.battle.skillCasting : randomSample(player.strategy);
-            var move = this.skills[moveName];
-            var level;
+            var moveName = (castComplete === true) ? player.battle.skillCasting : randomSample(player.strategy),
+                move,
+                level = 1;
+            
+            if (autoCast) {
+                moveName = autoCast;
+                autoCast = null;
+                isAutoCast = true;
+            }
+                
+            if (moveName === null || (!(moveName in this.skills) && moveName[0] !== "~")) {
+                moveName = this.battleSetup.defaultSkill;
+            }
             
             //Using Item instead of Skill
             if (moveName[0] === "~") {
@@ -203,34 +215,59 @@ Battle.prototype.playNextTurn = function() {
                     continue;
                 }
                 
-                this.game.changeItemCount(player, itemName, -1);
-                
                 var gainedLife = player.hp,
                     gainedMana = player.mp;
                 
+                target = player;
                 if ("battleEffect" in item) {
-                    var itemEff = item.battleEffect;
-                    var itemDuration = itemEff.duration || 6;
-                    var itemEffect = this.applyBattleEffect(player, moveName, itemEff, 1, itemDuration);
+                    var itemEff = item.battleEffect,
+                        itemDuration = itemEff.duration || 6,
+                        itemResult;
                     
-                    player.hp += itemEffect.hpDmg;
-                    player.mp += itemEffect.mpDmg;
+                    target = this.getTarget(player, (itemEff.target || "self"), 1, side, (itemEff.hitDead || "none"));
+                    
+                    if (target.length === 0) {
+                        out.push(player.name + " tried to use a " + item.name + ", but didn't anyone to use it on!");
+                        continue;
+                    } else {
+                        target = target[0];
+                    }
+                    
+                    gainedLife = target.hp,
+                    gainedMana = target.mp;
+                    
+                    var itemEffect = this.applyBattleEffect(target, moveName, itemEff, 1, itemDuration);
+                    
+                    if ("physical" in itemEff || "magical" in itemEff) {
+                        type = "physical" in itemEff ? "physical" : "magical";
+                        move = {
+                            name: item.name,
+                            type: type,
+                            modifier: itemEff[type],
+                            element: itemEff.element || "none",
+                            effect: {
+                                snipe: true
+                            }
+                        };
+                        itemResult = this.attackPlayer(player, target, move, 1);
+                    }
+                    target.hp -= (itemResult ? itemResult.damage : 0);
                 }
                 
-                if (player.hp > player.maxhp) {
-                    player.hp = player.maxhp;
-                } else if (player.hp <= 0) {
-                    player.hp = 0;
-                    effectsMessages.defeated.push(player);
+                if (target.hp > target.maxhp) {
+                    target.hp = target.maxhp;
+                } else if (target.hp <= 0) {
+                    target.hp = 0;
+                    effectsMessages.defeated.push(target);
                 }
-                if (player.mp > player.maxmp) {
-                    player.mp = player.maxmp;
-                } else if (player.mp < 0) {
-                    player.mp = 0;
+                if (target.mp > target.maxmp) {
+                    target.mp = target.maxmp;
+                } else if (target.mp < 0) {
+                    target.mp = 0;
                 }
                 
-                gainedLife = player.hp - gainedLife;
-                gainedMana = player.mp - gainedMana;
+                gainedLife = target.hp - gainedLife;
+                gainedMana = target.mp - gainedMana;
                 
                 var gainedmsg = [];
                 if (gainedLife !== 0) {
@@ -240,9 +277,11 @@ Battle.prototype.playNextTurn = function() {
                     gainedmsg.push("<b>" + getNumberSign(gainedMana) + "</b> MP");
                 }
                 
-                var itemmsg = "battleMessage" in item ? item.battleMessage.replace(/~User~/gi, player.name) : player.name + " used a " + item.name + "!";
-                itemmsg += gainedmsg.length > 0 ? " " + player.name + " (" + gainedmsg.join(", ") + ")" : "";
+                var itemmsg = "battleMessage" in item ? item.battleMessage.replace(/~User~/gi, player.name).replace(/~Target~/gi, target.name) : player.name + " used a " + item.name + (target !== player ? " on " + target.name : "") + "!";
+                itemmsg += gainedmsg.length > 0 ? " " + target.name + " (" + gainedmsg.join(", ") + ")" : "";
                 out.push(itemmsg);
+                
+                this.game.changeItemCount(player, itemName, -1);
                 
                 if (effectsMessages.defeated.length > 0) {
                     out.push(readable(effectsMessages.defeated.map(getName), "and") + " was defeated!");
@@ -254,11 +293,27 @@ Battle.prototype.playNextTurn = function() {
                 continue;
             }
             
-            if (player.isPlayer && moveName in player.skillLevels && player.skillLevels[moveName] < player.skills[moveName]) {
-                level = player.skillLevels[moveName] - 1;
+            move = this.skills[moveName];
+            if (isAutoCast) {
+                level = autoCastLevel;
+            } else if (player.isPlayer && moveName in player.skillLevels && player.skillLevels[moveName] < player.skills[moveName]) {
+                level = player.skillLevels[moveName];
+            } else if (moveName in player.skills){
+                level = player.skills[moveName];
+            } else if (player.isPlayer && "boundSkills" in this.classes[player.job] && moveName in this.classes[player.job].boundSkills) {
+                level = this.classes[player.job].boundSkills[moveName] - 1;
             } else {
-                level = player.skills[moveName] - 1;
+                for (r in player.equips) {
+                    if (player.equips[r] !== null) {
+                        var equip = this.items[player.equips[r]];
+                        if ("effect" in equip && "boundSkills" in equip.effect && moveName in equip.effect.boundSkills && equip.effect.boundSkills[moveName] > level) {
+                            level = equip.effect.boundSkills[moveName];
+                        }
+                    }
+                }
             }
+            
+            level = level -1;
             
             var mpModifier = this.getPassiveMultiplier(player, "mpModifier");
             var targetTeam, n, added = 0;
@@ -295,7 +350,7 @@ Battle.prototype.playNextTurn = function() {
                 
             }
             
-            if (!castComplete && "cast" in move) {
+            if (instantAutoCast !== true && !castComplete && "cast" in move) {
                 var cast = Math.round((getLevelValue(move.cast, level) + this.getPassiveValue(player, "castTime")) * this.getPassiveMultiplier(player, "castMultiplier"));
                 
                 if (cast > 0 || (cast === 0 && this.battleSetup.instantCast === false)) {
@@ -305,54 +360,12 @@ Battle.prototype.playNextTurn = function() {
                     continue;
                 }
             } else {
+                instantAutoCast = false;
                 player.battle.casting = null;
             }
             
-            switch (move.target.toLowerCase()) {
-                case "self":
-                    targets.push(player);
-                    break;
-                case "party":
-                    targetTeam = side === 1 ? shuffle(team1.concat()) : shuffle(team2.concat());
-                    focusList = side === 1 ? shuffle(this.team1Focus.concat()) : shuffle(this.team2Focus.concat());
-                    break;
-                case "ally":
-                    targetTeam = side === 1 ? shuffle(team1.concat()) : shuffle(team2.concat());
-                    focusList = side === 1 ? shuffle(this.team1Focus.concat()) : shuffle(this.team2Focus.concat());
-                    if (targetTeam.indexOf(player) !== -1) {
-                        targetTeam.splice(targetTeam.indexOf(player), 1);
-                    }
-                    if (focusList.indexOf(player) !== -1) {
-                        focusList.splice(focusList.indexOf(player), 1);
-                    }
-                    break;
-                case "enemy":
-                    targetTeam = side === 1 ? shuffle(team2.concat()) : shuffle(team1.concat());
-                    focusList = side === 1 ? shuffle(this.team2Focus.concat()) : shuffle(this.team1Focus.concat());
-                    break;
-                case "all":
-                    targetTeam = shuffle(team1.concat(team2));
-                    focusList = shuffle(this.team1Focus.concat(this.team2Focus));
-                    break;
-            }
-            
-            var count = (move.targetCount) ? getLevelValue(move.targetCount, level) : 1;
-            var hitDead = (move.hitDead) ? move.hitDead.toLowerCase() : "none";
-            
-            if (move.target.toLowerCase() !== "self") {
-                for (n = 0; n < focusList.length; ++n) {
-                    if ((focusList[n].hp > 0 && hitDead === "none") || (hitDead === "any") || (focusList[n].hp === 0 && hitDead === "only")) {
-                        targets.push(focusList[n]);
-                        added++;
-                    }
-                }
-                for (n = 0; n < targetTeam.length && added < count; ++n) {
-                    if ((targetTeam[n].hp > 0 && hitDead === "none") || (hitDead === "any") || (targetTeam[n].hp === 0 && hitDead === "only")) {
-                        targets.push(targetTeam[n]);
-                        added++;
-                    }
-                }
-            }
+            var hitDead = move.hitDead ? move.hitDead.toLowerCase() : "none";
+            targets = this.getTarget(player, move.target.toLowerCase(), (move.targetCount ? getLevelValue(move.targetCount, level) : 1), side, hitDead);
             
             if (targets.length === 0) {
                 out.push(player.name + " tried to use " + move.name + ", but found no target!");
@@ -387,7 +400,7 @@ Battle.prototype.playNextTurn = function() {
                 }
             }
             
-            var breakCast, attackResult;
+            var breakCast, attackResult, skillElement = "none";
             for (var t = 0; t < targets.length; ++t) {
                 target = targets[t];
                 reactions = [];
@@ -422,6 +435,7 @@ Battle.prototype.playNextTurn = function() {
                     critical = attackResult.critical;
                     
                     triggers.elementalDamage = attackResult.element;
+                    skillElement = attackResult.element;
                     triggers.criticalHit = critical === this.battleSetup.critical;
                 } 
                 var userDmg = 0, userMpDmg = 0, tempDmg;
@@ -455,7 +469,7 @@ Battle.prototype.playNextTurn = function() {
                             effectsMessages.targetEffect.push(player.name);
                         }
                     }
-                    if (target.battle.casting !== null && move.effect.breakCast && Math.random() < getLevelValue(move.effect.breakCast, level)) {
+                    if (target.battle.casting !== null && move.effect.breakCast && this.skills[target.battle.skillCasting].avoidBreakCast !== true && Math.random() < getLevelValue(move.effect.breakCast, level)) {
                         breakCast = true;
                         target.battle.casting = null;
                         target.battle.skillCasting = null;
@@ -668,7 +682,7 @@ Battle.prototype.playNextTurn = function() {
                         mpDmg = 0;
                         
                         if ("physical" in eff || "magical" in eff) {
-                            var type = "physical" in eff ? "physical" : "magical";
+                            type = "physical" in eff ? "physical" : "magical";
                             counter = {
                                 name: reSkill.name,
                                 type: type,
@@ -748,6 +762,50 @@ Battle.prototype.playNextTurn = function() {
                     }
                 }
                 target.battle.reaction = null;
+            }
+            
+            if (!isAutoCast && player.isPlayer === true) {
+                var acEquip, acInfo, acTrigger, acFound = false;
+                for (r in player.equips) {
+                    if (player.equips[r] !== null) {
+                        acEquip = this.items[player.equips[r]];
+                        if ("effect" in acEquip && "autoCast" in acEquip.effect) {
+                            for (t in acEquip.effect.autoCast) {
+                                acInfo = acEquip.effect.autoCast[t];
+                                acTrigger = acInfo.trigger;
+                                if (Math.random() <= acInfo.chance) {
+                                    if ("skill" in acTrigger) {
+                                        if (acTrigger.skill.indexOf(moveName) !== -1 && acInfo.chance) {
+                                            acFound = true;
+                                        }
+                                    } else if ("anySkillBut" in acTrigger) {
+                                        if (acTrigger.anySkillBut.indexOf(moveName) === -1) {
+                                            acFound = true;
+                                        }
+                                    } else if ("type" in acTrigger) {
+                                        if (acTrigger.type.indexOf(move.type) !== -1) {
+                                            acFound = true;
+                                        }
+                                    } else if ("element" in acTrigger) {
+                                        if (acTrigger.element.indexOf(skillElement) !== -1) {
+                                            acFound = true;
+                                        }
+                                    }
+                                    if (acFound) {
+                                        autoCast = t;
+                                        autoCastLevel = acInfo.level;
+                                        instantAutoCast = acInfo.instantCast || false;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (acFound) {
+                        priority.splice(i, 0, player);
+                        break;
+                    }
+                }
             }
             
             if (effectsMessages.defeated.length > 0) {
@@ -898,6 +956,56 @@ Battle.prototype.playNextTurn = function() {
     }
     this.turn++;
 };
+Battle.prototype.getTarget = function(player, target, count, side, hitDead) {
+    var targets = [],
+        targetTeam,
+        focusList,
+        added = 0;
+    
+    switch (target) {
+        case "self":
+            targets.push(player);
+            break;
+        case "party":
+            targetTeam = side === 1 ? shuffle(this.team1.concat()) : shuffle(this.team2.concat());
+            focusList = side === 1 ? shuffle(this.team1Focus.concat()) : shuffle(this.team2Focus.concat());
+            break;
+        case "ally":
+            targetTeam = side === 1 ? shuffle(this.team1.concat()) : shuffle(this.team2.concat());
+            focusList = side === 1 ? shuffle(this.team1Focus.concat()) : shuffle(this.team2Focus.concat());
+            if (targetTeam.indexOf(player) !== -1) {
+                targetTeam.splice(targetTeam.indexOf(player), 1);
+            }
+            if (focusList.indexOf(player) !== -1) {
+                focusList.splice(focusList.indexOf(player), 1);
+            }
+            break;
+        case "enemy":
+            targetTeam = side === 1 ? shuffle(this.team2.concat()) : shuffle(this.team1.concat());
+            focusList = side === 1 ? shuffle(this.team2Focus.concat()) : shuffle(this.team1Focus.concat());
+            break;
+        case "all":
+            targetTeam = shuffle(this.team1.concat(this.team2));
+            focusList = shuffle(this.team1Focus.concat(this.team2Focus));
+            break;
+    }
+    if (target !== "self") {
+        for (n = 0; n < focusList.length && added < count; ++n) {
+            if ((focusList[n].hp > 0 && hitDead === "none") || (hitDead === "any") || (focusList[n].hp === 0 && hitDead === "only")) {
+                targets.push(focusList[n]);
+                added++;
+            }
+        }
+        for (n = 0; n < targetTeam.length && added < count; ++n) {
+            if ((targetTeam[n].hp > 0 && hitDead === "none") || (hitDead === "any") || (targetTeam[n].hp === 0 && hitDead === "only")) {
+                targets.push(targetTeam[n]);
+                added++;
+            }
+        }
+    }
+    
+    return targets;
+};
 Battle.prototype.attackPlayer = function(player, target, move, level) {
     var result = {
         damage: 0,
@@ -915,7 +1023,7 @@ Battle.prototype.attackPlayer = function(player, target, move, level) {
     if (evd <= 0) {
         evd = 1;
     }
-    var evadeCheck = 0.7 + ((acc - evd) / 100);
+    var evadeCheck = this.battleSetup.baseAccuracy + ((acc - evd) / 100);
     if (evadeCheck < 0.05) {
         evadeCheck = 0.05;
     } else if (evadeCheck > 0.95) {
@@ -959,20 +1067,23 @@ Battle.prototype.attackPlayer = function(player, target, move, level) {
     }
     
     // Passive Skill that increases damage by consuming Gold
-    var goldDamageSkills = this.getPassiveByEffect(player, "goldDamage"), goldBonus = 0;
+    var goldDamageSkills = this.getPassiveByEffect(player, "goldDamage"), attackBonus = 0;
     if (goldDamageSkills.length > 0) {
         var goldUsed, goldLevel;
         for (var g in goldDamageSkills) {
             goldLevel = player.passives[goldDamageSkills[g]] - 1;
             goldUsed = getLevelValue(this.skills[goldDamageSkills[g]].effect.goldDamage.cost, goldLevel);
             if (player.gold >= goldUsed) {
-                goldBonus += getLevelValue(this.skills[goldDamageSkills[g]].effect.goldDamage.modifier, goldLevel);
+                attackBonus += getLevelValue(this.skills[goldDamageSkills[g]].effect.goldDamage.modifier, goldLevel);
                 player.gold -= goldUsed;
             }
         }
     }
+    if (move.effect && move.effect.levelDamage) {
+        attackBonus += Math.floor(player.level * getLevelValue(move.effect.levelDamage, level));
+    }
     
-    power = power * (getLevelValue(move.modifier, level) + goldBonus) * pinch * this.battleSetup.damage;
+    power = power * (getLevelValue(move.modifier, level) + attackBonus) * pinch * this.battleSetup.damage * (1 + (this.battleSetup.levelDamageBonus * player.level));
     
     var def = (target.battle.attributes.def * (1 - this.battleSetup.secondaryDefense) + target.battle.attributes[move.type === "physical" ? "str" : "mag"] * this.battleSetup.secondaryDefense) * this.battleSetup.defense;
     if (move.effect && move.effect.pierce) {
@@ -1198,7 +1309,8 @@ Battle.prototype.summonMonster = function(player, moveName, level) {
                     evasion: this.getBuffedMultiplier(summoned, "evasion"),
                     critical: this.getBuffedMultiplier(summoned, "critical"),
                     attackSpeed: this.getBuffedMultiplier(summoned, "attackSpeed")
-                }
+                },
+                summons: {}
             };
             
             player.battle.summons[moveName].push(summoned);
@@ -1723,6 +1835,7 @@ function randomSample(hash) {
             }
         }
     }
+    return null;
 }
 function shuffle(o) {
     for (var j, x, i = o.length; i; j = parseInt(Math.random() * i, 10), x = o[--i], o[i] = o[j], o[j] = x){ o = o; }
