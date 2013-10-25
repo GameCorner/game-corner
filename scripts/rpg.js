@@ -60,7 +60,8 @@ function RPG(rpgchan) {
         itemsPerLevel: 0,
         battleExp: 1,
         battleGold: 1,
-        eventExp: 1
+        eventExp: 1,
+        saveOnClear: false
     };
     var equipment = {
         rhand: "Right Hand",
@@ -69,9 +70,11 @@ function RPG(rpgchan) {
         head: "Head"
     };
     var battleSetup = {
+        baseAccuracy: 0.7,
         evasion: 1,
         defense: 1,
         damage: 1,
+        levelDamageBonus: 0,
         critical: 1.5,
         secondaryDefense: 0,
         instantCast: false,
@@ -80,13 +83,34 @@ function RPG(rpgchan) {
         partyLevelDiff: 99,
         partyExp: 0,
         itemMode: "free",
-        planMode: "free"
+        planMode: "free",
+        defaultSkill: "attack"
     };
     
     var altSkills = {};
     var altPlaces = {};
     var altItems = {};
     var classHelp = [];
+    var gameHelp = [
+            "",
+            "*** *********************************************************************** ***",
+            "±RPG: A newcomer's guide by Oksana: http://gamecorner.info/Thread-RPG-Newcomer-s-Guide",
+            "±RPG: /classes - To see a list of the current starting classes.",
+            "±RPG: /start - To pick a class. Example: '/start mage'",
+            "±RPG: /i - To see your items list. Use /i itemname to use the item. Example: '/i armor' to wear armor or '/i potion' to heal during battle.",
+            "±RPG: /stats - To see your stats and available stat points. Use /increase to allocate them. Example: '/increase str:2' to put 2 points into strength.",
+            "±RPG: /skills - To see your skills and available skill points. Use /increase to allocate them. Example: '/increase rest' to raise your rest level.",
+            "±RPG: /plan - To see what our current battle plan is set to. Use /plan skill:chance to set your plan. Example: '/plan attack:8*rest:2' to set your plan to 80% attack and 20% rest.",
+            "±RPG: /w - To show all the places you can go. Use /w location to move to the new location. Example: '/w inn' to move to the inn.",
+            "±RPG: /t - To show the visible NPCs or objects to interact with. Use /a object or /t NPC to interact with them. Example: '/a board' to view the bulletin board at the inn.",
+            "±RPG: /e - To explore your current location. Sometimes it will start a battle, sometimes you will find items.",
+            "±RPG: /f - To flee from a battle. Use this to avoid dying if you are in a battle you are sure can't win.",
+            "±RPG: /revive - Use this when you have died. You will revive at your respawn location with half HP, so remember to heal at the inn.",
+            "±RPG: /savechar - To save your progress.",
+            "±RPG: /loadchar - To load your previously saved game.",
+            "*** *********************************************************************** ***",
+            ""
+		];
     
     var Party = require(plugins.party).Party;
     var Battle = require(plugins.battle).Battle;
@@ -673,12 +697,33 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, topic.nogoldmsg, rpgchan);
                 return;
             }
+        } else if ("show" in topic) {
+            sys.sendMessage(src, "", rpgchan);
+            sys.sendMessage(src, topic.message, rpgchan);
+            var item;
+            for (var s in topic.show) {
+                if (topic.show[s] in items) {
+                    item = items[topic.show[s]];
+                    sys.sendMessage(src, item.name + " (" + topic.show[s] + "): " + item.info + " " + (item.type === "equip" ? getEquipAttributes(topic.show[s]) : ""), rpgchan);
+                }
+            }
+            sys.sendMessage(src, "", rpgchan);
+            return;
         }
         
         if (!nomsg) {
             sys.sendMessage(src, "", rpgchan);
             var messageList = ["message", "message2", "message3", "message4", "message5", "message6", "message7", "message8", "message9", "message10"];
-            sys.sendMessage(src, topic[getLevelValue(messageList, outcome - 1)], rpgchan);
+            var msgAttr = messageList[0];
+            
+            for (var m = outcome - 1; m >= 0; m--) {
+                if (messageList[m] in topic) {
+                    msgAttr = messageList[m];
+                    break;
+                }
+            }
+            
+            sys.sendMessage(src, topic[msgAttr], rpgchan);
         }
         this.checkNPCEffect(src, topic, person, outcome);
     };
@@ -1169,7 +1214,7 @@ function RPG(rpgchan) {
         if (message) {
             hpDmg = Math.abs(startingHp[src] - player.hp);
             mpDmg = Math.abs(startingMp[src] - player.mp);
-            rpgbot.sendMessage(src, message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, hpDmg).replace(/~ManaGained~/g, hpDmg).replace(/~Place~/g, places[player.location].name), rpgchan);
+            rpgbot.sendMessage(src, message.replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, hpDmg).replace(/~ManaGained~/g, mpDmg).replace(/~Place~/g, places[player.location].name), rpgchan);
         }
         
         for (e in out) {
@@ -1179,7 +1224,7 @@ function RPG(rpgchan) {
                 hpDmg = Math.abs(startingHp[e] - player.hp);
                 mpDmg = Math.abs(startingMp[e] - player.mp);
                 for (o in out[e]) {
-                    sys.sendMessage(e, out[e][o].replace(/~User~/g, user).replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, hpDmg).replace(/~ManaGained~/g, hpDmg).replace(/~Place~/g, places[player.location].name), rpgchan);
+                    sys.sendMessage(e, out[e][o].replace(/~User~/g, user).replace(/~Life~/g, player.hp).replace(/~Mana~/g, player.mp).replace(/~LifeGained~/g, hpDmg).replace(/~ManaGained~/g, mpDmg).replace(/~Place~/g, places[player.location].name), rpgchan);
                 }
             }
         }
@@ -1215,7 +1260,7 @@ function RPG(rpgchan) {
             teamWarnings = [];
             deny = false;
             
-            party = req.partyEffect === true ? team : [player];
+            party = req.partyRequisites === true ? team : [player];
             
             if ("chance" in req && Math.random() > req.chance) {
                 deny = true;
@@ -1610,6 +1655,7 @@ function RPG(rpgchan) {
         monster.name = data.name + (num ? " " + num : "");
         monster.id = name.toLowerCase();
         monster.exp = data.exp;
+        monster.level = data.level;
         monster.gold = data.gold;
         monster.loot = data.loot;
         monster.defenseElement = data.element || "none";
@@ -1884,6 +1930,9 @@ function RPG(rpgchan) {
                 result.push((effect.mpdamage > 0 ? "+" : "") + effect.mpdamage + " Mana per turn");
             }
         }
+        if ("level" in item && hideSlot !== true) {
+            result.push("Required Level " + item.level);
+        }
         return "[" + result.join(", ") + "]";
     }
     this.useItem = function(src, commandData) {
@@ -1992,6 +2041,8 @@ function RPG(rpgchan) {
             }
             rpgbot.sendMessage(src, items[it].name + " equipped!", rpgchan);
             player.equips[slot] = it;
+            
+            this.fixSkills(src);
             this.updateBonus(src);
         } else {
             rpgbot.sendMessage(src, "This item cannot be used!", rpgchan);
@@ -2219,6 +2270,7 @@ function RPG(rpgchan) {
                 equips[e] = null;
             }
         }
+        this.fixSkills(src);
         this.updateBonus(src);
     };
     this.requestTrade = function(src, commandData) {
@@ -3075,7 +3127,7 @@ function RPG(rpgchan) {
                         return;
                     }
                 }
-                if (!(move in player.skills) || player.skills[move] === 0) {
+                if (this.canUseSkill(src, move) === false) {
                     rpgbot.sendMessage(src, "You haven't learned the skill '" + move + "'!", rpgchan);
                     return;
                 }
@@ -3234,7 +3286,7 @@ function RPG(rpgchan) {
                     return;
                 }
             }
-            if (!(skill in player.skills) || player.skills[skill] === 0) {
+            if (this.canUseSkill(src, skill) === false) {
                 rpgbot.sendMessage(src, "You haven't learned the skill '" + skill + "'!", rpgchan);
                 return;
             }
@@ -3243,9 +3295,26 @@ function RPG(rpgchan) {
                 rpgbot.sendMessage(src, skills[skill].name + " is not a passive skill!", rpgchan);
                 return;
             }
-            level = info.length > 1 && !isNaN(parseInt(info[1], 10)) ? parseInt(info[1], 10) : player.skills[skill];
-            if (level < 1 || level > player.skills[skill]) {
-                level = player.skills[skill];
+            
+            if (!(skill in player.skills)) {
+                if ("boundSkills" in classes[player.job] && skill in classes[player.job].boundSkills) {
+                    level = classes[player.job].boundSkills[skill];
+                } else {
+                    for (var r in player.equips) {
+                        if (player.equips[r] !== null) {
+                            var eq = items[player.equips[r]];
+                            if ("effect" in eq && "boundSkills" in eq.effect && skill in eq.effect.boundSkills) {
+                                level = eq.effect.boundSkills[skill];
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                level = info.length > 1 && !isNaN(parseInt(info[1], 10)) ? parseInt(info[1], 10) : player.skills[skill];
+                if (level < 1 || level > player.skills[skill]) {
+                    level = player.skills[skill];
+                }
             }
             
             obj[skill] = level;
@@ -3290,27 +3359,10 @@ function RPG(rpgchan) {
             } else if (player.passives[skill] === old) {
                 player.passives[skill] = player.skills[skill];
             }
-            
-            for (s in player.equips) {
-                if (player.equips[s] !== null && this.canUseItem(player, player.equips[s]) === false) {
-                    rpgbot.sendMessage(src, items[player.equips[s]].name + " unequipped!", rpgchan);
-                    player.equips[s] = null;
-                }
-            }
         }
         
         if (amount === 0) {
-            if (skill in player.strategy) {
-                delete player.strategy[skill];
-            }
-            for (s in player.plans) {
-                if (skill in player.plans[s]) {
-                    delete player.plans[s][skill];
-                }
-            }
-            if (skill in player.skillLevels) {
-                delete player.skillLevels[skill];
-            }
+            this.fixSkills(src, skill);
         }
         
         if (remove) {
@@ -3318,6 +3370,75 @@ function RPG(rpgchan) {
         }
         
         this.updateBonus(src);
+    };
+    this.fixSkills = function(src) {
+        var player = getAvatar(src), s, p;
+        
+        //Remove Skills that cannot be used from Plan, Saved Plans and Passives
+        for (s in player.strategy) {
+            if (s[0] !== "~" && this.canUseSkill(src, s) === false) {
+                delete player.strategy[s];
+            }
+        }
+        for (p in player.plans) {
+            for (s in player.plans[p]) {
+                if (s[0] !== "~" && this.canUseSkill(src, s) === false) {
+                    delete player.plans[p][s];
+                }
+            }
+        }
+        for (s in player.passives) {
+            if (this.canUseSkill(src, s) === false) {
+                delete player.passives[s];
+            }
+        }
+        
+        //Unequip equipment that cannot be used anymore due to Passives unequipped
+        for (s in player.equips) {
+            if (player.equips[s] !== null && this.canUseItem(player, player.equips[s]) === false) {
+                rpgbot.sendMessage(src, items[player.equips[s]].name + " unequipped!", rpgchan);
+                player.equips[s] = null;
+            }
+        }
+        
+        //Remove Skills that cannot be used from Plan, Saved Plans and Passives due to Equipment unequipped
+        for (s in player.strategy) {
+            if (s[0] !== "~" && this.canUseSkill(src, s) === false) {
+                delete player.strategy[s];
+            }
+        }
+        for (p in player.plans) {
+            for (s in player.plans[p]) {
+                if (s[0] !== "~" && this.canUseSkill(src, s) === false) {
+                    delete player.plans[p][s];
+                }
+            }
+        }
+        for (s in player.passives) {
+            if (this.canUseSkill(src, s) === false) {
+                delete player.passives[s];
+            }
+        }
+    };
+    this.canUseSkill = function(src, skill) {
+        var player = getAvatar(src), job = classes[player.job];
+        
+        if (skill in player.skills && player.skills[skill] > 0) {
+            return true;
+        } else if ("boundSkills" in job && job.boundSkills[skill] > 0) {
+            return true;
+        } else {
+            var equip;
+            for (var s in player.equips) {
+                if (player.equips[s] !== null) {
+                    equip = items[player.equips[s]];
+                    if ("effect" in equip && "boundSkills" in equip.effect && equip.effect.boundSkills[skill] > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     };
     function getSkillsNamesLevels(obj) {
         var list = [];
@@ -3332,25 +3453,21 @@ function RPG(rpgchan) {
     this.changePlayerClass = function(player, job) {
         if (job !== player.job) {
             player.job = job;
+            var s, p, newJob = classes[job];
             
-            for (var s in player.skills) {
-                if (!(s in classes[job].skills) && player.skills[s] === 0 && leveling.skillFromOtherClass === false) {
+            for (s in player.skills) {
+                if (!(s in newJob.skills) && player.skills[s] === 0 && leveling.skillFromOtherClass === false) {
                     delete player.skills[s];
                 }
             }
             
-            for (s in classes[job].skills) {
+            for (s in newJob.skills) {
                 if (!(s in player.skills)) {
-                    player.skills[s] = classes[job].skills[s];
+                    player.skills[s] = newJob.skills[s];
                 }
             }
             
-            for (s in player.equips) {
-                if (player.equips[s] !== null && this.canUseItem(player, player.equips[s]) === false) {
-                    player.equips[s] = null;
-                }
-            }
-            
+            this.fixSkills(player.id);
             this.updateBonus(player.id);
         }
     };
@@ -3856,6 +3973,10 @@ function RPG(rpgchan) {
         
         this.removePlayer(src);
         
+        if (leveling.saveOnClear === true) {
+            this.saveGame(src, "sure");
+        }
+        
         user[rpgAtt] = undefined;
         rpgbot.sendMessage(src, "Character successfully cleared!", rpgchan);
     };
@@ -4265,14 +4386,44 @@ function RPG(rpgchan) {
         var job = player.job;
         for (var s in player.skills) {
             if (skills[s].type !== "passive") {
-                out.push(skills[s].name + " (" + s + ") : [" + player.skills[s] + "/" + skills[s].levels + "] " + skills[s].info + " (" + skills[s].cost + " Mana) " + (leveling.skillFromOtherClass === false && !(s in classes[job].skills) ? "(Skill from another class)" : ""));
+                out.push(this.getSkillDescription(s, player.skills[s]) + (leveling.skillFromOtherClass === false && !(s in classes[job].skills) ? "(Skill from another class)" : ""));
             }
         }
         out.push("");
         out.push("Passive Skills:");
         for (s in player.skills) {
             if (skills[s].type === "passive") {
-                out.push(skills[s].name + " (" + s + ") : [" + player.skills[s] + "/" + skills[s].levels + "] " + skills[s].info + " " + (leveling.skillFromOtherClass === false && !(s in classes[job].skills) ? "(Skill from another class)" : ""));
+                out.push(this.getSkillDescription(s, player.skills[s]) + (leveling.skillFromOtherClass === false && !(s in classes[job].skills) ? "(Skill from another class)" : ""));
+            }
+        }
+        
+        if ("boundSkills" in classes[job]) {
+            out.push("");
+            out.push("Class-bound Skills:");
+            for (s in classes[job].boundSkills) {
+                out.push(this.getSkillDescription(s, classes[job].boundSkills[s]));
+            }
+        }
+        
+        var bound = {}, equip;
+        for (s in player.equips) {
+            if (player.equips[s] !== null) {
+                equip = items[player.equips[s]];
+                if ("effect" in equip && "boundSkills" in equip.effect) {
+                    for (var e in equip.effect.boundSkills) {
+                        if (!(e in bound) || equip.effect.boundSkills[e] > bound[e]) {
+                            bound[e] = equip.effect.boundSkills[e];
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (Object.keys(bound).length > 0) {
+            out.push("");
+            out.push("Equipment-bound Skills:");
+            for (s in bound) {
+                out.push(this.getSkillDescription(s, bound[s]));
             }
         }
         
@@ -4283,6 +4434,14 @@ function RPG(rpgchan) {
         
         for (var x in out) {
             sys.sendMessage(src, out[x], rpgchan);
+        }
+    };
+    this.getSkillDescription = function(skill, level) {
+        var move = skills[skill];
+        if (move.type !== "passive") {
+            return move.name + " (" + skill + ") : [" + level + "/" + move.levels + "] " + move.info + " (" + getLevelValue(move.cost, level - 1) + " Mana) ";
+        } else {
+            return move.name + " (" + skill + ") : [" + level + "/" + move.levels + "] " + move.info + " (Passive)";
         }
     };
     this.viewQuests = function(src) {
@@ -4452,67 +4611,97 @@ function RPG(rpgchan) {
         rpgbot.sendMessage(src, "Battle Font size set to " + commandData, rpgchan);
     };
     this.showCommands = function(src, commandData) {
-        sys.sendMessage(src, "", rpgchan);
-        var x;
-		if (commandData.toLowerCase() !== "auth"){
-            if (commandData.toLowerCase() === "hidden") {
-                sys.sendMessage(src, "Alternative Commands:", rpgchan);
-                for (x in this.commands.altactions) {
-                    sys.sendMessage(src, "/" + x + " - " + this.commands.altactions[x][1], rpgchan);
+        var commandsHelp = {
+            actions: [
+                "/walk [location]%: To go to a different location. Type only '/walk' to see where you can go to from your current location. [Alt: /w]",
+                "/talk [npc]%: To talk to an NPC. Type only '/talk' to see a list of NPCs and Objects at your current location. [Alt: /t]",
+                "/act [object]%: To interact with an Object. Type only '/act' to see a list of NPCs and Objects at your current location. [Alt: /a]",
+                "/explore%: To explore a location for items, monsters or events. [Alt: /e]",
+                "/flee%: To run away from your current battle. [Alt: /f]",
+                "/item [item]%: To use an Usable Item or equip an Equipment. Type only /item to see all you items you have. [Alt: /i]",
+                "/challenge [player]%: To challenge another player to a duel. You must be at the same location as that person. [Alt: /c]",
+                "/revive%: To respawn after you die. You will spawn at your last spawn point with half of your maximum HP. [Alt: /r]",
+                "/trade [player]:[item you offer]:[item you want]%: To request a trade with another player. To trade more than 1 item, use [item]*[amount]. To trade Gold, just put a number instead of an item name.[Alt: /t]",
+                "/accept [player]%: To instantly accept someone's trade offer."
+            ],
+            character: [
+                "/plan [strategy]%: To view or set your battle strategy. Formatting for [strategy] is [skill1]:[chance]*[skill2]:[chance]*[~item]:[chance]. You can have as many skills/items in your strategy as you want. Example: /plan attack:60*rest:20*~potion:20 to set your plan to 60% Attack, 20% Rest and 20% Potion item.",
+                "/plan set [slot] [strategy]%: To register a strategy in one of your Saved Plans slots. [slot] can be 1, 2 or 3.",
+                "/plan load [slot] [strategy]%: To load a saved strategy from one of your Saved Plans slots. [slot] can be 1, 2 or 3.",
+                "/setskill [skill]:[level]%: To define a skill that should be used in a lower level instead of its current level. [Alt: /setskills]",
+                "/passive [skill1]:[skill2]%: To view or set your passive skills. To set a passive skill to a lower level than its current level, use [skill]*[level]. [Alt: /passives]",
+                "/stats%: To view your character status.",
+                "/skills%: To view your character's skills. [Alt: /skill]",
+                "/quests%: To view the quests you started or completed. [Alt: /q]",
+                "/increase [attribute/skill]:[points]%: To increase your stats or skills after you level up. Example: /increase str:2 (increase Strength by 2 points) or /increase empower:1 (increase Empower skill level).",
+                "/savechar%: To save your progress.",
+                "/clearchar%: To clear your character.",
+                "/party%: To create and manage a party. [Alt: /p]",
+                "/partytalk [message]%: To talk to your party. [Alt: /pt]",
+                "/title [number]%: To view or change your current Title. [Alt: /titles]",
+                "/appearance [text]%: To change your appearance description that's displayed when someone view your character.",
+                "/font [number]%: To change the Battle's text size. Default is 11. Set to 0 to disable Battle Texts.",
+                "/getplan [slot]%: To get your Battle Plan in the same format you type it for easy Copy/Paste. Set a [slot] to get one of your saved plans.",
+                "/it [type]%: To view your items organized by category. Set a [type] to only show items from a specific type.",
+                "/watch [player]%: To watch someone else's battle. Use '/watch on' or '/watch off' to enable or disable other players from watching your battles."
+            ],
+            channel: [
+                "/help%: To learn how to play the game.",
+                "/rpgcommands%: To see the list of commands.",
+                "/classes%: To view basic information about each starting class.",
+                "/start [class]%: To create your character with the specified class and begin your game.",
+                "/loadchar%: To load your previously saved game.",
+                "/view [player]%: To view someone else's stats. Use '/view on' or '/view off' to enable or disable other players from viewing your stats.",
+                "/leaderboard%: To view the RPG Leaderboards. [Alt: /rpgleaderboard]"
+            ],
+            auth: [
+                "/reloadchars%: To reload everyone's character after an update.",
+                "/updateleaderboard%: To manually update the RPG Leaderboards.",
+                "/unbork [player]%: To manually fix someone's character.",
+                "/resetplayer [player]%: To reset a player's stats and skills.",
+                "/punish [player]:[levels]%: To punish a player's character.",
+                "/updatelocal%: To load RPG content from the server's directory.",
+                "/updaterpg [url]%: To load RPG content from the web. If you don't specify an URL, the last URL will be used.",
+                "/updategame%: Update the RPG Scripts.",
+                "/updatemodule [module]%: Update an RPG Module.",
+                "/getcontent%: To view the content file for RPG."
+            ]
+        };
+        
+        var x, type = commandData.toLowerCase(), output = [""];
+		if (type !== "auth"){
+            if (getAvatar(src) !== undefined) {
+                output.push("<b><font color=red>Actions: </font></b>");
+                for (x in commandsHelp.actions) {
+                    output.push("<b>" + commandsHelp.actions[x].replace(/%/g, "</b>"));
                 }
-            } else {
-                sys.sendMessage(src, "Actions:", rpgchan);
-                for (x in this.commands.actions) {
-                    sys.sendMessage(src, "/" + x + " - " + this.commands.actions[x][1], rpgchan);
+                output.push("");
+                output.push("<b><font color=red>Character Commands: </font></b>");
+                for (x in commandsHelp.character) {
+                    output.push("<b>" + commandsHelp.character[x].replace(/%/g, "</b>"));
                 }
-                sys.sendMessage(src, "Character commands:", rpgchan);
-                for (x in this.commands.character) {
-                    sys.sendMessage(src, "/" + x + " - " + this.commands.character[x][1], rpgchan);
-                }
-                sys.sendMessage(src, "Channel commands:", rpgchan);
-                for (x in this.commands.channel) {
-                    sys.sendMessage(src, "/" + x + " - " + this.commands.channel[x][1], rpgchan);
-                }
+                output.push("");
+            } 
+                
+            output.push("<b><font color=red>Channel Commands: </font></b>");
+            for (x in commandsHelp.channel) {
+                output.push("<b>" + commandsHelp.channel[x].replace(/%/g, "</b>"));
             }
+            output.push("");
 		} else {
-			if (isRPGAdmin(src)) {
-				sys.sendMessage(src, "Operator Commands:", rpgchan);
-				for (x in this.commands.op) {
-					sys.sendMessage(src, "/" + x + " - " + this.commands.op[x][1], rpgchan);
-				}
-			}
 			if (SESSION.channels(rpgchan).masters.indexOf(sys.name(src).toLowerCase()) !== -1) {
-				sys.sendMessage(src, "Owner Commands:", rpgchan);
-				for (x in this.commands.master) {
-					sys.sendMessage(src, "/" + x + " - " + this.commands.master[x][1], rpgchan);
+				output.push("<b><font color=red>Owner Commands: </font></b>");
+				for (x in commandsHelp.auth) {
+					output.push("<b>" + commandsHelp.auth[x].replace(/%/g, "</b>"));
 				}
+                output.push("");
 			}
 		}
-        sys.sendMessage(src, "", rpgchan);
+        sys.sendHtmlMessage(src, output.join("<br/>"), rpgchan);
     };
     this.showHelp = function(src) {
-		var help = [
-            "",
-            "*** *********************************************************************** ***",
-            "±RPG: A newcomer's guide by Oksana: http://gamecorner.info/Thread-RPG-Newcomer-s-Guide",
-            "±RPG: /classes - To see a list of the current starting classes.",
-            "±RPG: /start - To pick a class. Example: '/start mage'",
-            "±RPG: /i - To see your items list. Use /i itemname to use the item. Example: '/i armor' to wear armor or '/i potion' to heal during battle.",
-            "±RPG: /stats - To see your stats and available stat points. Use /increase to allocate them. Example: '/increase str:2' to put 2 points into strength.",
-            "±RPG: /skills - To see your skills and available skill points. Use /increase to allocate them. Example: '/increase rest' to raise your rest level.",
-            "±RPG: /plan - To see what our current battle plan is set to. Use /plan skill:chance to set your plan. Example: '/plan attack:8*rest:2' to set your plan to 80% attack and 20% rest.",
-            "±RPG: /w - To show all the places you can go. Use /w location to move to the new location. Example: '/w inn' to move to the inn.",
-            "±RPG: /t - To show the visible NPCs or objects to interact with. Use /a object or /t NPC to interact with them. Example: '/a board' to view the bulletin board at the inn.",
-            "±RPG: /e - To explore your current location. Sometimes it will start a battle, sometimes you will find items.",
-            "±RPG: /f - To flee from a battle. Use this to avoid dying if you are in a battle you are sure can't win.",
-            "±RPG: /revive - Use this when you have died. You will revive at your respawn location with half HP, so remember to heal at the inn.",
-            "±RPG: /savechar - To save your progress.",
-            "±RPG: /loadchar - To load your previously saved game.",
-            "*** *********************************************************************** ***",
-            ""
-		];
-		for (var x in help) {
-           sys.sendMessage(src, help[x], rpgchan);
+		for (var x in gameHelp) {
+           sys.sendMessage(src, gameHelp[x], rpgchan);
         }
 	};
     
@@ -4609,7 +4798,8 @@ function RPG(rpgchan) {
                     places: places,
                     quests: quests,
                     titles: titles,
-                    classHelp: classHelp
+                    classHelp: classHelp,
+                    gameHelp: gameHelp
                 };
             }
         
@@ -4623,11 +4813,20 @@ function RPG(rpgchan) {
             titles = parsed.titles || result.titles;
             classHelp = parsed.classHelp || result.classHelp;
             
+            if (parsed.gameHelp) {
+                gameHelp = parsed.gameHelp;
+            } else if (result.gameHelp) {
+                gameHelp = result.gameHelp;
+            }
+            
             expTable = config.levels;
             elements = config.elements || {};
             
             if (config.battle) {
                 var battle = config.battle;
+                if (battle.baseAccuracy) {
+                    battleSetup.baseAccuracy = battle.baseAccuracy;
+                }
                 if (battle.evasion) {
                     battleSetup.evasion = battle.evasion;
                 }
@@ -4636,6 +4835,9 @@ function RPG(rpgchan) {
                 }
                 if (battle.damage) {
                     battleSetup.damage = battle.damage;
+                }
+                if (battle.levelDamageBonus) {
+                    battleSetup.levelDamageBonus = battle.levelDamageBonus;
                 }
                 if (battle.critical) {
                     battleSetup.critical = battle.critical;
@@ -4666,6 +4868,9 @@ function RPG(rpgchan) {
                 }
                 if (battle.secondaryDefense) {
                     battleSetup.secondaryDefense = battle.secondaryDefense;
+                }
+                if (battle.defaultSkill) {
+                    battleSetup.defaultSkill = battle.defaultSkill;
                 }
             }
             
@@ -4724,6 +4929,9 @@ function RPG(rpgchan) {
                 if (level.eventExp) {
                     leveling.eventExp = level.eventExp;
                 }
+                if (level.saveOnClear) {
+                    leveling.saveOnClear = level.saveOnClear;
+                }
             }
             
             if (config.equipment) {
@@ -4768,7 +4976,8 @@ function RPG(rpgchan) {
                 places: places,
                 quests: quests,
                 titles: titles,
-                classHelp: classHelp
+                classHelp: classHelp,
+                gameHelp: gameHelp
             };
             
             sys.writeToFile(contentfile, JSON.stringify(result, null, 4));
@@ -4809,6 +5018,9 @@ function RPG(rpgchan) {
                 if (parsed.classHelp) { 
                     updated.push("Class Help");
                 }
+                if (parsed.gameHelp) { 
+                    updated.push("Game Help");
+                }
                 
                 var newLoc = {
                     config: parsed.config ? url + " [" + date + "]" : contentLoc.config,
@@ -4820,6 +5032,7 @@ function RPG(rpgchan) {
                     titles: parsed.titles ? url + " [" + date + "]" : contentLoc.titles,
                     quests: parsed.quests ? url + " [" + date + "]" : contentLoc.quests,
                     classHelp: parsed.classHelp ? url + " [" + date + "]" : contentLoc.classHelp,
+                    gameHelp: parsed.gameHelp ? url + " [" + date + "]" : contentLoc.gameHelp,
                     url: url,
                     updated: "[Updated: " + updated.join(", ") + "]",
                     user: name,
@@ -4864,6 +5077,7 @@ function RPG(rpgchan) {
         sys.sendMessage(src, "Places URL: " + contentLoc.places, rpgchan);
         sys.sendMessage(src, "Quests URL: " + contentLoc.quests, rpgchan);
         sys.sendMessage(src, "Class Help URL: " + contentLoc.classHelp, rpgchan);
+        sys.sendMessage(src, "Game Help URL: " + contentLoc.gameHelp, rpgchan);
         sys.sendMessage(src, "", rpgchan);
         sys.sendMessage(src, "Last Update Info:", rpgchan);
         sys.sendMessage(src, "URL: " + contentLoc.url + " " + contentLoc.updated, rpgchan);
