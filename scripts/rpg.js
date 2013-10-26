@@ -120,7 +120,7 @@ function RPG(rpgchan) {
     }
     
     this.walkTo = function(src, commandData) {
-        var player = getAvatar(src);
+        var player = getAvatar(src), l, p, count, access;
         
         if (player.location === null || player.location === undefined || !(player.location in places)) {
             player.location = player.respawn;
@@ -130,11 +130,13 @@ function RPG(rpgchan) {
         
         if (commandData === "*") {
             var out = ["", "You are at the " + places[player.location].name + "! You can move to the following locations: "];
-            var access = places[player.location].access;
-            for (var l in access) {
-                var p = places[access[l]];
+            access = places[player.location].access;
+            count = 1;
+            for (l in access) {
+                p = places[access[l]];
                 if (!p.hide || p.hide !== true) {
-                    out.push(p.name + " (" + access[l] + "): " + p.info + (p.type ? " [Type: " + cap(p.type) + "]" : ""));
+                    out.push(count + ". " + p.name + " (" + access[l] + "): " + p.info + (p.type ? " [Type: " + cap(p.type) + "]" : ""));
+                    count++;
                 }
             }
             for (l in out) {
@@ -156,8 +158,29 @@ function RPG(rpgchan) {
             if (loc in altPlaces) {
                 loc = altPlaces[loc];
             } else {
-                rpgbot.sendMessage(src, "No such place!", rpgchan);
-                return;
+                if (isNaN(parseInt(commandData, 10)) === false) {
+                    var choice = parseInt(commandData, 10), found = false;
+                    access = places[player.location].access;
+                    count = 1;
+                    for (l in access) {
+                        p = places[access[l]];
+                        if (!p.hide || p.hide !== true) {
+                            if (count === choice) {
+                                found = true;
+                                loc = access[l];
+                                break;
+                            } 
+                            count++;
+                        }
+                    }
+                    if (!found) {
+                        rpgbot.sendMessage(src, "No such place!", rpgchan);
+                        return;
+                    }
+                } else {
+                    rpgbot.sendMessage(src, "No such place!", rpgchan);
+                    return;
+                }
             }
         }
         if (loc === player.location) {
@@ -4439,7 +4462,7 @@ function RPG(rpgchan) {
     this.getSkillDescription = function(skill, level) {
         var move = skills[skill];
         if (move.type !== "passive") {
-            return move.name + " (" + skill + ") : [" + level + "/" + move.levels + "] " + move.info + " (" + getLevelValue(move.cost, level - 1) + " Mana) ";
+            return move.name + " (" + skill + ") : [" + level + "/" + move.levels + "] " + move.info + " (" + getLevelValue(move.cost, (level > 0 ? level : 1) - 1) + " Mana) ";
         } else {
             return move.name + " (" + skill + ") : [" + level + "/" + move.levels + "] " + move.info + " (Passive)";
         }
