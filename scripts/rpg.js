@@ -84,6 +84,7 @@ function RPG(rpgchan) {
         partyExp: 0,
         itemMode: "free",
         planMode: "free",
+        advancedPlans: 7,
         defaultSkill: "attack"
     };
     
@@ -880,7 +881,7 @@ function RPG(rpgchan) {
         for (e in itemsGained) {
             if (itemsGained[e] > 0) {
                 out[src].push(rpgbot.formatMsg("You received " + itemsGained[e] + " " + items[e].name + "(s)!"));
-            } else if (itemsGained < 0) {
+            } else if (itemsGained[e] < 0) {
                 out[src].push(rpgbot.formatMsg("You lost " + (-1 * itemsGained[e]) + " " + items[e].name + "(s)!"));
             }
         }
@@ -3047,6 +3048,15 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "To set your strategy, type /plan skill:chance*skill:chance. You can also use /plan slots to save up to 3 strategies.", rpgchan);
             return;
         }
+        if (commandData === "activate") {
+            if (battleSetup.planMode !== "free" && player.isBattling === true) {
+                rpgbot.sendMessage(src, "You cannot change the plan mode while battling!", rpgchan);
+                return;
+            }
+            player.planMode = "basic";
+            rpgbot.sendMessage(src, "Your current strategy is " + randomSampleText(player.strategy, this.skillOrItem) + ".", rpgchan);
+            return;
+        }
 
         var broken = commandData.split(" ");
         var action = "plan";
@@ -3102,74 +3112,9 @@ function RPG(rpgchan) {
             return;
         }
         
-        var data = commandData.split("*");
-        var obj = {};
-        var skill;
-        
-        for (var s in data) {
-            skill = data[s].split(":");
-            if (skill.length < 2) {
-                rpgbot.sendMessage(src, "Incorrect format. To set your strategy, type /plan skill:chance*skill:chance.", rpgchan);
-                return;
-            }
-            var move = skill[0].toLowerCase();
-            var chance = parseFloat(skill[1]);
-            var item, itemName;
-            
-            if (move[0] === "~") {
-                itemName = move.substr(1);
-                if (!(itemName in items)) {
-                    if(itemName in altItems) {
-                        itemName = altItems[itemName];
-                    } else {
-                        rpgbot.sendMessage(src, "The item '" + itemName + "' doesn't exist!", rpgchan);
-                        return;
-                    }
-                }
-                item = items[itemName];
-                if (item.battleItem !== true) {
-                    rpgbot.sendMessage(src, "The item '" + itemName + "' cannot be used during battles!", rpgchan);
-                    return;
-                }
-                if ("level" in item && player.level < item.level) {
-                    rpgbot.sendMessage(src, "You need to be at least level " + item.level + " to use the item " + itemName + "!", rpgchan);
-                    return;
-                }
-                /* Troublesome, since classes can change after setting the plan 
-                if (this.canUseItem(player, itemName) === false) {
-                    rpgbot.sendMessage(src, "You can't use the item " + itemName + " as " + classes[player.job].name + "!", rpgchan);
-                    return;
-                } 
-                */
-            } else {
-                if (!(move in skills)) {
-                    if(move in altSkills) {
-                        move = altSkills[move];
-                    } else {
-                        rpgbot.sendMessage(src, "The skill '" + move + "' doesn't exist!", rpgchan);
-                        return;
-                    }
-                }
-                if (this.canUseSkill(src, move) === false) {
-                    rpgbot.sendMessage(src, "You haven't learned the skill '" + move + "'!", rpgchan);
-                    return;
-                }
-                
-                if (skills[move].type === "passive") {
-                    rpgbot.sendMessage(src, "You can't set passive skills on your plan!", rpgchan);
-                    return;
-                }
-            }
-            
-            if (typeof chance !== "number" || isNaN(chance) === true) {
-                if (itemName !== undefined) {
-                    rpgbot.sendMessage(src, "Set a chance for the item '" + itemName + "'!", rpgchan);
-                } else {
-                    rpgbot.sendMessage(src, "Set a chance for the skill '" + move + "'!", rpgchan);
-                }
-                return;
-            }
-            obj[move] = chance;
+        var obj = this.validatePlan(src, commandData);
+        if (obj === false) {
+            return;
         }
         
         if (action === "set") {
@@ -3185,8 +3130,281 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "Your strategy was set to " + randomSampleText(obj, this.skillOrItem) + "!", rpgchan);
         }
     };
+    this.setAdvancedPlan = function(src, commandData) {
+        var player = getAvatar(src);
+        if (commandData === "*") {
+            rpgbot.sendMessage(src, "Your current advanced strategy is: ", rpgchan);
+            for (var p = 0; p < player.advStrategy.length; p++) {
+                if (player.advStrategy[p] !== null) {
+                    sys.sendMessage(src, (p + 1) + ". " + randomSampleText(player.advStrategy[p][1], this.skillOrItem) + " if " + this.translateConditions(player.advStrategy[p][0]),rpgchan);
+                }
+            }
+            rpgbot.sendMessage(src, "To set your strategy, type /aplan [slot] [conditions] [skill:chance*skill:chance]. Type /aplan help for a detailed explanation.", rpgchan);
+            return;
+        }
+        if (commandData === "help") {
+            sys.sendMessage(src, "", rpgchan);
+            rpgbot.sendMessage(src, "To set your strategy, type /aplan [Slot] [Conditions] [Strategy]. ", rpgchan);
+            sys.sendMessage(src, "[Slot]: Choose a number between 1~" + battleSetup.advancedPlans + ". The lower the number, the higher priority that plan gets.", rpgchan);
+            sys.sendMessage(src, "[Conditions]: Sets the conditions that must be true for this plan to be used during battle. If the conditions are not met, the next slot will be used instead.", rpgchan);
+            sys.sendMessage(src, "Syntax: [parameter1>30:parameter2<60] means parameter1's value must be higher than 30 AND parameter2 must be lower than 60.", rpgchan);
+            sys.sendMessage(src, "Syntax: [parameter1>30*parameter2<60] means parameter1's value must be higher than 30 OR parameter2 must be lower than 60.", rpgchan);
+            sys.sendMessage(src, "", rpgchan);
+            sys.sendMessage(src, "Parameters for Condition: You can have any number of parameters you want, but you can't use : and * in the same condition. To set no conditions, simply set * as the condition.", rpgchan);
+            sys.sendMessage(src, "hp: Player's HP (in %)", rpgchan);
+            sys.sendMessage(src, "mp: Player's Mana (in %)", rpgchan);
+            sys.sendMessage(src, "allyhp: Any Ally's HP (in %)", rpgchan);
+            sys.sendMessage(src, "allymp: Any Ally's Mana (in %)", rpgchan);
+            sys.sendMessage(src, "partyhp: Average Party's HP (in %)", rpgchan);
+            sys.sendMessage(src, "partymp: Average Party's Mana (in %)", rpgchan);
+            sys.sendMessage(src, "enemyhp: Any Enemy's HP (in %)", rpgchan);
+            sys.sendMessage(src, "enemymp: Any Enemy's Mana (in %)", rpgchan);
+            sys.sendMessage(src, "epartyhp: Average Enemy Party's HP (in %)", rpgchan);
+            sys.sendMessage(src, "epartymp: Average Enemy Party's Mana (in %)", rpgchan);
+            sys.sendMessage(src, "gold: Player's Gold", rpgchan);
+            sys.sendMessage(src, "enemies: Number of enemies still alive.", rpgchan);
+            sys.sendMessage(src, "", rpgchan);
+            sys.sendMessage(src, "[Strategy]: Same as normal /plan. Use [skill:chance*skill:chance] to set the plan you want to use when those conditions are met.", rpgchan);
+            sys.sendMessage(src, "Example: [/aplan 2 hp<50:mp>30 rest:40*heal:60] will give you 40% chance of using Rest and 60% chance of using Heal if your HP is below 50% and your Mana is above 30%, and if the first slot's condition was not met.", rpgchan);
+            sys.sendMessage(src, "", rpgchan);
+            rpgbot.sendMessage(src, "Use '/aplan activate' to enable Advanced Plan, or '/plan activate' to go back to Basic Plan mode. Type '/aplan raw' to get your plan in text format. To clear a slot, use '/aplan [slot] * *'.", rpgchan);
+            sys.sendMessage(src, "", rpgchan);
+            return;
+        }
+        if (commandData === "activate") {
+            if (battleSetup.planMode !== "free" && player.isBattling === true) {
+                rpgbot.sendMessage(src, "You cannot change the plan mode while battling!", rpgchan);
+                return;
+            }
+            player.planMode = "advanced";
+            rpgbot.sendMessage(src, "You activated Advanced Plan mode. Type /aplan to check your strategy.", rpgchan);
+            return;
+        }
+        if (commandData === "raw") {
+            rpgbot.sendMessage(src, "Your Advanced Plan (Raw):", rpgchan);
+            var plan;
+            for (var r = 0; r < player.advStrategy.length; r++) {
+                plan = player.advStrategy[r];
+                if (plan !== null) {
+                    sys.sendMessage(src, (r + 1)  + ": " + (r + 1) + " " + (plan[0] !== "" ? plan[0] : "*") + " " + getPlanString(plan[1]), rpgchan);
+                }
+            }
+            return;
+        }
+        
+        if (battleSetup.planMode !== "free" && player.isBattling === true) {
+            rpgbot.sendMessage(src, (battleSetup.planMode === "setOnly" ? "You cannot change plans while battling (You still can load saved plans)!" : "You cannot change plans while battling!"), rpgchan);
+            return;
+        }
+        
+        var slot = parseInt(commandData.substring(0, commandData.indexOf(" ")), 10);
+        
+        if (isNaN(slot) || slot < 1 || slot > battleSetup.advancedPlans) {
+            rpgbot.sendMessage(src, "Set a valid slot (1~" + battleSetup.advancedPlans + ").", rpgchan);
+            return;
+        }
+        
+        var broken = commandData.substr(commandData.indexOf(" ") + 1);
+        var conditions = broken.substring(0, broken.indexOf(" "));
+        var strategy = broken.substr(broken.indexOf(" ") + 1);
+        
+        if (conditions === "*" || conditions === ":") {
+            conditions = "";
+            if (strategy === "*" || strategy === ":") {
+                if (slot === battleSetup.advancedPlans) {
+                    rpgbot.sendMessage(src, "You can't clear the last slot!", rpgchan);
+                    return;
+                }
+                player.advStrategy[slot - 1] = null;
+                rpgbot.sendMessage(src, "Your advanced strategy " + slot + " was cleared!", rpgchan);
+                return;
+            }
+        } else if (slot === battleSetup.advancedPlans) {
+            conditions = "";
+            rpgbot.sendMessage(src, "You can't set conditions to the last slot!", rpgchan);
+        } else {
+            conditions = this.validateCondition(src, conditions.toLowerCase());
+            if (conditions === false) {
+                return;
+            }
+        }    
+        var obj = this.validatePlan(src, strategy);
+        if (obj === false) {
+            return;
+        }
+        
+        player.advStrategy[slot - 1] = [conditions, obj];
+        rpgbot.sendMessage(src, "Your advanced strategy " + slot + " was set to " + randomSampleText(obj, this.skillOrItem) + " if " + this.translateConditions(conditions) + "!", rpgchan);
+    };
+    this.validatePlan = function(src, info) {
+        var data = info.split("*");
+        var player = getAvatar(src);
+        var obj = {};
+        var skill;
+        
+        for (var s in data) {
+            skill = data[s].split(":");
+            if (skill.length < 2) {
+                rpgbot.sendMessage(src, "Incorrect format. To set your strategy, type /plan skill:chance*skill:chance.", rpgchan);
+                return false;
+            }
+            var move = skill[0].toLowerCase();
+            var chance = parseFloat(skill[1]);
+            var item, itemName;
+            
+            if (move[0] === "~") {
+                itemName = move.substr(1);
+                if (!(itemName in items)) {
+                    if(itemName in altItems) {
+                        itemName = altItems[itemName];
+                    } else {
+                        rpgbot.sendMessage(src, "The item '" + itemName + "' doesn't exist!", rpgchan);
+                        return false;
+                    }
+                }
+                item = items[itemName];
+                if (item.battleItem !== true) {
+                    rpgbot.sendMessage(src, "The item '" + itemName + "' cannot be used during battles!", rpgchan);
+                    return false;
+                }
+                if ("level" in item && player.level < item.level) {
+                    rpgbot.sendMessage(src, "You need to be at least level " + item.level + " to use the item " + itemName + "!", rpgchan);
+                    return false;
+                }
+            } else {
+                if (!(move in skills)) {
+                    if(move in altSkills) {
+                        move = altSkills[move];
+                    } else {
+                        rpgbot.sendMessage(src, "The skill '" + move + "' doesn't exist!", rpgchan);
+                        return false;
+                    }
+                }
+                if (this.canUseSkill(src, move) === false) {
+                    rpgbot.sendMessage(src, "You haven't learned the skill '" + move + "'!", rpgchan);
+                    return false;
+                }
+                
+                if (skills[move].type === "passive") {
+                    rpgbot.sendMessage(src, "You can't set passive skills on your plan!", rpgchan);
+                    return false;
+                }
+            }
+            
+            if (typeof chance !== "number" || isNaN(chance) === true) {
+                if (itemName !== undefined) {
+                    rpgbot.sendMessage(src, "Set a chance for the item '" + itemName + "'!", rpgchan);
+                } else {
+                    rpgbot.sendMessage(src, "Set a chance for the skill '" + move + "'!", rpgchan);
+                }
+                return false;
+            }
+            obj[move] = chance;
+        }
+        
+        return obj;
+    };
+    this.validateCondition = function(src, info) {
+        if (info.indexOf(":") !== -1 && info.indexOf("*") !== -1) {
+            rpgbot.sendMessage(src, "You can't have both : and * in your plan's condition!", rpgchan);
+            return false;
+        }
+        var conditions = info.indexOf(":") !== -1 ? info.split(":") : info.split("*"),
+            cond,
+            c,
+            param,
+            sign,
+            val;
+        
+        for (c in conditions) {
+            cond = conditions[c];
+            if (cond.indexOf(">") === -1 && cond.indexOf("<") === -1) {
+                rpgbot.sendMessage(src, "Invalid format for plan's condition! You must define either > or <.", rpgchan);
+                return false;
+            }
+            sign = cond.indexOf(">") !== -1 ? ">" : "<";
+            param = cond.substring(0, cond.indexOf(sign));
+            val = parseInt(cond.substr(cond.indexOf(sign) + 1));
+            
+            if (["hp", "mp", "allyhp", "allymp", "partyhp", "partymp", "enemyhp", "enemymp", "epartyhp", "epartymp", "gold", "enemies"].indexOf(param) === -1) {
+                rpgbot.sendMessage(src, "Invalid parameter " + param + " for plan's condition!", rpgchan);
+                return false;
+            }
+            if (["hp", "mp", "allyhp", "allymp", "partyhp", "partymp", "enemyhp", "enemymp", "epartyhp", "epartymp"].indexOf(param) !== -1) {
+                if (isNaN(val) || val < 0 || val > 100) {
+                    rpgbot.sendMessage(src, "Value for condition's parameter " + param + " must be a number between 0 and 100.", rpgchan);
+                    return false;
+                }
+            } else {
+                if (isNaN(val) || val < 0) {
+                    rpgbot.sendMessage(src, "Value for condition's parameter " + param + " must be a number higher than 0.", rpgchan);
+                    return false;
+                }
+            }
+        }
+        
+        return info;
+    };
     this.skillOrItem = function(obj) {
         return obj[0] === "~" ? "~" + items[obj.substr(1)].name : skills[obj].name;
+    };
+    this.translateConditions = function(info) {
+        if (info === "") {
+            return "none of the previous conditions are met";
+        }
+        var out = [],
+            sign = info.indexOf(":") !== -1 ? ":" : "*",
+            condition = info.split(sign),
+            c, cond, param, val, size;
+            
+        for (c in condition) {
+            cond = condition[c];
+            sign = cond.indexOf(">") !== -1 ? ">" : "<";
+            param = cond.substring(0, cond.indexOf(sign));
+            val = cond.substr(cond.indexOf(sign) + 1);
+            size = sign === ">" ? "higher" : "lower";
+            
+            switch(param) {
+                case "hp":
+                    out.push("Player's HP is " + size + " than " + val + "%");
+                    break;
+                case "mp":
+                    out.push("Player's Mana is " + size + " than " + val + "%");
+                    break;
+                case "allyhp":
+                    out.push("an Ally's HP is " + size + " than " + val + "%");
+                    break;
+                case "allymp":
+                    out.push("an Ally's Mana is " + size + " than " + val + "%");
+                    break;
+                case "partyhp":
+                    out.push("Party's average HP is " + size + " than " + val + "%");
+                    break;
+                case "partymp":
+                    out.push("Party's average Mana is " + size + " than " + val + "%");
+                    break;
+                case "enemyhp":
+                    out.push("an Enemy's HP is " + size + " than " + val + "%");
+                    break;
+                case "enemymp":
+                    out.push("an Enemy's Mana is " + size + " than " + val + "%");
+                    break;
+                case "epartyhp":
+                    out.push("an Enemy's average HP is " + size + " than " + val + "%");
+                    break;
+                case "epartymp":
+                    out.push("an Enemy's average Mana is " + size + " than " + val + "%");
+                    break;
+                case "gold":
+                    out.push("Player's Gold is " + size + " than " + val);
+                    break;
+                case "enemies":
+                    out.push("number of enemies alive is " + size + " than " + val);
+                    break;
+            }
+        }
+        
+        return readable(out, (info.indexOf(":") !== -1 ? "and" : "or"));
     };
     this.getBattlePlan = function(src, commandData) {
         var player = getAvatar(src);
@@ -3768,6 +3986,13 @@ function RPG(rpgchan) {
         for (e in data.strategy) {
             character.strategy[e] = data.strategy[e];
         }
+        character.advStrategy = [];
+        for (e = 0; e < battleSetup.advancedPlans - 1; e++) {
+            character.advStrategy.push(null);
+        }
+        character.advStrategy.push(["", JSON.parse(JSON.stringify(character.strategy))]);
+        
+        character.planMode = "basic";
         
         character.bonus = {
             battle: {
@@ -3977,6 +4202,22 @@ function RPG(rpgchan) {
         
         if (!file.skillLevels) {
             file.skillLevels = {};
+        }
+        
+        if (!file.advStrategy) {
+            file.advStrategy = [
+                ["", JSON.parse(JSON.stringify(file.strategy))]
+            ];
+            file.planMode = "basic";
+        } 
+        if (file.advStrategy.length < battleSetup.advancedPlans) {
+            while (file.advStrategy.length < battleSetup.advancedPlans) {
+                file.advStrategy.splice(0, 0, null);
+            }
+        } else if (file.advStrategy.length > battleSetup.advancedPlans) {
+            while (file.advStrategy.length > battleSetup.advancedPlans) {
+                file.advStrategy.splice(0, 1, null);
+            }
         }
         
         if (!file.updateReset) {
@@ -4651,6 +4892,7 @@ function RPG(rpgchan) {
                 "/plan [strategy]%: To view or set your battle strategy. Formatting for [strategy] is [skill1]:[chance]*[skill2]:[chance]*[~item]:[chance]. You can have as many skills/items in your strategy as you want. Example: /plan attack:60*rest:20*~potion:20 to set your plan to 60% Attack, 20% Rest and 20% Potion item.",
                 "/plan set [slot] [strategy]%: To register a strategy in one of your Saved Plans slots. [slot] can be 1, 2 or 3.",
                 "/plan load [slot] [strategy]%: To load a saved strategy from one of your Saved Plans slots. [slot] can be 1, 2 or 3.",
+                "/aplan [slot] [conditions] [strategy]%: To set your Advanced Strategy. Use /aplan help for more details.",
                 "/setskill [skill]:[level]%: To define a skill that should be used in a lower level instead of its current level. [Alt: /setskills]",
                 "/passive [skill1]:[skill2]%: To view or set your passive skills. To set a passive skill to a lower level than its current level, use [skill]*[level]. [Alt: /passives]",
                 "/stats%: To view your character status.",
@@ -4891,6 +5133,9 @@ function RPG(rpgchan) {
                 }
                 if (battle.secondaryDefense) {
                     battleSetup.secondaryDefense = battle.secondaryDefense;
+                }
+                if (battle.advancedPlans) {
+                    battleSetup.advancedPlans = battle.advancedPlans;
                 }
                 if (battle.defaultSkill) {
                     battleSetup.defaultSkill = battle.defaultSkill;
@@ -5509,6 +5754,7 @@ function RPG(rpgchan) {
 		},
         character: {
             plan: [this.setBattlePlan, "To view or set your battle strategy."],
+            aplan: [this.setAdvancedPlan, "To view or set your advanced battle strategy."],
             setskill: [this.setSkillLevel, "To view or set the level you want to use your skills."],
             passive: [this.setPassiveSkills, "To view or set your passive skills."],
             stats: [this.viewStats, "To view your character status."],
