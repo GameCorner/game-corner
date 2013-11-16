@@ -191,14 +191,18 @@ Battle.prototype.playNextTurn = function() {
         }
         
         if (player.hp > 0) {
-            var moveName = (castComplete === true) ? player.battle.skillCasting : randomSample(player.strategy),
+            var moveName,
                 move,
                 level = 1;
             
-            if (autoCast) {
+            if (castComplete === true) {
+                moveName = player.battle.skillCasting;
+            } else if (autoCast) {
                 moveName = autoCast;
                 autoCast = null;
                 isAutoCast = true;
+            } else {
+                moveName = randomSample(this.getPlan(player));
             }
                 
             if (moveName === null || (!(moveName in this.skills) && moveName[0] !== "~")) {
@@ -318,7 +322,7 @@ Battle.prototype.playNextTurn = function() {
             var mpModifier = this.getPassiveMultiplier(player, "mpModifier");
             var targetTeam, n, added = 0;
             
-            if (player.mp < Math.floor(move.cost * mpModifier)) {
+            if (player.mp < Math.floor(getLevelValue(move.cost, level) * mpModifier)) {
                 out.push(player.name + " tried to use " + move.name + ", but didn't have enough Mana!");
                 player.battle.casting = null;
                 continue;
@@ -955,6 +959,171 @@ Battle.prototype.playNextTurn = function() {
         this.finishBattle(winner);
     }
     this.turn++;
+};
+Battle.prototype.getPlan = function(player) {
+    if (player.planMode === "advanced") {
+        var p, plan, type, conditions, c, cond, conditionMet, param, sign, val, hasFalse, hasTrue, noTrue, result, count, e, target,
+            side = this.team1.indexOf(player) !== -1 ? 1 : 2,
+            playerSide = side === 1 ? this.team1.concat() : this.team2.concat(),
+            enemySide = side === 1 ? this.team2.concat() : this.team1.concat();
+            
+        for (p = 0; p < player.advStrategy.length; p++) {
+            plan = player.advStrategy[p];
+            if (plan !== null) {
+                if (plan[0] === "") {
+                    return plan[1];
+                }
+                
+                type = plan[0].indexOf(":") !== -1 ? ":" : "*";
+                conditions = plan[0].split(type);
+                hasFalse = false, hasTrue = false;
+                conditionMet = false;
+                
+                for (c in conditions) {
+                    cond = conditions[c];
+                    sign = cond.indexOf(">") !== -1 ? ">" : "<";
+                    
+                    param = cond.substring(0, cond.indexOf(sign));
+                    val = parseInt(cond.substr(cond.indexOf(sign) + 1), 10);
+                    
+                    switch(param) {
+                        case "hp":
+                            result = player.hp / player.maxhp * 100;
+                            break;
+                        case "mp":
+                            result = player.mp / player.maxmp * 100;
+                            break;
+                        case "allyhp":
+                            result = [];
+                            for (e in playerSide) {
+                                target = playerSide[e];
+                                if (target !== player) {
+                                    result.push(target.hp / target.maxhp * 100);
+                                }
+                            }
+                            break;
+                        case "allymp":
+                            result = [];
+                            for (e in playerSide) {
+                                target = playerSide[e];
+                                if (target !== player) {
+                                    result.push(target.mp / target.maxmp * 100);
+                                }
+                            }
+                            break;
+                        case "partyhp":
+                            count = 0;
+                            for (e in playerSide) {
+                                target = playerSide[e];
+                                count += target.hp / target.maxhp * 100;
+                            }
+                            result = count / playerSide.length;
+                            break;
+                        case "partymp":
+                            count = 0;
+                            for (e in playerSide) {
+                                target = playerSide[e];
+                                count += target.mp / target.maxmp * 100;
+                            }
+                            result = count / playerSide.length;
+                            break;
+                        case "enemyhp":
+                            result = [];
+                            for (e in enemySide) {
+                                target = enemySide[e];
+                                result.push(target.hp / target.maxhp * 100);
+                            }
+                            break;
+                        case "enemymp":
+                            result = [];
+                            for (e in enemySide) {
+                                target = enemySide[e];
+                                result.push(target.mp / target.maxmp * 100);
+                            }
+                            break;
+                        case "epartyhp":
+                            count = 0;
+                            for (e in enemySide) {
+                                target = enemySide[e];
+                                count += target.hp / target.maxhp * 100;
+                            }
+                            result = count / enemySide.length;
+                            break;
+                        case "epartymp":
+                            count = 0;
+                            for (e in enemySide) {
+                                target = enemySide[e];
+                                count += target.mp / target.maxmp * 100;
+                            }
+                            result = count / enemySide.length;
+                            break;
+                        case "gold":
+                            result = player.gold;
+                            break;
+                        case "enemies":
+                            result = 0;
+                            for (e in enemySide) {
+                                if (enemySide[e].hp > 0) {
+                                    result += 1;
+                                }
+                            }
+                            break;
+                    }
+                    
+                    if (Array.isArray(result)) {
+                        noTrue = true;
+                        for (e in result) {
+                            if (sign === ">") {
+                                if (val <= result[e]) {
+                                    hasTrue = true;
+                                    noTrue = false;
+                                } 
+                            } else if (sign === "<") {
+                                if (val >= result[e]) {
+                                    hasTrue = true;
+                                    noTrue = false;
+                                } 
+                            }
+                        }
+                        if (noTrue) {
+                            hasFalse = true;
+                        }
+                    } else {
+                        if (sign === ">") {
+                            if (result >= val) {
+                                hasTrue = true;
+                            } else {
+                                hasFalse = true;
+                            }
+                        } else if (sign === "<") {
+                            if (result <= val) {
+                                hasTrue = true;
+                            } else {
+                                hasFalse = true;
+                            }
+                        }
+                    }
+                    
+                    if (type === ":" && hasFalse) {
+                        break;
+                    }
+                    if (type === "*" && hasTrue) {
+                        conditionMet = true;
+                        break;
+                    }
+                }
+                if (type === ":" && hasFalse === false) {
+                    conditionMet = true;
+                }
+                if (conditionMet) {
+                    return plan[1];
+                }
+            }
+        }
+    } else {
+        return player.strategy;
+    }
+    return player.strategy;
 };
 Battle.prototype.getTarget = function(player, target, count, side, hitDead) {
     var targets = [],
