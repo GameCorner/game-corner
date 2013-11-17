@@ -84,7 +84,7 @@ function RPG(rpgchan) {
         partyExp: 0,
         itemMode: "free",
         planMode: "free",
-        advancedPlans: 7,
+        advancedPlans: 5,
         defaultSkill: "attack"
     };
     
