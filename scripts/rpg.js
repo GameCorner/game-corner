@@ -1688,6 +1688,10 @@ function RPG(rpgchan) {
         monster.passives = data.passives || {};
         monster.forceSave = data.forceSave || false;
         monster.isSummon = false;
+        if (data.advStrategy) {
+            monster.advStrategy = data.advStrategy;
+            monster.planMode = "advanced";
+        }
         
         return monster;
     };
@@ -3613,7 +3617,7 @@ function RPG(rpgchan) {
         this.updateBonus(src);
     };
     this.fixSkills = function(src) {
-        var player = getAvatar(src), s, p;
+        var player = getAvatar(src), s, p, plan;
         
         //Remove Skills that cannot be used from Plan, Saved Plans and Passives
         for (s in player.strategy) {
@@ -3631,6 +3635,16 @@ function RPG(rpgchan) {
         for (s in player.passives) {
             if (this.canUseSkill(src, s) === false) {
                 delete player.passives[s];
+            }
+        }
+        for (p in player.advStrategy) {
+            plan = player.advStrategy[p];
+            if (plan !== null) {
+                for (s in plan[1]) {
+                    if (s[0] !== "~" && this.canUseSkill(src, s) === false) {
+                        delete plan[1][s];
+                    }
+                }
             }
         }
         
@@ -3658,6 +3672,16 @@ function RPG(rpgchan) {
         for (s in player.passives) {
             if (this.canUseSkill(src, s) === false) {
                 delete player.passives[s];
+            }
+        }
+        for (p in player.advStrategy) {
+            plan = player.advStrategy[p];
+            if (plan !== null) {
+                for (s in plan[1]) {
+                    if (s[0] !== "~" && this.canUseSkill(src, s) === false) {
+                        delete plan[1][s];
+                    }
+                }
             }
         }
     };
@@ -4216,7 +4240,7 @@ function RPG(rpgchan) {
             }
         } else if (file.advStrategy.length > battleSetup.advancedPlans) {
             while (file.advStrategy.length > battleSetup.advancedPlans) {
-                file.advStrategy.splice(0, 1, null);
+                file.advStrategy.splice(0, 1);
             }
         }
         
