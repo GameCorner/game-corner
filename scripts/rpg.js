@@ -3328,7 +3328,7 @@ function RPG(rpgchan) {
             }
             sign = cond.indexOf(">") !== -1 ? ">" : "<";
             param = cond.substring(0, cond.indexOf(sign));
-            val = parseInt(cond.substr(cond.indexOf(sign) + 1));
+            val = parseInt(cond.substr(cond.indexOf(sign) + 1), 10);
             
             if (["hp", "mp", "allyhp", "allymp", "partyhp", "partymp", "enemyhp", "enemymp", "epartyhp", "epartymp", "gold", "enemies"].indexOf(param) === -1) {
                 rpgbot.sendMessage(src, "Invalid parameter " + param + " for plan's condition!", rpgchan);
@@ -4125,7 +4125,12 @@ function RPG(rpgchan) {
             return;
         }
         
-        gamefile = this.convertChar(gamefile);
+        try {
+            gamefile = this.convertChar(gamefile);
+        } catch (err) {
+            rpgbot.sendMessage(src, "Your game file is corrupted. Try contacting a channel staff for possible solutions.", rpgchan);
+            return;
+        }
         
         user[rpgAtt] = gamefile;
         user[rpgAtt].id = src;
