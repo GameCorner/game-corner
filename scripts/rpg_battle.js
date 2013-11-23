@@ -1068,6 +1068,11 @@ Battle.prototype.getPlan = function(player) {
                                 }
                             }
                             break;
+                        default: 
+                            if (param.indexOf("~") === 0) {
+                                result = this.game.getItemCount(player, param.substr(1));
+                            }
+                            break;
                     }
                     
                     if (Array.isArray(result)) {
