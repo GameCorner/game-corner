@@ -242,6 +242,9 @@ Battle.prototype.playNextTurn = function() {
                     
                     var itemEffect = this.applyBattleEffect(target, moveName, itemEff, 1, itemDuration);
                     
+                    target.hp += itemEffect.hpDmg;
+                    target.mp += itemEffect.mpDmg;
+                    
                     if ("physical" in itemEff || "magical" in itemEff) {
                         type = "physical" in itemEff ? "physical" : "magical";
                         move = {
