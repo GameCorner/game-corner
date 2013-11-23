@@ -3167,6 +3167,7 @@ function RPG(rpgchan) {
             sys.sendMessage(src, "epartymp: Average Enemy Party's Mana (in %)", rpgchan);
             sys.sendMessage(src, "gold: Player's Gold", rpgchan);
             sys.sendMessage(src, "enemies: Number of enemies still alive.", rpgchan);
+            sys.sendMessage(src, "~item: Amount of that item the player has.", rpgchan);
             sys.sendMessage(src, "", rpgchan);
             sys.sendMessage(src, "[Strategy]: Same as normal /plan. Use [skill:chance*skill:chance] to set the plan you want to use when those conditions are met.", rpgchan);
             sys.sendMessage(src, "Example: [/aplan 2 hp<50:mp>30 rest:40*heal:60] will give you 40% chance of using Rest and 60% chance of using Heal if your HP is below 50% and your Mana is above 30%, and if the first slot's condition was not met.", rpgchan);
@@ -3314,11 +3315,15 @@ function RPG(rpgchan) {
             return false;
         }
         var conditions = info.indexOf(":") !== -1 ? info.split(":") : info.split("*"),
+            type = info.indexOf(":") !== -1 ? ":" : "*",
             cond,
             c,
             param,
             sign,
-            val;
+            val,
+            item,
+            valid = [],
+            formatted;
         
         for (c in conditions) {
             cond = conditions[c];
@@ -3330,9 +3335,23 @@ function RPG(rpgchan) {
             param = cond.substring(0, cond.indexOf(sign));
             val = parseInt(cond.substr(cond.indexOf(sign) + 1), 10);
             
+            formatted = param;
             if (["hp", "mp", "allyhp", "allymp", "partyhp", "partymp", "enemyhp", "enemymp", "epartyhp", "epartymp", "gold", "enemies"].indexOf(param) === -1) {
-                rpgbot.sendMessage(src, "Invalid parameter " + param + " for plan's condition!", rpgchan);
-                return false;
+                if (param.indexOf("~") === 0) {
+                    item = param.substr(1);
+                    if (!(item in items)) {
+                        if(item in altItems) {
+                            item = altItems[item];
+                            formatted = "~" + item;
+                        } else {
+                            rpgbot.sendMessage(src, "The item '" + item + "' doesn't exist!", rpgchan);
+                            return false;
+                        }
+                    }
+                } else {
+                    rpgbot.sendMessage(src, "Invalid parameter " + param + " for plan's condition!", rpgchan);
+                    return false;
+                }
             }
             if (["hp", "mp", "allyhp", "allymp", "partyhp", "partymp", "enemyhp", "enemymp", "epartyhp", "epartymp"].indexOf(param) !== -1) {
                 if (isNaN(val) || val < 0 || val > 100) {
@@ -3345,9 +3364,11 @@ function RPG(rpgchan) {
                     return false;
                 }
             }
+            
+            valid.push(formatted + sign + val);
         }
         
-        return info;
+        return valid.join(type);
     };
     this.skillOrItem = function(obj) {
         return obj[0] === "~" ? "~" + items[obj.substr(1)].name : skills[obj].name;
@@ -3405,6 +3426,12 @@ function RPG(rpgchan) {
                 case "enemies":
                     out.push("number of enemies alive is " + size + " than " + val);
                     break;
+                default:
+                    if (param.indexOf("~") === 0) {
+                        out.push("player has " + (size === "higher" ? "more" : "less") + " than " + val + " " + items[param.substr(1)].name + "(s)");
+                    }
+                    break;
+                
             }
         }
         
