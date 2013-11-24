@@ -1847,6 +1847,8 @@ function RPG(rpgchan) {
         if (Array.isArray(att)) {
             if (level < att.length) {
                 return att[level];
+            } else if (level < 0) {
+                return att[0];
             } else {
                 return att[att.length - 1];
             }
@@ -4272,7 +4274,11 @@ function RPG(rpgchan) {
             }
         } else if (file.advStrategy.length > battleSetup.advancedPlans) {
             while (file.advStrategy.length > battleSetup.advancedPlans) {
-                file.advStrategy.splice(0, 1);
+                if (file.advStrategy.indexOf(null) >= 0) {
+                    file.advStrategy.splice(file.advStrategy.indexOf(null), 1);
+                } else {
+                    file.advStrategy.splice(0, 1);
+                }
             }
         }
         
@@ -4867,7 +4873,7 @@ function RPG(rpgchan) {
         
         out.push(titleName + "'s skills:");
         for (var i in target.skills) {
-            out.push(skills[i].name + " (" + i + ") : [" + target.skills[i] + "/" + skills[i].levels + "] " + skills[i].info + (skills[i].type === "passive" ? " (Passive)" : " (" + skills[i].cost + " Mana)"));
+            out.push(skills[i].name + " (" + i + ") : [" + target.skills[i] + "/" + skills[i].levels + "] " + skills[i].info + (skills[i].type === "passive" ? " (Passive)" : " (" + getLevelValue(skills[i].cost, target.skills[i] - 1) + " Mana)"));
         }
         
         out.push("");
