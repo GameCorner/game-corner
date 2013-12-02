@@ -1260,6 +1260,7 @@ Battle.prototype.attackPlayer = function(player, target, move, level) {
         attackBonus += Math.floor(player.level * getLevelValue(move.effect.levelDamage, level));
     }
     
+    var main = power;
     power = power * (getLevelValue(move.modifier, level) + attackBonus) * pinch * this.battleSetup.damage * (1 + (this.battleSetup.levelDamageBonus * player.level));
     
     var def = (target.battle.attributes.def * (1 - this.battleSetup.secondaryDefense) + target.battle.attributes[move.type === "physical" ? "str" : "mag"] * this.battleSetup.secondaryDefense) * this.battleSetup.defense;
@@ -1298,7 +1299,7 @@ Battle.prototype.attackPlayer = function(player, target, move, level) {
         element = this.elements[atkElement][defElement];
     }
     
-    var main = move.type === "physical" ? player.battle.attributes.str : player.battle.attributes.mag;
+    
     var invert = move.type === "physical" ? player.battle.attributes.mag : player.battle.attributes.str;
     main = main <= 0 ? 1 : main;
     invert = invert <= 0 ? 1 : invert;
@@ -1724,12 +1725,20 @@ Battle.prototype.finishBattle = function(win) {
                 if (gainedGold > 0) {
                     won.gold += gainedGold;
                 }
-                
+                var share = 0, guild;
+                if (won.guild !== null) {
+                    guild = this.game.guilds[won.guild];
+                    share = guild.expShare[won.name.toLowerCase()];
+                }
                 gainedExp = Math.floor((monsterExp + Math.floor(playerExp / won.level)) * this.getPassiveMultiplier(won, "expBonus") * this.leveling.battleExp * partyBonus);
                 if (gainedExp > 0 || gainedGold > 0) {
-                    rpgbot.sendMessage(won.id, "You received " + (gainedExp > 0 ? gainedExp + " Exp. Points" : "") + (gainedExp > 0 && gainedGold > 0 ? " and " : "") + (gainedGold > 0 ? gainedGold + " Gold" : "") + "!", this.rpgchan);
+                    rpgbot.sendMessage(won.id, "You received " + (gainedExp > 0 ? gainedExp + " Exp. Points" + (share > 0 ? " (" + (share * 100) + "% sent to Guild)" : "") : "") + (gainedExp > 0 && gainedGold > 0 ? " and " : "") + (gainedGold > 0 ? gainedGold + " Gold" : "") + "!", this.rpgchan);
                 }
                 if (gainedExp > 0) {
+                    if (share > 0) {
+                        guild.giveExp(won, Math.round(gainedExp * share));
+                        gainedExp = Math.round(gainedExp * (1 - share));
+                    }
                     this.game.receiveExp(won.id, gainedExp);
                 }
             }
