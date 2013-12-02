@@ -359,6 +359,8 @@ Guild.prototype.acceptInvite = function(player) {
 Guild.prototype.addMember = function(player) {
     var name = player.name.toLowerCase();
     
+    player.guild = this.name.toLowerCase();
+    
     this.members[name] = player.id;
     this.membersInfo[name] = {
         name: player.name,
