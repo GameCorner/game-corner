@@ -9,11 +9,13 @@ function RPG(rpgchan) {
     var savefolder = "rpgsaves";
     var contentfile = "rpgcontent.json";
     var locationfile = "rpglocation.txt";
+    var guildsfile = "rpgguilds.json";
     var leaderboardfile = "rpgleaderboard.json";
     var rpgAtt = "rpg";
     var plugins = {
         party: "rpg_party.js",
-        battle: "rpg_battle.js"
+        battle: "rpg_battle.js",
+        guild: "rpg_guild.js"
     };
     
     var config;
@@ -30,9 +32,11 @@ function RPG(rpgchan) {
     var tick = 0;
     
     var expTable = [40, 94, 166, 263, 393, 568, 804, 1122, 1551, 2130, 2911, 3965, 5387, 7306, 9896, 13392, 18111, 24481, 33080, 44688, 60358, 81512, 110069, 148620, 200663, 270921, 365769, 493813, 666672];
+    var guildExp = [40, 94, 166, 263, 393, 568, 804, 1122, 1551, 2130, 2911, 3965, 5387, 7306, 9896, 13392, 18111, 24481, 33080, 44688, 60358, 81512, 110069, 148620, 200663, 270921, 365769, 493813, 666672];
     
     this.currentParties = {};
     this.currentBattles = [];
+    this.guilds = {};
     
     var duelChallenges = {};
     var tradeRequests = {};
@@ -87,34 +91,40 @@ function RPG(rpgchan) {
         advancedPlans: 5,
         defaultSkill: "attack"
     };
+    var guildInfo = {
+        baseMembers: 5,
+        membersPerLevel: 3,
+        exp: [10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000]
+    };
     
     var altSkills = {};
     var altPlaces = {};
     var altItems = {};
     var classHelp = [];
     var gameHelp = [
-            "",
-            "*** *********************************************************************** ***",
-            "±RPG: A newcomer's guide by Oksana: http://gamecorner.info/Thread-RPG-Newcomer-s-Guide",
-            "±RPG: /classes - To see a list of the current starting classes.",
-            "±RPG: /start - To pick a class. Example: '/start mage'",
-            "±RPG: /i - To see your items list. Use /i itemname to use the item. Example: '/i armor' to wear armor or '/i potion' to heal during battle.",
-            "±RPG: /stats - To see your stats and available stat points. Use /increase to allocate them. Example: '/increase str:2' to put 2 points into strength.",
-            "±RPG: /skills - To see your skills and available skill points. Use /increase to allocate them. Example: '/increase rest' to raise your rest level.",
-            "±RPG: /plan - To see what our current battle plan is set to. Use /plan skill:chance to set your plan. Example: '/plan attack:8*rest:2' to set your plan to 80% attack and 20% rest.",
-            "±RPG: /w - To show all the places you can go. Use /w location to move to the new location. Example: '/w inn' to move to the inn.",
-            "±RPG: /t - To show the visible NPCs or objects to interact with. Use /a object or /t NPC to interact with them. Example: '/a board' to view the bulletin board at the inn.",
-            "±RPG: /e - To explore your current location. Sometimes it will start a battle, sometimes you will find items.",
-            "±RPG: /f - To flee from a battle. Use this to avoid dying if you are in a battle you are sure can't win.",
-            "±RPG: /revive - Use this when you have died. You will revive at your respawn location with half HP, so remember to heal at the inn.",
-            "±RPG: /savechar - To save your progress.",
-            "±RPG: /loadchar - To load your previously saved game.",
-            "*** *********************************************************************** ***",
-            ""
-		];
+        "",
+        "*** *********************************************************************** ***",
+        "±RPG: A newcomer's guide by Oksana: http://gamecorner.info/Thread-RPG-Newcomer-s-Guide",
+        "±RPG: /classes - To see a list of the current starting classes.",
+        "±RPG: /start - To pick a class. Example: '/start mage'",
+        "±RPG: /i - To see your items list. Use /i itemname to use the item. Example: '/i armor' to wear armor or '/i potion' to heal during battle.",
+        "±RPG: /stats - To see your stats and available stat points. Use /increase to allocate them. Example: '/increase str:2' to put 2 points into strength.",
+        "±RPG: /skills - To see your skills and available skill points. Use /increase to allocate them. Example: '/increase rest' to raise your rest level.",
+        "±RPG: /plan - To see what our current battle plan is set to. Use /plan skill:chance to set your plan. Example: '/plan attack:8*rest:2' to set your plan to 80% attack and 20% rest.",
+        "±RPG: /w - To show all the places you can go. Use /w location to move to the new location. Example: '/w inn' to move to the inn.",
+        "±RPG: /t - To show the visible NPCs or objects to interact with. Use /a object or /t NPC to interact with them. Example: '/a board' to view the bulletin board at the inn.",
+        "±RPG: /e - To explore your current location. Sometimes it will start a battle, sometimes you will find items.",
+        "±RPG: /f - To flee from a battle. Use this to avoid dying if you are in a battle you are sure can't win.",
+        "±RPG: /revive - Use this when you have died. You will revive at your respawn location with half HP, so remember to heal at the inn.",
+        "±RPG: /savechar - To save your progress.",
+        "±RPG: /loadchar - To load your previously saved game.",
+        "*** *********************************************************************** ***",
+        ""
+    ];
     
     var Party = require(plugins.party).Party;
     var Battle = require(plugins.battle).Battle;
+    var Guild = require(plugins.guild).Guild;
     
     function getAvatar(src) {
         return SESSION.users(src)[rpgAtt];
@@ -473,7 +483,8 @@ function RPG(rpgchan) {
             sys.sendMessage(src, "",rpgchan);
             sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             nomsg = true;
-        } else if ("buy" in topic && typeof topic.buy === "object") {
+        } 
+        else if ("buy" in topic && typeof topic.buy === "object") {
             products = topic.buy;
             if (data.length < 3) {
                 sys.sendMessage(src, "", rpgchan);
@@ -511,7 +522,8 @@ function RPG(rpgchan) {
             sys.sendMessage(src, "",rpgchan);
             sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             nomsg = true;
-        } else if ("buy" in topic && topic.buy === "*") {
+        } 
+        else if ("buy" in topic && topic.buy === "*") {
             if (data.length < 3) {
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, topic.message, rpgchan);
@@ -546,7 +558,8 @@ function RPG(rpgchan) {
             sys.sendMessage(src, "",rpgchan);
             sys.sendMessage(src, topic.acceptmsg.replace(/~Count~/g, amount).replace(/~Item~/g, items[goods].name).replace(/~Price~/g, price),rpgchan);
             nomsg = true;
-        } else if ("trade" in topic) {
+        } 
+        else if ("trade" in topic) {
             products = topic.trade;
             var t, materials, rewards;
             if (data.length < 3) {
@@ -636,7 +649,8 @@ function RPG(rpgchan) {
             sys.sendMessage(src, "",rpgchan);
             sys.sendMessage(src, topic.acceptmsg,rpgchan);
             nomsg = true;
-        } else if ("storage" in topic) {
+        } 
+        else if ("storage" in topic) {
             if (data.length < 3) {
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, topic.message, rpgchan);
@@ -689,7 +703,8 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, topic.noitemmsg, rpgchan);
                 return;
             }
-        } else if ("bank" in topic && topic.bank === true) {
+        } 
+        else if ("bank" in topic && topic.bank === true) {
             if (data.length < 3) {
                 sys.sendMessage(src, "", rpgchan);
                 sys.sendMessage(src, topic.message, rpgchan);
@@ -721,7 +736,8 @@ function RPG(rpgchan) {
                 sys.sendMessage(src, topic.nogoldmsg, rpgchan);
                 return;
             }
-        } else if ("show" in topic) {
+        } 
+        else if ("show" in topic) {
             sys.sendMessage(src, "", rpgchan);
             sys.sendMessage(src, topic.message, rpgchan);
             var item;
@@ -731,6 +747,17 @@ function RPG(rpgchan) {
                     sys.sendMessage(src, item.name + " (" + topic.show[s] + "): " + item.info + " " + (item.type === "equip" ? getEquipAttributes(topic.show[s]) : ""), rpgchan);
                 }
             }
+            sys.sendMessage(src, "", rpgchan);
+            return;
+        }
+        else if ("guild" in topic) {
+            sys.sendMessage(src, "", rpgchan);
+            if (data.length < 3) {
+                rpgbot.sendMessage(src, "You must choose a name for the Guild!", rpgchan);
+                return;
+            }
+            sys.sendMessage(src, topic.message, rpgchan);
+            this.createGuild(src, data[2]);
             sys.sendMessage(src, "", rpgchan);
             return;
         }
@@ -1438,6 +1465,11 @@ function RPG(rpgchan) {
                         }
                     }
                 }
+                if ("hasGuild" in req) {
+                    if (req.hasGuild !== (target.guild !== null)) {
+                        playerDeny = true;
+                    }
+                }
                 if (playerDeny) {
                     deny = true;
                 
@@ -2091,7 +2123,7 @@ function RPG(rpgchan) {
             }
         }
     };
-    this.viewItems = function(src, commandData) {
+    this.viewItems = function(src, commandData, isGuild) {
         var player = getAvatar(src);
         var out = [];
         
@@ -2115,10 +2147,17 @@ function RPG(rpgchan) {
         var headerAdded = false;
         
         try {
-            ordered = data === "storage" ? Object.keys(player.storage).sort(sortByName) : Object.keys(player.items).sort(sortByName);
-            if (data === "storage") {
+            if (isGuild) {
+                var guild = this.guilds[player.guild].storage;
                 data = "all";
-                itemSource = player.storage;
+                itemSource = guild.storage;
+                ordered = Object.keys(guild.storage).sort(sortByName);
+            } else {
+                ordered = data === "storage" ? Object.keys(player.storage).sort(sortByName) : Object.keys(player.items).sort(sortByName);
+                if (data === "storage") {
+                    data = "all";
+                    itemSource = player.storage;
+                } 
             }
         } catch (err) {
             rpgbot.sendMessage(src, "You have an invalid item, so you can't use this command! Contact an RPG admin for help.", rpgchan);
@@ -3929,7 +3968,6 @@ function RPG(rpgchan) {
             rpgbot.sendMessage(src, "You are in an invalid party!", rpgchan);
             return;
         }
-        
     };
     
     this.startGame = function(src, commandData) {
@@ -3992,6 +4030,8 @@ function RPG(rpgchan) {
         player.respawn = startup.location;
         player.party = null;
         
+        player.guild = null;
+        
         player.isPlayer = true;
         player.isBattling = false;
         player.version = charVersion;
@@ -4015,6 +4055,19 @@ function RPG(rpgchan) {
         
         sys.sendMessage(src, "", rpgchan);
         rpgbot.sendMessage(src, "Character successfully created!", rpgchan);
+        
+        var guild, lowerName = player.name.toLowerCase();
+        for (x in this.guilds) {
+            guild = this.guilds[x];
+            if (lowerName in guild.members) {
+                if (guild.leader === lowerName) {
+                    guild.destroy();
+                } else {
+                    guild.leaveGuild(src, true);
+                }
+            }
+        }
+        
         this.changeLocation(src, player.location, "spawned at");
         sys.sendMessage(src, "", rpgchan);
     };
@@ -4109,6 +4162,11 @@ function RPG(rpgchan) {
         sys.makeDir(savefolder);
         sys.writeToFile(savefolder + "/" + escape(savename) + ".json", JSON.stringify(user[rpgAtt]));
         
+        var player = user[rpgAtt];
+        if (player.guild !== null) {
+            this.guilds[player.guild].updateMembersInfo(player);
+        }
+        
         rpgbot.sendMessage(src, "Game saved as " + savename + "! Use /loadchar to load your progress!", rpgchan);
     };
     this.loadGame = function(src) {
@@ -4162,9 +4220,19 @@ function RPG(rpgchan) {
         }
         
         user[rpgAtt] = gamefile;
-        user[rpgAtt].id = src;
-        user[rpgAtt].party = null;
+        var player = user[rpgAtt];
+        player.id = src;
+        player.party = null;
+        
         rpgbot.sendMessage(src, "Your character has been loaded successfully!", rpgchan);
+        if (player.guild !== null) {
+            if (!(player.guild in this.guilds) || !(player.name.toLowerCase() in this.guilds[player.guild].members)) {
+                player.guild = null;
+            } else {
+                this.guilds[player.guild].memberLogin(src);
+            }
+        }
+        
     };
     this.convertChar = function(gamefile) {
         var file = gamefile;
@@ -4261,6 +4329,9 @@ function RPG(rpgchan) {
         if (!file.skillLevels) {
             file.skillLevels = {};
         }
+        if (!file.guild) {
+            file.guild = null;
+        }
         
         if (!file.advStrategy) {
             file.advStrategy = [
@@ -4303,6 +4374,9 @@ function RPG(rpgchan) {
             this.saveGame(src, "sure");
         }
         
+        if (user[rpgAtt].guild !== null) {
+            this.guilds[user[rpgAtt].guild].memberLogout(src);
+        }
         user[rpgAtt] = undefined;
         rpgbot.sendMessage(src, "Character successfully cleared!", rpgchan);
     };
@@ -5032,12 +5106,123 @@ function RPG(rpgchan) {
         }
 	};
     
+    this.createGuild = function(src, data) {
+        var player = getAvatar(src);
+        
+        if (player.guild !== null) {
+            return false;
+        }
+        
+        if (data.toLowerCase() in this.guilds) {
+            return false;
+        }
+        
+        var guild = new Guild(data, { player: player, isNew: true }, this);
+        this.guilds[data.toLowerCase()] = guild;
+        player.guild = data.toLowerCase();
+        rpgbot.sendMessage(src, "Guild " + data + " created!", rpgchan);
+        this.saveGuilds();
+        this.saveGame(src, "sure");
+    };
+    this.saveGuilds = function() {
+        sys.writeToFile(guildsfile, JSON.stringify(this.guilds, function(key, value) {
+            if (key == "game" && typeof value === "object") {
+                return;
+            }
+            return value;
+        }));
+    };
+    this.loadGuilds = function() {
+        this.guilds = JSON.parse(sys.getFileContent(guildsfile));
+        
+        var g, oldGuild, newGuild;
+        for (g in this.guilds) {
+            oldGuild = this.guilds[g];
+            newGuild = new Guild(oldGuild.name, oldGuild, this);
+            newGuild.updateContent(this);
+            newGuild.updateMembers();
+            
+            this.guilds[g] = newGuild;
+        }
+    };
+    this.updateGuilds = function() {
+        var g, oldGuild, newGuild;
+        for (g in this.guilds) {
+            oldGuild = this.guilds[g];
+            newGuild = new Guild(oldGuild.name, oldGuild, this);
+            newGuild.updateContent(this);
+            newGuild.updateMembers();
+            
+            this.guilds[g] = newGuild;
+        }
+    };
+    this.guildCommands = function(src, commandData) {
+        var player = getAvatar(src);
+        
+        if (commandData === "u") {
+            this.saveGuilds();
+            return;
+        }
+        
+        if (player.guild !== null) {
+            this.guilds[player.guild.toLowerCase()].useCommand(src, commandData);
+        } else {
+            var info = commandData.split(":");
+            
+            if (info.length < 2) {
+                rpgbot.sendMessage(src, "Guild Commands: ", rpgchan);
+                return;
+            }
+            var comm = info[0].toLowerCase(),
+                data = info[1];
+            
+            switch (comm) {
+                case "accept":
+                case "join":
+                    if (data.toLowerCase() in this.guilds) {
+                        this.guilds[data.toLowerCase()].acceptInvite(player);
+                    } else {
+                        sys.sendMessage(src, "", rpgchan);
+                        rpgbot.sendMessage(src, "No such Guild!", rpgchan);
+                        var pending = [], name = player.name.toLowerCase();
+                        
+                        for (var g in this.guilds) {
+                            if (name in this.guilds[g].invites) {
+                                pending.push(this.guilds[g].name);
+                            }
+                        }
+                        if (pending.length > 0) {
+                            rpgbot.sendMessage(src, "You have invitations to the following guilds: " + readable(pending, "and") + ".", rpgchan);
+                        }
+                    }
+                break;
+                case "create":
+                case "c":
+                    this.createGuild(src, data);
+                break;
+                default:
+                    rpgbot.sendMessage(src, "Invalid Guild Command!", rpgchan);
+            }
+            sys.sendMessage(src, "", rpgchan);
+        }
+    };
+    this.talkToGuild = function(src, commandData) {
+        var player = getAvatar(src);
+        
+        if (player.guild === null) {
+            rpgbot.sendMessage(src, "You are not in any party!", rpgchan);
+            return;
+        }
+        this.guilds[player.guild].guildChat(src, commandData);
+    };
+    
     function runUpdate() {
         var tempBattles = game.currentBattles;
         var tempDuels = duelChallenges;
         var tempTrades = tradeRequests;
         var tempParty = game.currentParties;
         var tempBoards = leaderboards;
+        var tempGuilds = game.guilds;
         
         var POglobal = SESSION.global();
         var index, source;
@@ -5052,7 +5237,7 @@ function RPG(rpgchan) {
                 POglobal.plugins[index] = module;
                 module.source = source;
                 module.init();
-                module.game.restoreValues(tempBattles, tempDuels, tempTrades, tempParty, tempBoards);
+                module.game.restoreValues(tempBattles, tempDuels, tempTrades, tempParty, tempBoards, tempGuilds);
                 
             });
             sendChanAll("Updating RPG game...", rpgchan);
@@ -5074,6 +5259,14 @@ function RPG(rpgchan) {
                     updateModule(plugins.party, function(module) {
                         Party = module.Party;
                         rpgbot.sendMessage(src, "Party Module updated!", rpgchan);
+                    });
+                    break;
+                case "guild":
+                    rpgbot.sendMessage(src, "Updating RPG Guild module!", rpgchan);
+                    updateModule(plugins.guild, function(module) {
+                        Guild = module.Guild;
+                        rpgbot.sendMessage(src, "Guild Module updated!", rpgchan);
+                        game.updateGuilds();
                     });
                     break;
                 default:
@@ -5268,6 +5461,18 @@ function RPG(rpgchan) {
                 equipment = config.equipment;
             }
             
+            if (config.guild) {
+                if (config.guild.baseMembers) {
+                    guildInfo.baseMembers = config.guild.baseMembers;
+                }
+                if (config.guild.membersPerLevel) {
+                    guildInfo.membersPerLevel = config.guild.membersPerLevel;
+                }
+                if (config.guild.exp) {
+                    guildInfo.exp = config.guild.exp;
+                }
+            }
+            
             var e, n, alt;
             altSkills = {};
             for (e in skills) {
@@ -5383,17 +5588,21 @@ function RPG(rpgchan) {
             this.titles = titles;
             this.battleSetup = battleSetup;
             this.leveling = leveling;
+            this.guildInfo = guildInfo;
+            
+            this.updateParties();
             
             rpgbot.sendAll("RPG Game reloaded!", rpgchan);
 		} catch (err) {
 			sys.sendAll("Error loading RPG Game data: " + err, rpgchan);
 		}
 	};
-    this.restoreValues = function(tempBattles, tempDuels, tempTrades, tempParty, tempBoards) {
+    this.restoreValues = function(tempBattles, tempDuels, tempTrades, tempParty, tempBoards, tempGuilds) {
         tradeRequests = tempTrades;
         game.currentBattles = tempBattles;
         duelChallenges = tempDuels;
         game.currentParties = tempParty;
+        game.guilds = tempGuilds;
         leaderboards = tempBoards;
     };
     this.viewContentFile = function(src) {
@@ -5825,8 +6034,10 @@ function RPG(rpgchan) {
             increase: [this.addPoint, "To increase your stats or skills after you level up."],
             savechar: [this.saveGame, "To save your progress."],
             clearchar: [this.clearChar, "To clear your character."],
-            party: [this.manageParty, "To create and manage a party"],
+            party: [this.manageParty, "To create and manage a party."],
             partytalk: [this.talkToParty, "To talk to your party."],
+            guild: [this.guildCommands, "To manage a Guild."],
+            guildtalk: [this.talkToGuild, "To talk to your party."],
             title: [this.changeTitle, "To view or change your Title."],
             appearance: [this.changeAppearance, "To change your appearance description."],
             font: [this.changeFontSize, "To change the Battle Message's size."],
@@ -5850,7 +6061,9 @@ function RPG(rpgchan) {
             c: [this.challengePlayer, "Same as /challenge."],
             q: [this.viewQuests, "Same as /quests."],
             p: [this.manageParty, "Same as /party."],
-            pt: [this.talkToParty, "Same as /partytalk."]
+            g: [this.guildCommands, "Same as /guild."],
+            pt: [this.talkToParty, "Same as /partytalk."],
+            gt: [this.talkToGuild, "Same as /partytalk."]
         },
 		channel: {
 			help: [this.showHelp, "To learn how to play the game."],
@@ -5960,6 +6173,9 @@ function RPG(rpgchan) {
             for (var x in this.currentBattles) {
                 this.currentBattles[x].playNextTurn();
             }
+        }
+        if (tick % 60 === 0) {
+            this.saveGuilds();
             tick = 0;
         }
 	};
@@ -6006,6 +6222,8 @@ function RPG(rpgchan) {
         }
         game.rpgchan = rpgchan;
         game.rpgAtt = rpgAtt;
+        game.updateLeaderboard();
+        game.loadGuilds();
 	};
 	this.stepEvent = function() {
         try {
