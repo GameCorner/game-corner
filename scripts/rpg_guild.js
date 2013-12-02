@@ -344,7 +344,7 @@ Guild.prototype.sendInvite = function(src, target) {
             }
             this.invites[target] = true;
             this.botMessage(src, "Guild invitation sent to " + targetPlayer.name + ".", true);
-            this.botMessage(sys.id(target), "You have been invited to the " + this.name + " guild. To join, type '/guild join " + this.name + "'.");
+            this.botMessage(sys.id(target), "You have been invited to the " + this.name + " guild. To join, type '/guild join:" + this.name + "'.");
         }
     }
 };
@@ -574,7 +574,7 @@ Guild.prototype.setAuth = function(src, info) {
         case "exp":
         case "share":
         case "exp share":
-            permission = "cansetShare";
+            permission = "canSetShare";
             act = "change members' exp. share";
         break;
         default:
@@ -650,7 +650,7 @@ Guild.prototype.viewGuild = function(src) {
     
     for (x in this.membersInfo) {
         info = this.membersInfo[x];
-        out.push(info.name + " (Lv. " + info.level + " " + this.game.classes[info.job].name + "), " + this.titles[x] + (this.members[x] !== null ? " (at " + this.game.places[this.getAvatar(this.members[x]).location].name + ")" : "" ) + " - Exp. Contribution: " + this.expGiven[x] + "/" + this.exp + (this.exp > 0 ? " (" + (this.expGiven[x]/this.exp*100) + "%)" : ""));
+        out.push(info.name + " (Lv. " + info.level + " " + this.game.classes[info.job].name + "), " + this.titles[x] + (this.members[x] !== null ? " (at " + this.game.places[this.getAvatar(this.members[x]).location].name + ")" : "" ) + " - Exp. Contribution: " + this.expGiven[x] + "/" + this.exp + (this.exp > 0 ? " (" + (this.expGiven[x]/this.exp*100).toFixed(1) + "%)" : ""));
     }
     
     sys.sendMessage(src, "", this.game.rpgchan);
