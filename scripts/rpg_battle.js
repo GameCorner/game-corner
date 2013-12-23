@@ -47,7 +47,8 @@ function Battle(viewers, teamA, teamB, rpg) {
             mpdamage:{},
             delay: 0,
             attributes: {},
-            summons: {}
+            summons: {},
+            casting: null
         };
         if (this.team1[p].isPlayer) {
             p1 = true;
@@ -70,7 +71,8 @@ function Battle(viewers, teamA, teamB, rpg) {
             mpdamage:{},
             delay: 0,
             attributes: {},
-            summons: {}
+            summons: {},
+            casting: null
         };
         if (this.team2[p].isPlayer) {
             p2 = true;
@@ -1488,7 +1490,8 @@ Battle.prototype.summonMonster = function(player, moveName, level) {
                     critical: this.getBuffedMultiplier(summoned, "critical"),
                     attackSpeed: this.getBuffedMultiplier(summoned, "attackSpeed")
                 },
-                summons: {}
+                summons: {},
+                casting: null
             };
             
             player.battle.summons[moveName].push(summoned);
